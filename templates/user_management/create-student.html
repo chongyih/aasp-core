@@ -377,7 +377,7 @@
                   }
 
                   // show or hide "ignored rows" div altogether
-                  if (res.removed_rows || res.conflicted_rows) {
+                  if (res.removed_rows.length !== 0 || res.conflicted_rows.length !== 0) {
                       bulkLogDiv.show();
                   }
               }

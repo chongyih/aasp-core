@@ -1,0 +1,59 @@
+{% extends 'layouts/auth.html' %}
+{% load static %}
+
+{% block title %}Login - AASP{% endblock %}
+
+{% block content %}
+  <div class="row h-100">
+    <div class="col-lg-5 col-md-12 mx-auto">
+      <div id="auth-left">
+        <div class="auth-logo mb-4">
+          <img src="{% static 'images/logo/logo.png' %}" style="height: 7rem;" alt="Logo">
+        </div>
+        <h1 class="auth-title">Log in.</h1>
+        <p class="auth-subtitle mb-5">Log in with the information you entered during registration.</p>
+
+        {# non-field errors #}
+        {% for error in form.non_field_errors %}
+          <div class="alert alert-danger">{{ error }}</div>
+        {% endfor %}
+
+        <form method="POST">
+          {% csrf_token %}
+          <!-- Username input -->
+          <div class="form-group position-relative has-icon-left mb-4">
+            <input name="username" id="id_username" type="text" class="form-control form-control-xl" placeholder="Username"
+                   oninput="this.value = this.value.toUpperCase()" autofocus="autofocus"/>
+            <div class="form-control-icon"><i class="bi bi-person"></i></div>
+          </div>
+          {# username errors #}
+          {% if form.username.errors %}
+            {% for e in form.username.errors %}
+              <p class="text-danger">{{ e }}</p>
+            {% endfor %}
+          {% endif %}
+
+          <!-- Password input -->
+          <div class="form-group position-relative has-icon-left mb-4">
+            <input name="password" id="id_password" type="password" class="form-control form-control-xl" placeholder="Password"/>
+            <div class="form-control-icon"><i class="bi bi-shield-lock"></i></div>
+          </div>
+          {# password errors #}
+          {% if form.password.errors %}
+            {% for e in form.password.errors %}
+              <p class="text-danger">{{ e }}</p>
+            {% endfor %}
+          {% endif %}
+
+          <button class="btn btn-primary btn-block btn-lg shadow-lg mt-3">Log in</button>
+        </form>
+
+        <div class="text-center mt-5 text-lg fs-4">
+          <p class="text-gray-600">Don't have an account? Talk to your lab assistant.</p>
+          {# mytodo: implement forgot password #}
+          <a class="font-bold" href="#">Forgot password</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

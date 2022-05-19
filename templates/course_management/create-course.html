@@ -1,0 +1,151 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}Courses{% endblock %}
+
+{% block styles %}
+{% endblock %}
+
+{% block content %}
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-6 order-md-1 order-last">
+          <h2>Add Course</h2>
+          <p class="text-subtitle text-muted">Create a new course!</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-5 m-2">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title ">Course Information</h4>
+          </div>
+          <div class="card-body">
+            <form class="form form-vertical" method="post">
+              {% csrf_token %}
+              <div class="form-body">
+
+                {# non-field errors #}
+                {% for error in form.non_field_errors %}
+                  <div class="alert alert-danger py-2">Non-field error!</div>
+                {% endfor %}
+
+                <!-- Course code input -->
+                <div class="col-12">
+                  <div class="form-group has-icon-left">
+                    <label for="id_code">Course Code</label>
+                    <div class="position-relative">
+                      <input type="text"
+                             class="form-control {% if form.code.errors %}is-invalid{% endif %}"
+                             name="code" id="id_code"
+                             placeholder="e.g. CZ4001" style="text-transform: uppercase"
+                             maxlength="{{ form.fields.code.max_length }}"
+                             value="{% if form.code.value %}{{ form.code.value }}{% endif %}"
+                             {% if form.fields.code.required %}required{% endif %}
+                      >
+                      <div class="form-control-icon"><i class="bi bi-hash"></i></div>
+                    </div>
+                    {# course code errors #}
+                    {% if form.code.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.code.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Course name input -->
+                <div class="col-12">
+                  <div class="form-group has-icon-left">
+                    <label for="id_name">Course Name</label>
+                    <div class="position-relative">
+                      <input type="text"
+                             class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                             name="name" id="id_name"
+                             placeholder="e.g. Software Security" style="text-transform: uppercase"
+                             maxlength="{{ form.fields.name.max_length }}"
+                             value="{% if form.name.value %}{{ form.name.value }}{% endif %}"
+                             {% if form.fields.name.required %}required{% endif %}
+                      >
+                      <div class="form-control-icon"><i class="bi bi-type"></i></div>
+                    </div>
+                    {# course name errors #}
+                    {% if form.name.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.name.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Academic year input -->
+                <div class="col-6">
+                  <div class="form-group has-icon-left">
+                    <label for="id_year">Academic Year</label>
+                    <div class="position-relative">
+                    <select class="form-select" id="id_year" name="year">
+                      {% for value, text in form.year.field.choices %}
+                        <option value="{{ value }}" {% if value == form.year.value %}selected{% endif %}>{{ text }}</option>
+                      {% endfor %}
+                    </select>
+                    </div>
+                    {# year errors #}
+                    {% if form.year.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.year.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Semester input -->
+                <div class="col-6">
+                  <div class="form-group has-icon-left">
+                    <label for="id_semester">Semester</label>
+                    <div class="position-relative">
+                    <select class="form-select" id="id_semester" name="semester">
+                      {% for value, text in form.semester.field.choices %}
+                        <option value="{{ value }}" {% if value == form.semester.value %}selected{% endif %}>{{ text }}</option>
+                      {% endfor %}
+                    </select>
+                    </div>
+                    {# year errors #}
+                    {% if form.semester.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.semester.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Submit and Reset buttons -->
+                <div class="col-12 d-flex justify-content-end">
+                  <button type="submit" class="btn btn-primary me-1 mb-1">Submit</button>
+                  <button type="reset" class="btn btn-light-secondary me-1 mb-1">Reset
+                  </button>
+                </div>
+
+              </div>
+            </form>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+{% endblock %}
+
+{% block js %}
+{% endblock %}

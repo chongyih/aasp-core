@@ -1,0 +1,72 @@
+{% load static %}
+{% load utils %}
+
+<div class="sidebar-wrapper active">
+  <div class="sidebar-header">
+    <div class="d-flex justify-content-between">
+      <div class="logo">
+        <img src="{% static 'images/logo/logo.png ' %}" style="height: 5rem;" alt="Logo" srcset="">
+      </div>
+      <div class="toggler">
+        <a href="#" class="sidebar-hide d-xl-none d-block"><i class="bi bi-x bi-middle"></i></a>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar-menu">
+    <ul class="menu">
+
+      {# dynamic options based on user group #}
+      {# student dashboard #}
+      <li class="sidebar-title">Menu</li>
+      {% if request.user.is_superuser or request.user|has_group:'student' %}
+        <li class="sidebar-item {% if 'dashboard/students' in request.path %} active {% endif %}">
+          <a href="{% url 'dashboard-students' %}" class='sidebar-link'><i class="fa-solid fa-house"></i><span>Student Dashboard</span></a>
+        </li>
+      {% endif %}
+
+      {# educator dashboard #}
+      {% if request.user.is_superuser or request.user|has_group:'educator' %}
+        <li class="sidebar-item {% if 'dashboard/educators' in request.path %} active {% endif %}">
+          <a href="{% url 'dashboard-educators' %}" class='sidebar-link'><i class="fa-solid fa-house"></i><span>Educator Dashboard</span></a>
+        </li>
+      {% endif %}
+
+      {# lab assistant dashboard #}
+      {% if request.user.is_superuser or request.user|has_group:'lab_assistant' %}
+        <li class="sidebar-item {% if 'dashboard/labassistants' in request.path %} active {% endif %}">
+          <a href="{% url 'dashboard-lab-assistants' %}" class='sidebar-link'><i class="fa-solid fa-house"></i><span>Lab Assistant Dashboard</span></a>
+        </li>
+      {% endif %}
+
+      {% if request.user.is_superuser or request.user|has_group:'lab_assistant' or request.user|has_group:'educator' %}
+        <li class="sidebar-title">User Management</li>
+
+        {# courses #}
+        <li class="sidebar-item {% if request.path == '/courses/' %} active {% endif %}">
+          <a href="{% url 'view-courses' %}" class='sidebar-link'><i class="fa-solid fa-user-group"></i><span>Courses</span></a>
+        </li>
+
+        {# student accounts #}
+        <li class="sidebar-item has-sub">
+          <a href="#" class='sidebar-link'>
+            <i class="fa-solid fa-graduation-cap"></i>
+            <span>Student Accounts</span>
+          </a>
+
+          <ul class="submenu ">
+            <li class="submenu-item"><a href="{% url 'create-student' %}">Add Students</a></li>
+            <li class="submenu-item"><a href="component-badge.html">View Students</a></li>
+          </ul>
+        </li>
+      {% endif %}
+
+      {# global options across all user groups #}
+      <li class="sidebar-title">Account</li>
+      <li class="sidebar-item">
+        <a href="{% url 'logout' %}" class='sidebar-link'><i class="fa-solid fa-right-from-bracket"></i><span>Log Out</span></a>
+      </li>
+
+    </ul>
+  </div>
+  <button class="sidebar-toggler btn x"><i data-feather="x"></i></button>
+</div>

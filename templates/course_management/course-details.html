@@ -1,0 +1,298 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}Courses{% endblock %}
+
+{% block styles %}
+  <link rel="stylesheet" href="{% static 'vendors/choices.js/choices.min.css' %}"/>
+{% endblock %}
+
+{% block content %}
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-12 order-md-1 order-last">
+          <h2>{{ course }}</h2>
+          <p class="text-subtitle text-muted">Course details</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Course information card -->
+    <div class="row">
+      <div class="col-12 m-2">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title ">Course Information</h4>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-4">
+                <h6>Course Code</h6>
+                <p>{{ course.code }}</p>
+              </div>
+              <div class="col-4">
+                <h6>Course Name</h6>
+                <p>{{ course.name }}</p>
+              </div>
+              <div class="col-4">
+                <h6>Course Owner</h6>
+                <p>{{ course.owner.username }} ({{ course.owner.name }})</p>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-4">
+                <h6>Academic Year</h6>
+                <p>{{ course.year }}</p>
+              </div>
+              <div class="col-4">
+                <h6>Semester</h6>
+                <p>{{ course.get_semester_display }}</p>
+              </div>
+              <div class="col-4">
+                <h6>Students</h6>
+                <p>{{ course.students.count }} students enrolled</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Students and Maintainers row -->
+    <div class="row">
+
+      <!-- Student cards -->
+      <div class="col-8">
+        <div class="card-group">
+
+          <!-- View/remove students card -->
+          <div class="card">
+            <div class="card-content">
+              <div class="card-body">
+                <h4 class="card-title">View / Remove Students</h4>
+                <p class="card-text">
+                  View a list of enrolled students, or select students to remove from the course using the dropdown below.
+                </p>
+                <div class="alert alert-success" id="remove-student-alert" style="display:none;"></div>
+                <form id="remove-student-form">
+                  <!-- Students picker -->
+                  <label for="student-picker"><b>Enrolled Students</b></label>
+                  <select multiple class="form-group" id="student-picker" name="students"></select>
+
+                  <!-- Remove button -->
+                  <div class="col-12 d-flex justify-content-end">
+                    <button class="btn btn-danger">Remove selected</button>
+                  </div>
+
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add students card -->
+          <div class="card">
+            <div class="card-content">
+              <div class="card-body">
+                <h4 class="card-title">Add Students</h4>
+                <p class="card-text">
+                  Enter a list of usernames to add them to the course!
+                </p>
+                <div class="alert alert-success" id="add-students-alert" style="display:none;"></div>
+                <form id="add-students-form">
+                  <!-- Usernames input -->
+                  <div class="form-group mb-3">
+                    <label for="id_student-usernames" class="form-label"><b>Usernames (one per line)</b></label>
+                    <textarea class="form-control" id="id_student-usernames" rows="5" spellcheck="false" required></textarea>
+                  </div>
+
+                  <!-- Add button -->
+                  <div class="col-12 d-flex justify-content-end">
+                    <button class="btn btn-success" id="addStudentsBtn">Add</button>
+                  </div>
+                </form>
+
+                <!-- Add students log -->
+                <div id="add-students-log-div" style="display:block;">
+                  <hr>
+                  <label for="ignored-usernames"><b>Ignored usernames</b></label>
+                  <p>These lines were ignored because it is invalid, or an account with this username does not exist.</p>
+                  <textarea class="form-control" id="ignored-usernames" disabled>
+                  </textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Maintainers card -->
+      <div class="col-4">
+        <div class="card">
+          <div class="card-content">
+            <div class="card-body">
+              <h4 class="card-title">Maintainers</h4>
+              <p class="card-text">
+                This card has supporting text below as a natural lead-in to additional
+                content.
+              </p>
+              <small class="text-muted">Last updated 3 mins ago</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+{% endblock %}
+
+{% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+  <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
+
+  <!-- Student selector script -->
+  <script>
+      const studentPicker = document.getElementById("student-picker");
+      let choices = [
+          {% for user in course.students.all %}
+              {value: '{{ user.id }}', label: '{{ user.username }} ({{ user.name }})', selected: false},
+          {% endfor %}
+      ]
+      let choice1 = new Choices(studentPicker, {
+          removeItemButton: true,
+          choices: choices
+      });
+  </script>
+
+  <!-- Remove students form -->
+  <script>
+      const removeStudentsForm = document.getElementById("remove-student-form");
+      const removeStudentAlert = $("#remove-student-alert");
+
+      removeStudentsForm.onsubmit = function (event) {
+          event.preventDefault();
+
+          // hide and reset elements
+          removeStudentAlert.hide();
+          removeStudentAlert.removeClass("alert-success");
+          removeStudentAlert.removeClass("alert-danger");
+
+          // get selected students
+          let selectedStudents = choice1.getValue(true);
+
+          if (selectedStudents.length === 0) {
+              removeStudentAlert.addClass("alert-danger");
+              removeStudentAlert.text("No students selected!");
+              removeStudentAlert.show();
+          } else {
+              // create form data
+              let formData = new FormData();
+              formData.append("student_ids", selectedStudents);
+              formData.append("course_id", "{{ course.id }}");
+              formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+              // ajax request
+              $.ajax({
+                  type: 'POST',
+                  url: "{% url 'remove-students-from-course' %}",
+                  data: formData,
+                  processData: false,
+                  contentType: false,
+              }).done((res) => {
+                  // set alert message and show
+                  removeStudentAlert.text(res.msg);
+                  removeStudentAlert.show();
+
+                  // set correct alert class
+                  if (res.result === "error") { //error
+                      removeStudentAlert.addClass("alert-danger");
+                  } else {
+                      removeStudentAlert.addClass("alert-success");
+
+                      // remove deleted students from choices
+                      choices = choices.filter((item) => {
+                          return selectedStudents.indexOf(item.value) === -1
+                      })
+
+                      // reset dropdown
+                      choice1.removeActiveItems(); // clear selection
+                      choice1.clearChoices(); // remove all choices
+                      choice1.setChoices(choices); // set new choices
+                  }
+              }).fail((res) => {
+                  removeStudentAlert.addClass("alert-danger");
+                  removeStudentAlert.html("Something went wrong with your request! 😰");
+                  removeStudentAlert.show();
+              }).always((res) => {
+              });
+          }
+
+          return false;
+      }
+
+  </script>
+
+  <!-- Add students form -->
+  <script>
+      const addStudentsForm = document.getElementById("add-students-form");
+      const addStudentsBtn = document.getElementById("addStudentsBtn");
+      const usernamesTextArea = $("#id_student-usernames");
+      const addStudentsAlert = $("#add-students-alert");
+      const addStudentsLogDiv = $("#add-students-log-div");
+
+      addStudentsForm.onsubmit = function (event) {
+          event.preventDefault();
+
+          // hide and reset elements
+          addStudentsAlert.hide();
+          addStudentsAlert.removeClass("alert-success");
+          addStudentsAlert.removeClass("alert-warning");
+          addStudentsLogDiv.hide();
+
+          //disable add button
+          addStudentsBtn.innerText = 'Processing...';
+          addStudentsBtn.disabled = true;
+
+          // prepare form data
+          let formData = new FormData();
+          formData.append("usernames", usernamesTextArea.val());
+          formData.append("course_id", "{{ course.id }}");
+          formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+          $.ajax({
+              type: 'POST',
+              url: "{% url 'add-students-to-course' %}",
+              data: formData,
+              processData: false,
+              contentType: false,
+          }).done((res) => {
+              // set alert message and show
+              addStudentsAlert.text(res.msg);
+              addStudentsAlert.show();
+
+              // set correct alert class
+              if (res.result === "error") { //error
+                  addStudentsAlert.addClass("alert-danger");
+              } else { //success
+                  addStudentsAlert.addClass("alert-success");
+                  usernamesTextArea.clear();
+
+
+              }
+
+          }).fail((res) => {
+
+          }).always((res) => {
+              // reset form
+              addStudentsBtn.innerText = 'Add';
+              addStudentsBtn.disabled = false;
+          })
+
+      }
+  </script>
+
+
+
+{% endblock %}

@@ -1,0 +1,401 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}Add Student Accounts{% endblock %}
+
+{% block styles %}
+  <link rel="stylesheet" href="{% static 'vendors/highlight.js/styles/night-owl.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendors/choices.js/choices.min.css' %}"/>
+{% endblock %}
+
+{% block content %}
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-6 order-md-1 order-last">
+          <h2>Add Student Accounts &#x1F393</h2>
+
+          <p class="text-subtitle text-muted">Create a single account or in bulk!</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Single account -->
+      <div class="col-5 m-2">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-title">Create Single Account</h4>
+          </div>
+          <div class="card-body">
+            <form class="form form-vertical" method="post">
+              {% csrf_token %}
+              <div class="form-body">
+
+                {# non-field errors #}
+                {% for error in form.non_field_errors %}
+                  <div class="alert alert-danger py-2">Non-field error!</div>
+                {% endfor %}
+
+                <!-- First name input -->
+                <div class="col-12">
+                  <div class="form-group has-icon-left">
+                    <label for="id_first_name">First Name</label>
+                    <div class="position-relative">
+                      <input type="text" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" name="first_name"
+                             id="id_first_name"
+                             placeholder="e.g. ADAM" style="text-transform: uppercase"
+                             value="{% if form.first_name.value %}{{ form.first_name.value }}{% endif %}">
+                      <div class="form-control-icon"><i class="bi bi-person"></i></div>
+                    </div>
+                    {# first_name errors #}
+                    {% if form.first_name.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.first_name.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Last name input -->
+                <div class="col-12">
+                  <div class="form-group has-icon-left">
+                    <label for="id_last_name">Last Name</label>
+                    <div class="position-relative">
+                      <input type="text" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" name="last_name" id="id_last_name"
+                             placeholder="e.g. TAN" style="text-transform: uppercase"
+                             value="{% if form.last_name.value %}{{ form.last_name.value }}{% endif %}">
+                      <div class="form-control-icon"><i class="bi bi-person"></i></div>
+                    </div>
+                    {# last_name errors #}
+                    {% if form.last_name.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.last_name.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Matriculation number input -->
+                <div class="col-12">
+                  <div class="form-group has-icon-left">
+                    <label for="id_identification">NTU Matriculation Number</label>
+                    <div class="position-relative">
+                      <input type="text" class="form-control {% if form.identification.errors %}is-invalid{% endif %}" name="identification"
+                             placeholder="e.g. U1922896C" id="id_identification" style="text-transform: uppercase"
+                             value="{% if form.identification.value %}{{ form.identification.value }}{% endif %}">
+                      <div class="form-control-icon"><i class="bi bi-hash"></i></div>
+                    </div>
+                    {# identification errors #}
+                    {% if form.identification.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.identification.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Email input -->
+                <div class="col-12">
+                  <div class="form-group has-icon-left">
+                    <label for="id_email">NTU Email Address</label>
+                    <div class="position-relative">
+                      <input type="text" class="form-control {% if form.email.errors %}is-invalid{% endif %}" name="email"
+                             placeholder="e.g. JLEE254@E.NTU.EDU.SG" id="id_email" style="text-transform: uppercase"
+                             value="{% if form.email.value %}{{ form.email.value }}{% endif %}">
+                      <div class="form-control-icon"><i class="bi bi-envelope"></i></div>
+                    </div>
+                    {# email errors #}
+                    {% if form.email.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.email.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Username input -->
+                <div class="col-12">
+                  <div class="form-group has-icon-left">
+                    <label for="id_username">NTU Username</label>
+                    <div class="position-relative">
+                      <input type="text" class="form-control {% if form.username.errors %}is-invalid{% endif %}" name="username"
+                             placeholder="e.g. JLEE254" id="id_username" style="text-transform: uppercase"
+                             value="{% if form.username.value %}{{ form.username.value }}{% endif %}">
+                      <div class="form-control-icon"><i class="bi bi-phone"></i></div>
+                    </div>
+                    {# username errors #}
+                    {% if form.username.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.username.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Password input -->
+                <div class="col-12">
+                  <div class="form-group has-icon-left">
+                    <label for="id_password1">Password</label>
+                    <div class="position-relative">
+                      <input type="password" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" name="password1"
+                             placeholder="Password" id="id_password1" value="{% if form.password1.value %}{{ form.password1.value }}{% endif %}">
+                      <div class="form-control-icon"><i class="bi bi-lock"></i></div>
+                    </div>
+                    {# password1 errors #}
+                    {% if form.password1.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.password1.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Repeat password input -->
+                <div class="col-12">
+                  <div class="form-group has-icon-left">
+                    <label for="id_password2">Repeat Password</label>
+                    <div class="position-relative">
+                      <input type="password" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" name="password2"
+                             placeholder="Repeat Password" id="id_password2"
+                             value="{% if form.password2.value %}{{ form.password2.value }}{% endif %}">
+                      <div class="form-control-icon"><i class="bi bi-lock"></i></div>
+                    </div>
+                    {# password2 errors #}
+                    {% if form.password2.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.password2.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Course selection (single account)-->
+                <div class="col-12">
+                  <div class="form-group">
+                    <label for="id_course">Add to Course (Optional)</label>
+                    <div class="position-relative">
+                      <select name="course" id="id_course" class="choices form-select">
+                        {# displays only courses owned or maintained by the user #}
+                        {% for value, text in form.course.field.choices %}
+                          <option value="{{ value }}">{{ text }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    {# course errors #}
+                    {% if form.course.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.course.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Submit and Reset buttons -->
+                <div class="col-12 d-flex justify-content-end">
+                  <button type="submit" class="btn btn-primary me-1 mb-1">Submit</button>
+                  <button type="reset" class="btn btn-light-secondary me-1 mb-1">Reset
+                  </button>
+                </div>
+
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk create -->
+      <div class="col-5 m-2">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-title">Bulk Create</h4>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-success" id="upload-result-alert" style="display:none;"></div>
+            <p>Upload a <code>.csv</code> file with the following format to create student accounts in bulk!</p>
+            <h6>CSV format</h6>
+            <pre><code class="language-plaintext">first_name,last_name,matriculation_number,email,username</code></pre>
+
+            <p>Please ensure that there are <strong>no duplicates</strong> and that these students <strong>do not have an account
+              yet.</strong></p>
+
+            <div>
+              <form id="bulk-create-form">
+
+                <!-- File picker -->
+                <div class="row form-group">
+                  <div class="col-12">
+                    <label for="id_course_bulk"><b>Upload</b></label>
+                    <input class="form-control" type="file" id="fileInput" accept="text/csv" required>
+                  </div>
+                </div>
+
+                <!-- Course selection (bulk upload) -->
+                <div class="form-group">
+                  <div class="position-relative">
+                    <label for="id_course_bulk"><b>Add to Course (Optional)</b></label>
+                    <select name="course_bulk" id="id_course_bulk" class="choices form-select">
+                      {# displays only courses owned or maintained by the user #}
+                      {% for value, text in form.course.field.choices %}
+                        <option value="{{ value }}">{{ text }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Upload button -->
+                <div class="col-12 d-flex justify-content-end">
+                  <div class="col-2">
+                    <button type="submit" id="uploadBtn" class="btn btn-primary me-1 mb-1">Upload</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <div id="bulk-log-div" style="display:none;">
+              <hr>
+              <h6>Ignored rows</h6>
+              <p>Duplicated values were found in one or more of the following fields: <code>matriculation number, email or username</code></p>
+              <div id="duplicated-div">
+                <label for="duplicated-code"><b>Rows with duplicated values within csv</b></label>
+                <textarea class="form-control" id="duplicated-code" disabled>
+                </textarea>
+              </div>
+
+              <div id="conflicted-div" class="mt-4">
+                <label for="conflicted-code"><b>Rows with conflicting values with existing user accounts</b></label>
+                <textarea class="form-control" id="conflicted-code" disabled>
+                </textarea>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+  <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendors/highlight.js/highlight.min.js' %}"></script>
+  <script>hljs.highlightAll();</script>
+
+  <!-- initialize tooltips -->
+  <script>
+      $(function () {
+          $('[data-toggle="tooltip"]').tooltip()
+      })
+  </script>
+
+  <!-- choices.js script -->
+  <script>
+      const coursePicker = document.getElementById("id_course");
+      const coursePickerBulk = document.getElementById("id_course_bulk");
+      let choice1 = new Choices(coursePicker);
+      let choice2 = new Choices(coursePickerBulk);
+  </script>
+
+  <!-- Bulk create file upload script-->
+  <script>
+      const form = document.getElementById("bulk-create-form");
+      const uploadBtn = document.getElementById("uploadBtn");
+      const fileInput = document.getElementById("fileInput");
+      const bulkLogDiv = $("#bulk-log-div");
+      const uploadResultAlert = $("#upload-result-alert");
+      const duplicatedDiv = $("#duplicated-div");
+      const conflictedDiv = $("#conflicted-div");
+      const duplicatedCode = $("#duplicated-code");
+      const conflictedCode = $("#conflicted-code");
+
+      form.onsubmit = function (event) {
+          event.preventDefault();
+
+          // hide and reset elements (alert, div)
+          uploadResultAlert.hide();
+          uploadResultAlert.removeClass("alert-success");
+          uploadResultAlert.removeClass("alert-warning");
+          bulkLogDiv.hide();
+
+          // disable upload button
+          uploadBtn.innerText = 'Uploading...';
+          uploadBtn.disabled = true;
+
+          let formData = new FormData();
+          formData.append("file", fileInput.files[0]);
+          formData.append("course", coursePickerBulk.value);
+          formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+          // ajax request
+          $.ajax({
+              type: 'POST',
+              url: "{% url 'create-student-bulk' %}",
+              data: formData,
+              processData: false,
+              contentType: false,
+          }).done((res) => {
+              // set alert message and show
+              uploadResultAlert.text(res.msg);
+              uploadResultAlert.show();
+
+              // set correct alert class
+              if (res.result === "error") { //error
+                  uploadResultAlert.addClass("alert-danger");
+              } else { //success
+                  uploadResultAlert.addClass("alert-success");
+                  // if there are removed rows, populate textarea and show, else hide.
+                  if (res.removed_rows.length !== 0) {
+                      duplicatedCode.html(res.removed_rows.join('\n'));
+                      duplicatedDiv.show();
+                  } else {
+                      duplicatedDiv.hide();
+                  }
+
+                  // if there are conflicted rows, populate textarea and show, else hide.
+                  if (res.conflicted_rows.length !== 0) {
+                      conflictedCode.html(res.conflicted_rows.join('\n'));
+                      conflictedDiv.show();
+                  } else {
+                      conflictedDiv.hide();
+                  }
+
+                  // show or hide "ignored rows" div altogether
+                  if (res.removed_rows || res.conflicted_rows) {
+                      bulkLogDiv.show();
+                  }
+              }
+          }).fail((res) => {
+              // set alert message and show
+              uploadResultAlert.addClass("alert-danger");
+              uploadResultAlert.text("File upload failed. Please refresh the page and try again!");
+              uploadResultAlert.show();
+          }).always((res) => {
+              // reset upload form
+              fileInput.value = "";
+              uploadBtn.innerText = 'Upload';
+              uploadBtn.disabled = false;
+          });
+
+          // to avoid html form submission
+          return false;
+      }
+
+  </script>
+{% endblock %}

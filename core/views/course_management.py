@@ -48,10 +48,7 @@ def create_course(request):
     return render(request, 'course_management/create-course.html', context)
 
 
-class HTTPResponseRedirect:
-    pass
-
-
+@login_required()
 def update_course(request, course_id):
     current_year = datetime.today().year
     years = []
@@ -60,6 +57,11 @@ def update_course(request, course_id):
 
     # get course object
     course = get_object_or_404(Course, id=course_id)
+
+    # check permissions of user (needs to be owner)
+    if course.get_permissions(request.user) != 2:
+        messages.warning(request, "You do not have permissions to update the course.")
+        return redirect('view-courses')
 
     # initialize form with course instance
     form = CourseForm(years, instance=course)
@@ -89,13 +91,17 @@ def course_details(request, course_id):
     # get course object
     course = get_object_or_404(Course, id=course_id)
 
-    # if no permissions, redirect back to courses page
-    if course.owner != request.user and request.user not in course.maintainers.all():
+    # if no permissions, redirect back to course page
+    if course.get_permissions(request.user) == 0:
         messages.warning(request, "You do not have permissions to view that course.")
         return redirect('view-courses')
 
+    # get a list of staff accounts (educator/lab_assistant/superuser role)
+    staff = User.objects.filter(Q(groups__name__in=('educator', 'lab_assistant')) | Q(is_superuser=True))
+
     context = {
-        "course": course
+        "course": course,
+        "staff": staff,
     }
 
     return render(request, 'course_management/course-details.html', context)
@@ -117,7 +123,7 @@ def remove_students(request):
             return JsonResponse(context, status=200)
 
         # check if user has permissions for this course
-        if course.owner != request.user and request.user not in course.maintainers.all():
+        if course.get_permissions(request.user) == 0:
             context = {
                 "result": "error",
                 "msg": "You do not have permissions for this course."
@@ -162,7 +168,7 @@ def add_students(request):
             return JsonResponse(context, status=200)
 
         # check if user has permissions for this course
-        if course.owner != request.user and request.user not in course.maintainers.all():
+        if course.get_permissions(request.user) == 0:
             context = {
                 "result": "error",
                 "msg": "You do not have permissions for this course."
@@ -170,7 +176,10 @@ def add_students(request):
             return JsonResponse(context, status=200)
 
         if usernames is not None:
-            usernames = usernames.strip().splitlines()
+            usernames = usernames.upper().strip().splitlines()
+
+        # remove duplicates by converting to set
+        usernames = set(usernames)
 
         # if no usernames entered
         if not usernames:
@@ -181,4 +190,109 @@ def add_students(request):
             return JsonResponse(context, status=200)
 
         # check which usernames exist, which does not...?
+        user_search = User.objects.in_bulk(usernames, field_name="username")
 
+        # retrieve user ids from the search results
+        student_ids = [user.id for user in user_search.values()]
+
+        # add these IDs to the course
+        course.students.add(*student_ids)
+
+        # compute list of usernames that were not found
+        not_found = list(set(usernames) - set(user_search.keys()))
+
+        # success message
+        n = len(student_ids)
+        if n == 0:
+            msg = "No students were added to the course. Refer to the section below for more details."
+        else:
+            if len(not_found) == 0:
+                msg = f"{n} student(s) were successfully added to the course!"
+            else:
+                msg = f"{n} student(s) were successfully added to the course, with some rows ignored (refer to the section below for more details)."
+
+        # result
+        context = {
+            "result": "success",
+            "msg": msg,
+            "not_found": not_found,
+        }
+        return JsonResponse(context, status=200)
+
+
+@login_required()
+def get_course_students(request):
+    if request.method == "GET":
+        course_id = request.GET.get("course_id")
+
+        # get course object
+        course = Course.objects.filter(id=course_id).first()
+        if not course:
+            context = {
+                "result": "error",
+                "msg": "The course does not exist."
+            }
+            return JsonResponse(context, status=200)
+
+        # check if user has permissions for this course
+        if course.get_permissions(request.user) == 0:
+            context = {
+                "result": "error",
+                "msg": "You do not have permissions for this course."
+            }
+            return JsonResponse(context, status=200)
+
+        # get students
+        students = list(course.students.all().values('id', 'username', 'first_name', 'last_name'))
+
+        # get students
+        return JsonResponse({"result": "success", "students": students}, status=200)
+
+
+@login_required()
+def update_course_maintainer(request):
+    """
+    Function to add a maintainer to a course.
+    Front-end does not display error messages for this feature, thus only the result of the operation is returned.
+    """
+    if request.method == "POST":
+        # default error response
+        error_context = {"result": "error", }
+
+        # get params
+        course_id = request.POST.get("course_id")
+        maintainer_id = request.POST.get("maintainer_id")
+        action = request.POST.get("action")
+
+        # missing params
+        if course_id is None or maintainer_id is None or action is None:
+            return JsonResponse(error_context, status=200)
+
+        # get course object
+        course = Course.objects.filter(id=course_id).first()
+
+        # course not found
+        if not course:
+            return JsonResponse(error_context, status=200)
+
+        # check if user has permissions for this course
+        if course.get_permissions(request.user) != 2:
+            return JsonResponse(error_context, status=200)
+
+        # get maintainer object
+        maintainer = User.objects.filter(id=maintainer_id).first()
+
+        # if maintainer not found
+        if not maintainer:
+            return JsonResponse(error_context, status=200)
+
+        # add maintainer to course
+        if action == "add":
+            course.maintainers.add(maintainer)
+        elif action == "remove":
+            course.maintainers.remove(maintainer)
+        else:
+            return JsonResponse(error_context, status=200)
+
+        # return success
+        return JsonResponse({"result": "success"}, status=200)

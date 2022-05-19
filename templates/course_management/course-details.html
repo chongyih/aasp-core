@@ -5,6 +5,7 @@
 
 {% block styles %}
   <link rel="stylesheet" href="{% static 'vendors/choices.js/choices.min.css' %}"/>
+  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
 {% endblock %}
 
 {% block content %}
@@ -24,6 +25,10 @@
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h4 class="card-title ">Course Information</h4>
+            {# edit details button #}
+            {% if course.owner == request.user %}
+              <a class="btn btn-sm btn-danger" href="{% url 'update-course' course_id=course.id %}?next={{ request.path }}">Edit Details</a>
+            {% endif %}
           </div>
           <div class="card-body">
             <div class="row">
@@ -51,7 +56,7 @@
               </div>
               <div class="col-4">
                 <h6>Students</h6>
-                <p>{{ course.students.count }} students enrolled</p>
+                <p><span id="students_count">{{ course.students.count }}</span> students enrolled</p>
               </div>
             </div>
           </div>
@@ -85,7 +90,6 @@
                   <div class="col-12 d-flex justify-content-end">
                     <button class="btn btn-danger">Remove selected</button>
                   </div>
-
                 </form>
               </div>
             </div>
@@ -97,14 +101,15 @@
               <div class="card-body">
                 <h4 class="card-title">Add Students</h4>
                 <p class="card-text">
-                  Enter a list of usernames to add them to the course!
+                  Enter a list of usernames to add to the course!
                 </p>
                 <div class="alert alert-success" id="add-students-alert" style="display:none;"></div>
                 <form id="add-students-form">
                   <!-- Usernames input -->
                   <div class="form-group mb-3">
                     <label for="id_student-usernames" class="form-label"><b>Usernames (one per line)</b></label>
-                    <textarea class="form-control" id="id_student-usernames" rows="5" spellcheck="false" required></textarea>
+                    <textarea class="form-control" id="id_student-usernames" rows="5" spellcheck="false" style="text-transform: uppercase"
+                              required></textarea>
                   </div>
 
                   <!-- Add button -->
@@ -114,10 +119,10 @@
                 </form>
 
                 <!-- Add students log -->
-                <div id="add-students-log-div" style="display:block;">
+                <div id="add-students-log-div" style="display:none;">
                   <hr>
                   <label for="ignored-usernames"><b>Ignored usernames</b></label>
-                  <p>These lines were ignored because it is invalid, or an account with this username does not exist.</p>
+                  <p>The following lines were ignored as accounts with these usernames do not exist.</p>
                   <textarea class="form-control" id="ignored-usernames" disabled>
                   </textarea>
                 </div>
@@ -134,16 +139,20 @@
             <div class="card-body">
               <h4 class="card-title">Maintainers</h4>
               <p class="card-text">
-                This card has supporting text below as a natural lead-in to additional
-                content.
+                Maintainers <b>can add and remove students</b> from the course.
               </p>
-              <small class="text-muted">Last updated 3 mins ago</small>
+              <div class="alert alert-success" id="remove-student-alert" style="display:none;"></div>
+              <form id="remove-student-form">
+                <!-- Maintainers picker -->
+                <label for="maintainers-picker"><b>Current Maintainers</b></label>
+                <div class="spinner-border spinner-border-sm" id="maintainer-loading" style="display:none"></div>
+                <select multiple class="form-group" id="maintainers-picker" name="maintainers"
+                        {% if course.owner != request.user %} disabled {% endif %}></select>
+              </form>
             </div>
           </div>
         </div>
       </div>
-
-
     </div>
   </div>
 {% endblock %}
@@ -151,19 +160,191 @@
 {% block js %}
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
   <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
 
   <!-- Student selector script -->
   <script>
       const studentPicker = document.getElementById("student-picker");
-      let choices = [
+      let students_arr = [
           {% for user in course.students.all %}
               {value: '{{ user.id }}', label: '{{ user.username }} ({{ user.name }})', selected: false},
           {% endfor %}
       ]
       let choice1 = new Choices(studentPicker, {
           removeItemButton: true,
-          choices: choices
+          choices: students_arr
       });
+  </script>
+
+  <!-- Maintainers selector script -->
+  <script>
+      const maintainerLoading = $("#maintainer-loading");
+      const maintainersPicker = document.getElementById("maintainers-picker");
+      let maintainers_arr = [
+          {% for user in staff %}
+              {
+                  value: '{{ user.id }}',
+                  label: '{{ user.username }} ({{ user.name }})',
+                  selected: {% if user in course.maintainers.all %} true {% else %} false {% endif %}
+              },
+          {% endfor %}
+      ]
+      let choice2 = new Choices(maintainersPicker, {
+          removeItemButton: true,
+          choices: maintainers_arr,
+      });
+
+      // when user adds a new maintainer
+      maintainersPicker.addEventListener("addItem", (event) => {
+          maintainerLoading.show();
+          choice2.disable();
+
+          // prepare data
+          let formData = new FormData();
+          formData.append("maintainer_id", event.detail.value);
+          formData.append("action", "add");
+          formData.append("course_id", "{{ course.id }}");
+          formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+          // ajax request
+          $.ajax({
+              type: 'POST',
+              url: "{% url 'update-course-maintainer' %}",
+              data: formData,
+              processData: false,
+              contentType: false,
+          }).done((res) => {
+              setTimeout(() => {
+                  if (res.result === "success")
+                      Toastify({
+                          text: "The maintainer has been added successfully!",
+                          duration: 2000,
+                          position: "center",
+                          style: {"background": "#77DD77"}
+                      }).showToast();
+                  else {
+                      Toastify({
+                          text: "Unable to add maintainer to course! Please refresh the page.",
+                          duration: 5000,
+                          position: "center",
+                          style: {"background": "#ff6961"}
+                      }).showToast();
+                  }
+              }, 300);
+          }).fail((res) => {
+              Toastify({
+                  text: "An error has occurred while adding the maintainer. Please refresh the page.",
+                  duration: 5000,
+                  position: "center",
+                  style: {"background": "#ff6961"}
+              }).showToast();
+          }).always((res) => {
+              setTimeout(() => {
+                  choice2.enable();
+                  maintainerLoading.hide();
+              }, 300)
+          });
+      })
+
+      // when user removes a maintainer
+      maintainersPicker.addEventListener("removeItem", (event) => {
+          choice2.disable();
+          maintainerLoading.show();
+
+          // prepare data
+          let formData = new FormData();
+          formData.append("maintainer_id", event.detail.value);
+          formData.append("action", "remove");
+          formData.append("course_id", "{{ course.id }}");
+          formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+          // ajax request
+          $.ajax({
+              type: 'POST',
+              url: "{% url 'update-course-maintainer' %}",
+              data: formData,
+              processData: false,
+              contentType: false,
+          }).done((res) => {
+              setTimeout(() => {
+                  if (res.result === "success")
+                      Toastify({
+                          text: "The maintainer has been removed successfully!",
+                          duration: 2000,
+                          position: "center",
+                          style: {"background": "#77DD77"}
+                      }).showToast();
+                  else {
+                      Toastify({
+                          text: "Unable to remove maintainer from the course! Please refresh the page.",
+                          duration: 5000,
+                          position: "center",
+                          style: {"background": "#ff6961"}
+                      }).showToast();
+                  }
+              }, 300);
+          }).fail((res) => {
+              Toastify({
+                  text: "An error has occurred while removing the maintainer. Please refresh the page.",
+                  duration: 5000,
+                  position: "center",
+                  style: {"background": "#ff6961"}
+              }).showToast();
+          }).always((res) => {
+              setTimeout(() => {
+                  choice2.enable();
+                  maintainerLoading.hide();
+              }, 300);
+          });
+      })
+
+  </script>
+
+  <!-- Function to refresh enrolled students -->
+  <script>
+      // requests students list from api, clears and updates dropdown choices, updates enrolled count
+      function updateStudentsList() {
+          $.ajax({
+              type: 'GET',
+              url: "{% url 'get-course-students' %}?course_id={{ course.id }}",
+              processData: false,
+              contentType: false,
+          }).done((res) => {
+              if (res.result === "success") {
+                  // update students_arr
+                  students_arr = res.students.map(student => {
+                      return {
+                          value: student.id,
+                          label: `${student.username} (${student.last_name} ${student.first_name})`,
+                          select: false,
+                      }
+                  });
+
+                  // update students dropdown
+                  choice1.removeActiveItems(); // clear selection
+                  choice1.clearChoices(); // remove all choices
+                  choice1.setChoices(students_arr); // set new choices
+
+                  // update enrolled count
+                  $("#students_count").html(students_arr.length);
+              } else {
+                  Toastify({
+                      text: "An error has occurred while refreshing the students list.",
+                      duration: 5000,
+                      position: "center",
+                      style: {"background": "#ff6961"}
+                  }).showToast();
+              }
+          }).fail((res) => {
+              Toastify({
+                  text: "An error has occurred while refreshing the students list. Please refresh the page.",
+                  duration: 5000,
+                  position: "center",
+                  style: {"background": "#ff6961"}
+              }).showToast();
+          }).always((res) => {
+          });
+      }
   </script>
 
   <!-- Remove students form -->
@@ -211,15 +392,8 @@
                   } else {
                       removeStudentAlert.addClass("alert-success");
 
-                      // remove deleted students from choices
-                      choices = choices.filter((item) => {
-                          return selectedStudents.indexOf(item.value) === -1
-                      })
-
-                      // reset dropdown
-                      choice1.removeActiveItems(); // clear selection
-                      choice1.clearChoices(); // remove all choices
-                      choice1.setChoices(choices); // set new choices
+                      // update students
+                      updateStudentsList();
                   }
               }).fail((res) => {
                   removeStudentAlert.addClass("alert-danger");
@@ -231,7 +405,6 @@
 
           return false;
       }
-
   </script>
 
   <!-- Add students form -->
@@ -241,6 +414,7 @@
       const usernamesTextArea = $("#id_student-usernames");
       const addStudentsAlert = $("#add-students-alert");
       const addStudentsLogDiv = $("#add-students-log-div");
+      const ignoredUsernames = $("#ignored-usernames");
 
       addStudentsForm.onsubmit = function (event) {
           event.preventDefault();
@@ -248,7 +422,7 @@
           // hide and reset elements
           addStudentsAlert.hide();
           addStudentsAlert.removeClass("alert-success");
-          addStudentsAlert.removeClass("alert-warning");
+          addStudentsAlert.removeClass("alert-danger");
           addStudentsLogDiv.hide();
 
           //disable add button
@@ -277,19 +451,26 @@
                   addStudentsAlert.addClass("alert-danger");
               } else { //success
                   addStudentsAlert.addClass("alert-success");
-                  usernamesTextArea.clear();
+                  usernamesTextArea.val('');
 
+                  // if any of the usernames provided were not found, display them
+                  if (res.not_found.length !== 0) {
+                      ignoredUsernames.html(res.not_found.join('\n'));
+                      addStudentsLogDiv.show();
+                  }
 
+                  // update students
+                  updateStudentsList();
               }
-
           }).fail((res) => {
-
+              addStudentsAlert.addClass("alert-danger");
+              addStudentsAlert.html("Something went wrong with your request! 😰");
+              addStudentsAlert.show();
           }).always((res) => {
               // reset form
               addStudentsBtn.innerText = 'Add';
               addStudentsBtn.disabled = false;
           })
-
       }
   </script>
 

@@ -62,7 +62,7 @@
                       </td>
                       <td>
                         <a class="btn btn-secondary" href="{% url 'course-details' course_id=c.id %}">View</a>
-                        <a class="btn btn-secondary" href="{% url 'update-course' course_id=c.id %}?next={{ request.path }}">Edit Details</a>
+                        <a class="btn btn-secondary {% if c.owner != request.user %}disabled{% endif %}" href="{% url 'update-course' course_id=c.id %}?next={{ request.path }}">Edit Details</a>
                       </td>
                     </tr>
                   {% endfor %}

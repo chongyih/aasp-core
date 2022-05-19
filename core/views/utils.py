@@ -16,8 +16,6 @@ def clean_csv(rows):
     Removes:
     - duplicated rows
     - rows with duplicated values in matriculation number, email or username
-    :param rows:
-    :return:
     """
     # stores all removed rows by this cleaning function
     removed = []

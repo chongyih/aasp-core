@@ -40,18 +40,26 @@ def create_student(request):
 @login_required()
 def create_student_bulk(request):
     if request.method == "POST":
-        # retrieve courses for this user
-        courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct()
-
         # retrieve selected course from the request if exist
         course_id = request.POST.get("course")
 
-        # if selected, ensure user has permissions
+        # if course was selected
         if course_id:
-            if not courses.filter(id=course_id).exists():
+            course = Course.objects.filter(id=course_id).first()
+
+            # if a course with the course_id was not found
+            if not course:
                 context = {
                     "result": "error",
                     "msg": "Invalid course selected!"
+                }
+                return JsonResponse(context, status=200)
+
+            # check if user has permissions for this course
+            if course.owner != request.user and request.user not in course.maintainers.all():
+                context = {
+                    "result": "error",
+                    "msg": "You do not have permissions for this course."
                 }
                 return JsonResponse(context, status=200)
 
@@ -73,7 +81,7 @@ def create_student_bulk(request):
         # process uploaded file
         try:
             # decode uploaded file
-            csv_rows = file.read().decode('utf-8').splitlines()
+            csv_rows = file.read().decode('utf-8').upper().splitlines()
 
             # clean the csv file
             cleaned_rows, removed_rows = clean_csv(csv_rows)
@@ -115,14 +123,19 @@ def create_student_bulk(request):
             # add to student group
             Group.objects.get(name="student").user_set.add(*created_accounts)
 
+            # add to course
+            if course_id:
+                course.students.add(*created_accounts)
+
             # success message
-            if len(created_accounts) == 0:
+            n = len(created_accounts)
+            if n == 0:
                 msg = "No accounts were created. Refer to the section below for more details."
             else:
                 if len(conflicted_rows) == 0 and len(removed_rows) == 0:
-                    msg = f"Success! {len(created_accounts)} student account(s) were created."
+                    msg = f"Success! {n} student account(s) were created."
                 else:
-                    msg = f"Success! {len(created_accounts)} student account(s) were created, with some rows ignored (refer to the section below for more details)."
+                    msg = f"Success! {n} student account(s) were created, with some rows ignored (refer to the section below for more details)."
 
             # result
             context = {

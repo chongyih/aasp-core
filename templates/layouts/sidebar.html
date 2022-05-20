@@ -16,28 +16,29 @@
     <ul class="menu">
 
       {# dynamic options based on user group #}
-      {# student dashboard #}
-      <li class="sidebar-title">Menu</li>
-      {% if request.user.is_superuser or request.user|has_group:'student' %}
-        <li class="sidebar-item {% if 'dashboard/students' in request.path %} active {% endif %}">
-          <a href="{% url 'dashboard-students' %}" class='sidebar-link'><i class="fa-solid fa-house"></i><span>Student Dashboard</span></a>
-        </li>
-      {% endif %}
+      <li class="sidebar-title">Dashboard</li>
 
       {# educator dashboard #}
       {% if request.user.is_superuser or request.user|has_group:'educator' %}
         <li class="sidebar-item {% if 'dashboard/educators' in request.path %} active {% endif %}">
-          <a href="{% url 'dashboard-educators' %}" class='sidebar-link'><i class="fa-solid fa-house"></i><span>Educator Dashboard</span></a>
+          <a href="{% url 'dashboard-educators' %}" class='sidebar-link'><i class="fa-solid fa-house"></i><span>Educator</span></a>
         </li>
       {% endif %}
-
       {# lab assistant dashboard #}
       {% if request.user.is_superuser or request.user|has_group:'lab_assistant' %}
         <li class="sidebar-item {% if 'dashboard/labassistants' in request.path %} active {% endif %}">
-          <a href="{% url 'dashboard-lab-assistants' %}" class='sidebar-link'><i class="fa-solid fa-house"></i><span>Lab Assistant Dashboard</span></a>
+          <a href="{% url 'dashboard-lab-assistants' %}" class='sidebar-link'><i class="fa-solid fa-house"></i><span>Lab Assistant</span></a>
+        </li>
+      {% endif %}
+      {# student dashboard #}
+      {% if request.user.is_superuser or request.user|has_group:'student' %}
+        <li class="sidebar-item {% if 'dashboard/students' in request.path %} active {% endif %}">
+          <a href="{% url 'dashboard-students' %}" class='sidebar-link'><i class="fa-solid fa-house"></i><span>Student</span></a>
         </li>
       {% endif %}
 
+
+      {# user management options #}
       {% if request.user.is_superuser or request.user|has_group:'lab_assistant' or request.user|has_group:'educator' %}
         <li class="sidebar-title">User Management</li>
 
@@ -48,15 +49,25 @@
 
         {# student accounts #}
         <li class="sidebar-item has-sub">
-          <a href="#" class='sidebar-link'>
-            <i class="fa-solid fa-graduation-cap"></i>
-            <span>Student Accounts</span>
-          </a>
+          <a href="#" class='sidebar-link'><i class="fa-solid fa-graduation-cap"></i><span>Student Accounts</span></a>
 
           <ul class="submenu ">
             <li class="submenu-item"><a href="{% url 'create-student' %}">Add Students</a></li>
-            <li class="submenu-item"><a href="component-badge.html">View Students</a></li>
+            <li class="submenu-item"><a href="#">View Students</a></li>
           </ul>
+        </li>
+      {% endif %}
+
+      {# test management options #}
+      {% if request.user.is_superuser or request.user|has_group:'educator' %}
+        <li class="sidebar-title">Test Management</li>
+
+        <li class="sidebar-item {% if request.path == '' %} active {% endif %}">
+          <a href="#" class='sidebar-link'><i class="fa-solid fa-folder"></i><span>Question Banks</span></a>
+        </li>
+
+        <li class="sidebar-item {% if request.path == '' %} active {% endif %}">
+          <a href="#" class='sidebar-link'><i class="fa-solid fa-cubes"></i><span>Tests</span></a>
         </li>
       {% endif %}
 

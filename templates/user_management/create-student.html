@@ -187,16 +187,15 @@
 
             <div id="bulk-log-div" style="display:none;">
               <hr>
-              <h6>Ignored rows</h6>
-              <p>Duplicated values were found in one or more of the following fields: <code>matriculation number, email or username</code></p>
+              <h6>Upload results</h6>
               <div id="duplicated-div">
-                <label for="duplicated-code"><b>Rows with duplicated values within csv</b></label>
+                <label for="duplicated-code"><b>Ignored rows due to duplicated <code>username</code> values</b></label>
                 <textarea class="form-control" id="duplicated-code" disabled>
                 </textarea>
               </div>
 
               <div id="conflicted-div" class="mt-4">
-                <label for="conflicted-code"><b>Rows with conflicting values with existing user accounts</b></label>
+                <label for="conflicted-code"><b>Accounts not created but added to the Course as they already exist</b></label>
                 <textarea class="form-control" id="conflicted-code" disabled>
                 </textarea>
               </div>

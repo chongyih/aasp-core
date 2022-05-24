@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
@@ -33,7 +34,7 @@ def create_student(request):
     context = {
         'form': form
     }
-    print(context)
+
     return render(request, 'user_management/create-student.html', context)
 
 
@@ -41,27 +42,32 @@ def create_student(request):
 def create_student_bulk(request):
     if request.method == "POST":
         # retrieve selected course from the request if exist
-        course_id = request.POST.get("course")
+        course_id = request.POST.get("course", None)
 
-        # if course was selected
-        if course_id:
-            course = Course.objects.filter(id=course_id).first()
+        if not course_id:
+            context = {
+                "result": "error",
+                "msg": "Please select a course."
+            }
+            return JsonResponse(context, status=200)
 
-            # if a course with the course_id was not found
-            if not course:
-                context = {
-                    "result": "error",
-                    "msg": "Invalid course selected!"
-                }
-                return JsonResponse(context, status=200)
+        # get course object
+        course = Course.objects.filter(id=course_id).first()
 
-            # check if user has permissions for this course
-            if course.owner != request.user and request.user not in course.maintainers.all():
-                context = {
-                    "result": "error",
-                    "msg": "You do not have permissions for this course."
-                }
-                return JsonResponse(context, status=200)
+        if not course:
+            context = {
+                "result": "error",
+                "msg": "The selected course does not exist."
+            }
+            return JsonResponse(context, status=200)
+
+        # check if user has permissions for this course
+        if course.get_permissions(request.user) == 0:
+            context = {
+                "result": "error",
+                "msg": "You do not have permissions for this course."
+            }
+            return JsonResponse(context, status=200)
 
         # retrieve the file from the request
         file = request.FILES.get('file')
@@ -83,52 +89,43 @@ def create_student_bulk(request):
             # decode uploaded file
             csv_rows = file.read().decode('utf-8').upper().splitlines()
 
-            # clean the csv file
+            # clean the csv file (removes invalid/duplicated rows, and rows with conflicting usernames)
             cleaned_rows, removed_rows = clean_csv(csv_rows)
 
-            # ensure users don't exist in database yet (by checking fields with UNIQUE constraint)
-            # 1. get conflicted identification values
-            conflict_identification = User.objects.filter(identification__in=[row[2] for row in cleaned_rows])
-            conflict_identification = [u.identification for u in conflict_identification]
-
-            # 2. get conflicted email values
-            conflict_email = User.objects.filter(email__in=[row[3] for row in cleaned_rows])
-            conflict_email = [u.email for u in conflict_email]
-
-            # 3. get conflicted username values
-            conflict_username = User.objects.filter(username__in=[row[4] for row in cleaned_rows])
-            conflict_username = [u.email for u in conflict_username]
+            # ensure users don't exist in database yet (by checking username)
+            # get conflicted username values
+            existing_users = list(User.objects.filter(username__in=[row[2] for row in cleaned_rows]))
+            existing_usernames = [u.username for u in existing_users]
 
             # generate User objects from contents of the csv file
-            default_password = make_password("password123!")
-            user_accounts = []
-            conflicted_rows = []
+            user_objects = []  # user accounts that will be created, and added to course
+            conflicted_rows = []  # user accounts that will not be created, but will be added course
             for row in cleaned_rows:
                 # create only if fields are not conflicted
-                if row[2] not in conflict_identification and row[3] not in conflict_email and row[4] not in conflict_username:
-                    user_accounts.append(
-                        User(first_name=row[0], last_name=row[1], identification=row[2], email=row[3], username=row[4], password=default_password))
+                if row[2] not in existing_usernames:
+                    user_objects.append(
+                        User(first_name=row[0], last_name=row[1], email=f"{row[2]}@E.NTU.EDU.SG", username=row[2],
+                             password=make_password(settings.DEFAULT_STUDENT_PASSWORD)))
                 else:
                     conflicted_rows.append(row)
 
             print("removed_rows:", removed_rows)
-            print("cleaned_rows:", cleaned_rows)
             print("conflicted_rows:", conflicted_rows)
-            print("number added:", len(user_accounts))
+            print("number added:", len(user_objects))
 
             # bulk create with database
             # bulk_create returns all objects that was given to it when ignore_conflicts=True, even those that were not added to the database
-            created_accounts = User.objects.bulk_create(user_accounts, ignore_conflicts=False)
+            created_users = User.objects.bulk_create(user_objects, ignore_conflicts=False)
 
             # add to student group
-            Group.objects.get(name="student").user_set.add(*created_accounts)
+            Group.objects.get(name="student").user_set.add(*created_users)
 
             # add to course
             if course_id:
-                course.students.add(*created_accounts)
+                course.students.add(*(created_users+existing_users))
 
             # success message
-            n = len(created_accounts)
+            n = len(created_users)
             if n == 0:
                 msg = "No accounts were created. Refer to the section below for more details."
             else:

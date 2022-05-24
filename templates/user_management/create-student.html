@@ -146,9 +146,8 @@
           <div class="card-body">
             <div class="alert alert-success" id="upload-result-alert" style="display:none;"></div>
             <p>Upload a <code>.csv</code> file with the following format to create student accounts in bulk!</p>
-            <h6>CSV format</h6>
+            <h6>CSV format (<a href="{% static 'csv_templates/students.csv' %}" download>Download CSV Template)</a></h6>
             <pre><code class="language-plaintext">first_name,last_name,username,group</code></pre>
-
             <p>Please ensure that there are <strong>no duplicates</strong> and that these students <strong>do not have an account
               yet.</strong></p>
 

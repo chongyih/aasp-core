@@ -14,11 +14,16 @@ def is_lab_assistant(user):
 def clean_csv(rows):
     """
     Removes:
+    - header row, if it exists
     - duplicated rows
     - rows with duplicated values in username (but different names, group, etc)
     """
     # stores all removed rows by this cleaning function
     removed = []
+
+    # remove header row if it exists
+    if "FIRST_NAME,LAST_NAME,USERNAME,GROUP" in rows[0]:
+        del rows[0]
 
     # remove duplicated rows by converting to set
     rows = set(rows)

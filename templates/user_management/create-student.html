@@ -80,48 +80,6 @@
                   </div>
                 </div>
 
-                <!-- Matriculation number input -->
-                <div class="col-12">
-                  <div class="form-group has-icon-left">
-                    <label for="id_identification">NTU Matriculation Number</label>
-                    <div class="position-relative">
-                      <input type="text" class="form-control {% if form.identification.errors %}is-invalid{% endif %}" name="identification"
-                             placeholder="e.g. U1922896C" id="id_identification" style="text-transform: uppercase"
-                             value="{% if form.identification.value %}{{ form.identification.value }}{% endif %}">
-                      <div class="form-control-icon"><i class="bi bi-hash"></i></div>
-                    </div>
-                    {# identification errors #}
-                    {% if form.identification.errors %}
-                      <p class="text-danger">{{ e }}
-                        {% for e in form.identification.errors %}
-                          {{ e }}<br>
-                        {% endfor %}
-                      </p>
-                    {% endif %}
-                  </div>
-                </div>
-
-                <!-- Email input -->
-                <div class="col-12">
-                  <div class="form-group has-icon-left">
-                    <label for="id_email">NTU Email Address</label>
-                    <div class="position-relative">
-                      <input type="text" class="form-control {% if form.email.errors %}is-invalid{% endif %}" name="email"
-                             placeholder="e.g. JLEE254@E.NTU.EDU.SG" id="id_email" style="text-transform: uppercase"
-                             value="{% if form.email.value %}{{ form.email.value }}{% endif %}">
-                      <div class="form-control-icon"><i class="bi bi-envelope"></i></div>
-                    </div>
-                    {# email errors #}
-                    {% if form.email.errors %}
-                      <p class="text-danger">{{ e }}
-                        {% for e in form.email.errors %}
-                          {{ e }}<br>
-                        {% endfor %}
-                      </p>
-                    {% endif %}
-                  </div>
-                </div>
-
                 <!-- Username input -->
                 <div class="col-12">
                   <div class="form-group has-icon-left">
@@ -143,51 +101,10 @@
                   </div>
                 </div>
 
-                <!-- Password input -->
-                <div class="col-12">
-                  <div class="form-group has-icon-left">
-                    <label for="id_password1">Password</label>
-                    <div class="position-relative">
-                      <input type="password" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" name="password1"
-                             placeholder="Password" id="id_password1" value="{% if form.password1.value %}{{ form.password1.value }}{% endif %}">
-                      <div class="form-control-icon"><i class="bi bi-lock"></i></div>
-                    </div>
-                    {# password1 errors #}
-                    {% if form.password1.errors %}
-                      <p class="text-danger">{{ e }}
-                        {% for e in form.password1.errors %}
-                          {{ e }}<br>
-                        {% endfor %}
-                      </p>
-                    {% endif %}
-                  </div>
-                </div>
-
-                <!-- Repeat password input -->
-                <div class="col-12">
-                  <div class="form-group has-icon-left">
-                    <label for="id_password2">Repeat Password</label>
-                    <div class="position-relative">
-                      <input type="password" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" name="password2"
-                             placeholder="Repeat Password" id="id_password2"
-                             value="{% if form.password2.value %}{{ form.password2.value }}{% endif %}">
-                      <div class="form-control-icon"><i class="bi bi-lock"></i></div>
-                    </div>
-                    {# password2 errors #}
-                    {% if form.password2.errors %}
-                      <p class="text-danger">{{ e }}
-                        {% for e in form.password2.errors %}
-                          {{ e }}<br>
-                        {% endfor %}
-                      </p>
-                    {% endif %}
-                  </div>
-                </div>
-
                 <!-- Course selection (single account)-->
                 <div class="col-12">
                   <div class="form-group">
-                    <label for="id_course">Add to Course (Optional)</label>
+                    <label for="id_course">Add to Course</label>
                     <div class="position-relative">
                       <select name="course" id="id_course" class="choices form-select">
                         {# displays only courses owned or maintained by the user #}
@@ -230,7 +147,7 @@
             <div class="alert alert-success" id="upload-result-alert" style="display:none;"></div>
             <p>Upload a <code>.csv</code> file with the following format to create student accounts in bulk!</p>
             <h6>CSV format</h6>
-            <pre><code class="language-plaintext">first_name,last_name,matriculation_number,email,username</code></pre>
+            <pre><code class="language-plaintext">first_name,last_name,username,group</code></pre>
 
             <p>Please ensure that there are <strong>no duplicates</strong> and that these students <strong>do not have an account
               yet.</strong></p>
@@ -249,7 +166,7 @@
                 <!-- Course selection (bulk upload) -->
                 <div class="form-group">
                   <div class="position-relative">
-                    <label for="id_course_bulk"><b>Add to Course (Optional)</b></label>
+                    <label for="id_course_bulk"><b>Add to Course</b></label>
                     <select name="course_bulk" id="id_course_bulk" class="choices form-select">
                       {# displays only courses owned or maintained by the user #}
                       {% for value, text in form.course.field.choices %}

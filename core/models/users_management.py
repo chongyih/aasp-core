@@ -4,11 +4,12 @@ from django.db import models
 
 
 class User(AbstractUser):
-    # for student matriculation number or staff id
-    identification = models.CharField(max_length=15, null=False, blank=False, unique=True, verbose_name="NTU Identification")
-
     # override email field to make it unique and required
     email = models.EmailField(null=False, blank=False, unique=True)
+
+    # override name fields to make them required
+    first_name = models.CharField("first name", max_length=150, blank=False)
+    last_name = models.CharField("last name", max_length=150, blank=False)
 
     class Meta:
         permissions = (
@@ -23,7 +24,6 @@ class User(AbstractUser):
         # capitalize these fields
         self.first_name = self.first_name.upper()
         self.last_name = self.last_name.upper()
-        self.identification = self.identification.upper()
         self.email = self.email.upper()
         self.username = self.username.upper()
 

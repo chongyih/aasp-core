@@ -69,13 +69,13 @@ class Migration(migrations.Migration):
             name="SOFTWARE SECURITY",
             code="CZ4067",
             year=2022,
-            owner=User.objects.get(username="YRLOKE"),
+            owner=User.objects.get(username="ADMIN"),
             semester='2',
         )
 
         # add maintainer
         c.maintainers.add(User.objects.get(username="LIM287"))
-        c.maintainers.add(User.objects.get(username="ADMIN"))
+        c.maintainers.add(User.objects.get(username="YRLOKE"))
 
     dependencies = [
         ('core', '0001_initial'),

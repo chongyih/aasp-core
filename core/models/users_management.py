@@ -46,11 +46,11 @@ class Course(models.Model):
 
     name = models.CharField(max_length=150, blank=False, null=False)
     code = models.CharField(max_length=20, blank=False, null=False)
-    students = models.ManyToManyField(User, related_name='registered_courses', blank=True)
     year = models.PositiveSmallIntegerField(validators=[MaxValueValidator(9999)], blank=False, null=False)  # e.g. 2017 (means AY17/18)
     semester = models.CharField(max_length=1, choices=Semesters.choices, default=Semesters.SEMESTER_1, blank=False, null=False)
     owner = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
     maintainers = models.ManyToManyField(User, related_name='maintained_courses', blank=True)  # maintainers can modify, but not delete the course
+    active = models.BooleanField(default=True, blank=False, null=False)
 
     def __str__(self):
         return f"{self.code} {self.name} (AY{str(self.year)[2:]}/{str(self.year+1)[2:]} S{self.semester})"
@@ -78,3 +78,16 @@ class Course(models.Model):
         if user in self.maintainers.all():
             return 1
         return 0
+
+
+class CourseGroup(models.Model):
+    name = models.CharField(max_length=20, blank=False, null=False)
+    course = models.ForeignKey(Course, blank=False, null=False, on_delete=models.RESTRICT)
+    students = models.ManyToManyField(User, related_name='enrolled_group', blank=True)
+
+    def __str__(self):
+        return f"{self.course} ({self.name})"
+
+    def clean(self):
+        super().clean()
+        self.name = self.name.upper()

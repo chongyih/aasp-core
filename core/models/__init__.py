@@ -1,1 +1,1 @@
-from .users_management import User, Course
+from .users_management import User, Course, CourseGroup

@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect
 
 from core.forms.user_management import StudentCreationForm
-from core.models import User, Course
+from core.models import User, Course, CourseGroup
 from core.views.utils import clean_csv
 
 
@@ -92,6 +92,14 @@ def create_student_bulk(request):
             # clean the csv file (removes invalid/duplicated rows, and rows with conflicting usernames)
             cleaned_rows, removed_rows = clean_csv(csv_rows)
 
+            # map course_group to students
+            course_groups = {}
+            for row in cleaned_rows:
+                group = row[3]
+                username = row[2]
+                course_groups[group] = course_groups.get(group, [])
+                course_groups[group].append(username)
+
             # ensure users don't exist in database yet (by checking username)
             # get conflicted username values
             existing_users = list(User.objects.filter(username__in=[row[2] for row in cleaned_rows]))
@@ -117,12 +125,17 @@ def create_student_bulk(request):
             # bulk_create returns all objects that was given to it when ignore_conflicts=True, even those that were not added to the database
             created_users = User.objects.bulk_create(user_objects, ignore_conflicts=False)
 
-            # add to student group
+            # add to student role group
             Group.objects.get(name="student").user_set.add(*created_users)
 
-            # add to course
-            if course_id:
-                course.students.add(*(created_users+existing_users))
+            # add to course (course group)
+            all_users = created_users + existing_users
+            for k, v in course_groups.items():
+                course_group, _ = CourseGroup.objects.get_or_create(course=course, name=k)
+
+                for user in all_users:
+                    if user.username in v:
+                        course_group.students.add(user)
 
             # success message
             n = len(created_users)

@@ -208,7 +208,7 @@
               <hr>
               <h6>Upload results</h6>
               <div id="duplicated-div">
-                <label for="duplicated-code"><b>Ignored rows due to duplicated <code>username</code> values</b></label>
+                <label for="duplicated-code"><b>Ignored rows due to invalid format or duplicated <code>username</code> values</b></label>
                 <textarea class="form-control" id="duplicated-code" disabled>
                 </textarea>
               </div>
@@ -266,7 +266,7 @@
           // hide and reset elements (alert, div)
           uploadResultAlert.hide();
           uploadResultAlert.removeClass("alert-success");
-          uploadResultAlert.removeClass("alert-warning");
+          uploadResultAlert.removeClass("alert-danger");
           bulkLogDiv.hide();
 
           // disable upload button
@@ -286,10 +286,6 @@
               processData: false,
               contentType: false,
           }).done((res) => {
-              // set alert message and show
-              uploadResultAlert.text(res.msg);
-              uploadResultAlert.show();
-
               // set correct alert class
               if (res.result === "error") { //error
                   uploadResultAlert.addClass("alert-danger");
@@ -316,6 +312,10 @@
                       bulkLogDiv.show();
                   }
               }
+
+              // set alert message and show
+              uploadResultAlert.text(res.msg);
+              uploadResultAlert.show();
           }).fail((res) => {
               // set alert message and show
               uploadResultAlert.addClass("alert-danger");

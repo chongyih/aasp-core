@@ -9,12 +9,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from core.filters import CourseStudentFilter
 from core.forms.course_management import CourseForm
 from core.models import Course, User, CourseGroup
+from core.views.utils import check_permissions
 
 
 @login_required()
 def view_courses(request):
     # retrieve courses for this user
-    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct()
+    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct().prefetch_related('owner', 'maintainers')
 
     context = {
         "courses": courses
@@ -56,10 +57,10 @@ def update_course(request, course_id):
         years.append((y, y))
 
     # get course object
-    course = get_object_or_404(Course, id=course_id)
+    course = get_object_or_404(Course.objects.prefetch_related('owner', 'maintainers'), id=course_id)
 
     # check permissions of user (needs to be owner)
-    if course.get_permissions(request.user) != 2:
+    if check_permissions(course, request.user) != 2:
         messages.warning(request, "You do not have permissions to update the course.")
         return redirect('view-courses')
 
@@ -93,7 +94,7 @@ def course_details(request, course_id):
     course = get_object_or_404(Course.objects.prefetch_related('owner', 'maintainers', 'coursegroup_set'), id=course_id)
 
     # if no permissions, redirect back to course page
-    if course.get_permissions(request.user) == 0:
+    if check_permissions(course, request.user) == 0:
         messages.warning(request, "You do not have permissions to view that course.")
         return redirect('view-courses')
 
@@ -102,7 +103,8 @@ def course_details(request, course_id):
 
     # get queryset of students who are enrolled in this course
     course_groups = course.coursegroup_set.all()
-    all_students = User.objects.filter(enrolled_groups__in=course_groups).prefetch_related('enrolled_groups', 'enrolled_groups__course').order_by('username')
+    all_students = User.objects.filter(enrolled_groups__course=course).prefetch_related('enrolled_groups', 'enrolled_groups__course').order_by(
+        'username')
     students_filter = CourseStudentFilter(course_groups, request.GET, queryset=all_students)
 
     context = {
@@ -121,7 +123,7 @@ def remove_student(request):
         student_id = request.POST.get("student_id")
 
         # get course object
-        course = Course.objects.filter(id=course_id).first()
+        course = Course.objects.filter(id=course_id).prefetch_related('owner', 'maintainers').first()
         if not course:
             context = {
                 "result": "error",
@@ -130,7 +132,7 @@ def remove_student(request):
             return JsonResponse(context, status=200)
 
         # check if user has permissions for this course
-        if course.get_permissions(request.user) == 0:
+        if check_permissions(course, request.user) == 0:
             context = {
                 "result": "error",
                 "msg": "You do not have permissions for this course."
@@ -146,7 +148,7 @@ def remove_student(request):
             return JsonResponse(context, status=200)
 
         # ensure student is enrolled in this course
-        course_group = CourseGroup.objects.filter(course=course, students__in=student_id).first()
+        course_group = CourseGroup.objects.filter(course=course, students=student_id).first()
         if not course_group:
             context = {
                 "result": "error",
@@ -165,14 +167,14 @@ def remove_student(request):
         return JsonResponse(context, status=200)
 
 
-@login_required()
+@login_required()  # not used
 def add_students(request):
     if request.method == "POST":
         course_id = request.POST.get("course_id")
         usernames = request.POST.get("usernames")
 
         # get course object
-        course = Course.objects.filter(id=course_id).first()
+        course = Course.objects.filter(id=course_id).prefetch_related('owner', 'maintainers').first()
         if not course:
             context = {
                 "result": "error",
@@ -181,7 +183,7 @@ def add_students(request):
             return JsonResponse(context, status=200)
 
         # check if user has permissions for this course
-        if course.get_permissions(request.user) == 0:
+        if check_permissions(course, request.user) == 0:
             context = {
                 "result": "error",
                 "msg": "You do not have permissions for this course."
@@ -233,13 +235,13 @@ def add_students(request):
         return JsonResponse(context, status=200)
 
 
-@login_required()
+@login_required()  # not used
 def get_course_students(request):
     if request.method == "GET":
         course_id = request.GET.get("course_id")
 
         # get course object
-        course = Course.objects.filter(id=course_id).first()
+        course = Course.objects.filter(id=course_id).prefetch_related('owner', 'maintainers').first()
         if not course:
             context = {
                 "result": "error",
@@ -248,7 +250,7 @@ def get_course_students(request):
             return JsonResponse(context, status=200)
 
         # check if user has permissions for this course
-        if course.get_permissions(request.user) == 0:
+        if check_permissions(course, request.user) == 0:
             context = {
                 "result": "error",
                 "msg": "You do not have permissions for this course."
@@ -282,14 +284,14 @@ def update_course_maintainer(request):
             return JsonResponse(error_context, status=200)
 
         # get course object
-        course = Course.objects.filter(id=course_id).first()
+        course = Course.objects.filter(id=course_id).prefetch_related('owner', 'maintainers').first()
 
         # course not found
         if not course:
             return JsonResponse(error_context, status=200)
 
         # check if user has permissions for this course
-        if course.get_permissions(request.user) != 2:
+        if check_permissions(course, request.user) != 2:
             return JsonResponse(error_context, status=200)
 
         # get maintainer object

@@ -9,7 +9,7 @@ from django.shortcuts import render, redirect
 
 from core.forms.user_management import StudentCreationForm
 from core.models import User, Course, CourseGroup
-from core.views.utils import clean_csv
+from core.views.utils import clean_csv, check_permissions
 
 
 @login_required()
@@ -20,7 +20,7 @@ def enrol_students(request):
     """
 
     # retrieve courses for this user
-    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct()
+    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct().prefetch_related('owner', 'maintainers')
 
     if request.method == 'POST':  # POST
         form = StudentCreationForm(courses, request.POST)
@@ -62,7 +62,7 @@ def enrol_students_bulk(request):
             return JsonResponse(context, status=200)
 
         # check if user has permissions for this course
-        if course.get_permissions(request.user) == 0:
+        if check_permissions(course, request.user) == 0:
             context = {
                 "result": "error",
                 "msg": "You do not have permissions for this course."
@@ -106,53 +106,44 @@ def enrol_students_bulk(request):
             existing_usernames = [u.username for u in existing_users]
 
             # generate User objects from contents of the csv file
-            user_objects = []  # user accounts that will be created, and added to course
-            conflicted_rows = []  # user accounts that will not be created, but will be added course
+            user_objects = []  # user accounts to be created
             for row in cleaned_rows:
-                # create only if fields are not conflicted
+                # create only if account don't exist yet
                 if row[2] not in existing_usernames:
                     user_objects.append(
                         User(first_name=row[0], last_name=row[1], email=f"{row[2]}@E.NTU.EDU.SG", username=row[2],
                              password=make_password(settings.DEFAULT_STUDENT_PASSWORD)))
-                else:
-                    conflicted_rows.append(row)
-
-            print("removed_rows:", removed_rows)
-            print("conflicted_rows:", conflicted_rows)
-            print("number added:", len(user_objects))
 
             # bulk create with database
-            # bulk_create returns all objects that was given to it when ignore_conflicts=True, even those that were not added to the database
             created_users = User.objects.bulk_create(user_objects, ignore_conflicts=False)
 
             # add to student role group
             Group.objects.get(name="student").user_set.add(*created_users)
 
-            # add to course (course group)
-            all_users = created_users + existing_users
             for k, v in course_groups.items():
                 course_group, _ = CourseGroup.objects.get_or_create(course=course, name=k)
+                course_group.students.add(*User.objects.filter(username__in=v))
 
-                for user in all_users:
-                    if user.username in v:
-                        course_group.students.add(user)
+            # add to course (course group)
+            # all_users = created_users + existing_users
+            # for k, v in course_groups.items():
+            #     course_group, _ = CourseGroup.objects.get_or_create(course=course, name=k)
+            #
+            #     for user in all_users:
+            #         if user.username in v:
+            #             course_group.students.add(user)
 
             # success message
-            n = len(created_users)
-            if n == 0:
-                msg = "No accounts were created. Refer to the section below for more details."
-            else:
-                if len(conflicted_rows) == 0 and len(removed_rows) == 0:
-                    msg = f"Success! {n} student account(s) were created."
-                else:
-                    msg = f"Success! {n} student account(s) were created, with some rows ignored (refer to the section below for more details)."
+            msg = f"{len(created_users) + len(existing_users)} students enrolled successfully!"
+            if len(removed_rows) != 0:
+                msg += " Some rows were ignored, refer to the section below for more details."
 
             # result
             context = {
                 "result": "success",
                 "msg": msg,
                 "removed_rows": removed_rows,
-                "conflicted_rows": conflicted_rows,
+                "conflicted_rows": []
             }
 
             return JsonResponse(context, status=200)

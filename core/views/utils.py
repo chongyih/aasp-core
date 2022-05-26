@@ -50,3 +50,17 @@ def clean_csv(rows):
             cleaned2.append(row)
 
     return cleaned2, removed
+
+
+def check_permissions(course, user):
+    """
+    Returns the permission level of a user for this course.
+    0 - no permissions
+    1 - maintainer
+    2 - owner
+    """
+    if course.owner == user:
+        return 2
+    if user in course.maintainers.all():
+        return 1
+    return 0

@@ -66,24 +66,8 @@ class Course(models.Model):
         self.name = self.name.upper()
         self.code = self.code.upper()
 
-    def get_permissions(self, user):
-        """
-        Returns the permission level of a user for this course.
-        0 - no permissions
-        1 - maintainer
-        2 - owner
-        """
-        if self.owner == user:
-            return 2
-        if user in self.maintainers.all():
-            return 1
-        return 0
-
     def students_count(self):
-        count = 0
-        for course_group in self.coursegroup_set.all():
-            count += course_group.students.count()
-        return count
+        return User.objects.filter(enrolled_groups__course=self).count()
 
 
 class CourseGroup(models.Model):

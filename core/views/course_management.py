@@ -6,8 +6,9 @@ from django.db.models import Q
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
+from core.filters import CourseStudentFilter
 from core.forms.course_management import CourseForm
-from core.models import Course, User
+from core.models import Course, User, CourseGroup
 
 
 @login_required()
@@ -39,8 +40,7 @@ def create_course(request):
             created_course.owner = request.user
             created_course.save()
             messages.success(request, "The course has been created! ✅")
-            # mytodo: change to course details page
-            return redirect('dashboard')
+            return redirect('view-courses')
 
     context = {
         'form': form,
@@ -88,8 +88,9 @@ def update_course(request, course_id):
 
 @login_required()
 def course_details(request, course_id):
+    # mytodo: to optimize database hits
     # get course object
-    course = get_object_or_404(Course, id=course_id)
+    course = get_object_or_404(Course.objects.prefetch_related('owner', 'maintainers', 'coursegroup_set'), id=course_id)
 
     # if no permissions, redirect back to course page
     if course.get_permissions(request.user) == 0:
@@ -99,19 +100,25 @@ def course_details(request, course_id):
     # get a list of staff accounts (educator/lab_assistant/superuser role)
     staff = User.objects.filter(Q(groups__name__in=('educator', 'lab_assistant')) | Q(is_superuser=True))
 
+    # get queryset of students who are enrolled in this course
+    course_groups = course.coursegroup_set.all()
+    all_students = User.objects.filter(enrolled_groups__in=course_groups).prefetch_related('enrolled_groups', 'enrolled_groups__course').order_by('username')
+    students_filter = CourseStudentFilter(course_groups, request.GET, queryset=all_students)
+
     context = {
         "course": course,
         "staff": staff,
+        "students_filter": students_filter,
     }
 
     return render(request, 'course_management/course-details.html', context)
 
 
 @login_required()
-def remove_students(request):
+def remove_student(request):
     if request.method == "POST":
         course_id = request.POST.get("course_id")
-        student_ids = request.POST.get("student_ids")
+        student_id = request.POST.get("student_id")
 
         # get course object
         course = Course.objects.filter(id=course_id).first()
@@ -130,24 +137,30 @@ def remove_students(request):
             }
             return JsonResponse(context, status=200)
 
-        if student_ids is not None:
-            student_ids = student_ids.split(",")
-
         # if no students selected
-        if not student_ids:
+        if not student_id:
             context = {
                 "result": "error",
-                "msg": "No students selected."
+                "msg": "No student selected."
             }
             return JsonResponse(context, status=200)
 
-        # remove students from course
-        course.students.remove(*student_ids)
+        # ensure student is enrolled in this course
+        course_group = CourseGroup.objects.filter(course=course, students__in=student_id).first()
+        if not course_group:
+            context = {
+                "result": "error",
+                "msg": "The student is not enrolled in this course."
+            }
+            return JsonResponse(context, status=200)
+
+        # remove the student
+        course_group.students.remove(student_id)
 
         # result
         context = {
             "result": "success",
-            "msg": "Students successfully removed!"
+            "msg": "Student successfully removed!"
         }
         return JsonResponse(context, status=200)
 

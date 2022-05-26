@@ -9,7 +9,6 @@ def dashboard(request):
     """
     redirects a logged-in user to the correct dashboard
     """
-    print("Entered switch")
     if request.user.is_superuser:
         return redirect('dashboard-educators')
     elif request.user.groups.filter(name='student').exists():

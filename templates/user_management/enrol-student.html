@@ -13,9 +13,9 @@
     <div class="page-title">
       <div class="row">
         <div class="col-12 col-md-6 order-md-1 order-last">
-          <h2>Add Student Accounts &#x1F393</h2>
+          <h2>Enrol Students to a Course &#x1F393</h2>
 
-          <p class="text-subtitle text-muted">Create a single account or in bulk!</p>
+          <p class="text-subtitle text-muted">Enrol a single student account or in bulk!</p>
         </div>
       </div>
     </div>
@@ -25,7 +25,7 @@
       <div class="col-5 m-2">
         <div class="card">
           <div class="card-header">
-            <h4 class="card-title">Create Single Account</h4>
+            <h4 class="card-title">Enrol Single Account</h4>
           </div>
           <div class="card-body">
             <form class="form form-vertical" method="post">
@@ -159,19 +159,17 @@
         </div>
       </div>
 
-      <!-- Bulk create -->
+      <!-- Bulk enrolment -->
       <div class="col-5 m-2">
         <div class="card">
           <div class="card-header">
-            <h4 class="card-title">Bulk Create</h4>
+            <h4 class="card-title">Bulk Enrolment</h4>
           </div>
           <div class="card-body">
             <div class="alert alert-success" id="upload-result-alert" style="display:none;"></div>
-            <p>Upload a <code>.csv</code> file with the following format to create student accounts in bulk!</p>
+            <p>Upload a <code>.csv</code> file with the following format to enrol student accounts in bulk!</p>
             <h6>CSV format (<a href="{% static 'csv_templates/students.csv' %}" download>Download CSV Template)</a></h6>
             <pre><code class="language-plaintext">first_name,last_name,username,group</code></pre>
-            <p>Please ensure that there are <strong>no duplicates</strong> and that these students <strong>do not have an account
-              yet.</strong></p>
 
             <div>
               <form id="bulk-create-form">
@@ -283,7 +281,7 @@
           // ajax request
           $.ajax({
               type: 'POST',
-              url: "{% url 'create-student-bulk' %}",
+              url: "{% url 'enrol-students-bulk' %}",
               data: formData,
               processData: false,
               contentType: false,

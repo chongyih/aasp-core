@@ -13,9 +13,9 @@ from core.views.utils import clean_csv
 
 
 @login_required()
-def create_student(request):
+def enrol_students(request):
     """
-    Student creation page
+    Student enrolment page
     Single-user form submission handled here, bulk creation handled with create_student_bulk()
     """
 
@@ -27,7 +27,7 @@ def create_student(request):
         if form.is_valid():
             form.save()
             messages.success(request, "The user has been created! ✅")
-            return redirect('create-student')
+            return redirect('enrol-students')
     else:  # GET
         form = StudentCreationForm(courses=courses)
 
@@ -35,11 +35,11 @@ def create_student(request):
         'form': form
     }
 
-    return render(request, 'user_management/create-student.html', context)
+    return render(request, 'user_management/enrol-student.html', context)
 
 
 @login_required()
-def create_student_bulk(request):
+def enrol_students_bulk(request):
     if request.method == "POST":
         # retrieve selected course from the request if exist
         course_id = request.POST.get("course", None)

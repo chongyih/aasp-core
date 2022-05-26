@@ -53,11 +53,11 @@ class Course(models.Model):
     active = models.BooleanField(default=True, blank=False, null=False)
 
     def __str__(self):
-        return f"{self.code} {self.name} (AY{str(self.year)[2:]}/{str(self.year+1)[2:]} S{self.semester})"
+        return f"{self.code} {self.name} (AY{str(self.year)[2:]}/{str(self.year+1)[2:]} {self.get_semester_display()})"
 
     @property
     def short_name(self):
-        return f"{self.code} (AY{str(self.year)[2:]}/{str(self.year+1)[2:]} S{self.semester})"
+        return f"{self.code} (AY{str(self.year)[2:]}/{str(self.year+1)[2:]} S{self.get_semester_display()})"
 
     def clean(self):
         super().clean()
@@ -79,14 +79,20 @@ class Course(models.Model):
             return 1
         return 0
 
+    def students_count(self):
+        count = 0
+        for course_group in self.coursegroup_set.all():
+            count += course_group.students.count()
+        return count
+
 
 class CourseGroup(models.Model):
     name = models.CharField(max_length=20, blank=False, null=False)
     course = models.ForeignKey(Course, blank=False, null=False, on_delete=models.RESTRICT)
-    students = models.ManyToManyField(User, related_name='enrolled_group', blank=True)
+    students = models.ManyToManyField(User, related_name='enrolled_groups', blank=True)
 
     def __str__(self):
-        return f"{self.course} ({self.name})"
+        return f"{self.name}"
 
     def clean(self):
         super().clean()

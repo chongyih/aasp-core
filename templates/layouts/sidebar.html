@@ -47,15 +47,11 @@
           <a href="{% url 'view-courses' %}" class='sidebar-link'><i class="fa-solid fa-user-group"></i><span>Courses</span></a>
         </li>
 
-        {# student accounts #}
-        <li class="sidebar-item has-sub">
-          <a href="#" class='sidebar-link'><i class="fa-solid fa-graduation-cap"></i><span>Student Accounts</span></a>
-
-          <ul class="submenu ">
-            <li class="submenu-item"><a href="{% url 'create-student' %}">Add Students</a></li>
-            <li class="submenu-item"><a href="#">View Students</a></li>
-          </ul>
+        {# enrol students #}
+        <li class="sidebar-item {% if request.path == '/enrol-students/' %} active {% endif %}">
+          <a href="{% url 'enrol-students' %}" class='sidebar-link'><i class="fa-solid fa-graduation-cap"></i><span>Enrol Students</span></a>
         </li>
+
       {% endif %}
 
       {# test management options #}

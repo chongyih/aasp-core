@@ -15,15 +15,15 @@ urlpatterns = [
     path('', dashboards.dashboard, name='dashboard'),
 
     # create student
-    path('create-student/', user_management.create_student, name='create-student'),
-    path('api/create_student_bulk/', user_management.create_student_bulk, name='create-student-bulk'),  # ajax
+    path('enrol-students/', user_management.enrol_students, name='enrol-students'),
+    path('api/enrol-students-bulk/', user_management.enrol_students_bulk, name='enrol-students-bulk'),  # ajax
 
     # course management
     path('courses/', course_management.view_courses, name='view-courses'),
     path('courses/create/', course_management.create_course, name='create-course'),
     path('courses/update/<int:course_id>/', course_management.update_course, name='update-course'),
     path('courses/details/<int:course_id>/', course_management.course_details, name='course-details'),
-    path('api/remove-students-from-course/', course_management.remove_students, name='remove-students-from-course'),  # ajax
+    path('api/remove-student-from-course/', course_management.remove_student, name='remove-student-from-course'),  # ajax
     path('api/add-students-to-course/', course_management.add_students, name='add-students-to-course'),  # ajax
     path('api/get-course-students/', course_management.get_course_students, name='get-course-students'),  # ajax
     path('api/update-course-maintainer/', course_management.update_course_maintainer, name='update-course-maintainer'),  # ajax

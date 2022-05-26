@@ -1,7 +1,7 @@
 {% extends 'layouts/master-nav.html' %}
 {% load static %}
 
-{% block title %}Courses{% endblock %}
+{% block title %}{{ course }}{% endblock %}
 
 {% block styles %}
   <link rel="stylesheet" href="{% static 'vendors/choices.js/choices.min.css' %}"/>
@@ -12,16 +12,20 @@
   <div class="page-heading">
     <div class="page-title">
       <div class="row">
-        <div class="col-12 col-md-12 order-md-1 order-last">
+        <div class="col-12 col-md-12 order-md-1 order-last pb-3">
           <h2>{{ course }}</h2>
-          <p class="text-subtitle text-muted">Course details</p>
+          {% if course.active %}
+            <span class="badge bg-success">Active</span>
+          {% else %}
+            <span class="badge bg-secondary">Inactive</span>
+          {% endif %}
         </div>
       </div>
     </div>
 
     <!-- Course information card -->
     <div class="row">
-      <div class="col-12 m-2">
+      <div class="col-8">
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h4 class="card-title ">Course Information</h4>
@@ -56,82 +60,12 @@
               </div>
               <div class="col-4">
                 <h6>Students</h6>
-                <p><span id="students_count">{{ course.students.count }}</span> students enrolled</p>
+                <p><span id="students_count">{{ course.students_count }}</span> students enrolled</p>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-    </div>
-
-    <!-- Students and Maintainers row -->
-    <div class="row">
-
-      <!-- Student cards -->
-      <div class="col-8">
-        <div class="card-group">
-
-          <!-- View/remove students card -->
-          <div class="card">
-            <div class="card-content">
-              <div class="card-body">
-                <h4 class="card-title">View / Remove Students</h4>
-                <p class="card-text">
-                  View a list of enrolled students, or select students to remove from the course using the dropdown below.
-                </p>
-                <div class="alert alert-success" id="remove-student-alert" style="display:none;"></div>
-                <form id="remove-student-form">
-                  <!-- Students picker -->
-                  <label for="student-picker"><b>Enrolled Students</b></label>
-                  <select multiple class="form-group" id="student-picker" name="students"></select>
-
-                  <!-- Remove button -->
-                  <div class="col-12 d-flex justify-content-end">
-                    <button class="btn btn-danger">Remove selected</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-
-          <!-- Add students card -->
-          <div class="card">
-            <div class="card-content">
-              <div class="card-body">
-                <h4 class="card-title">Add Students</h4>
-                <p class="card-text">
-                  Enter a list of usernames to add to the course!
-                </p>
-                <div class="alert alert-success" id="add-students-alert" style="display:none;"></div>
-                <form id="add-students-form">
-                  <!-- Usernames input -->
-                  <div class="form-group mb-3">
-                    <label for="id_student-usernames" class="form-label"><b>Usernames (one per line)</b></label>
-                    <textarea class="form-control" id="id_student-usernames" rows="5" spellcheck="false" style="text-transform: uppercase"
-                              required></textarea>
-                  </div>
-
-                  <!-- Add button -->
-                  <div class="col-12 d-flex justify-content-end">
-                    <button class="btn btn-success" id="addStudentsBtn">Add</button>
-                  </div>
-                </form>
-
-                <!-- Add students log -->
-                <div id="add-students-log-div" style="display:none;">
-                  <hr>
-                  <label for="ignored-usernames"><b>Ignored usernames</b></label>
-                  <p>The following lines were ignored as accounts with these usernames do not exist.</p>
-                  <textarea class="form-control" id="ignored-usernames" disabled>
-                  </textarea>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Maintainers card -->
       <div class="col-4">
         <div class="card">
@@ -144,16 +78,144 @@
               <div class="alert alert-success" id="remove-student-alert" style="display:none;"></div>
               <form id="remove-student-form">
                 <!-- Maintainers picker -->
-                <label for="maintainers-picker"><b>Current Maintainers</b></label>
                 <div class="spinner-border spinner-border-sm" id="maintainer-loading" style="display:none"></div>
                 <select multiple class="form-group" id="maintainers-picker" name="maintainers"
-                        {% if course.owner != request.user %} disabled {% endif %}></select>
+                        {% if course.owner != request.user %} disabled {% endif %}>
+                </select>
               </form>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Tab group row -->
+    <div class="row">
+      <div class="col-12 m-2">
+        <div class="card">
+          <div class="card-body">
+            <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" id="pills-home-tab" data-bs-toggle="pill" href="#pills-home" role="tab" aria-controls="pills-home"
+                   aria-selected="true">Students</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="pills-profile-tab" data-bs-toggle="pill" href="#pills-profile" role="tab" aria-controls="pills-profile"
+                   aria-selected="false">Assessments</a>
+              </li>
+            </ul>
+            <div class="tab-content" id="pills-tabContent">
+
+              <!-- First tab (students) -->
+              <div class="tab-pane fade show active" id="pills-home" role="tabpanel" aria-labelledby="pills-home-tab">
+                <!-- Filters form -->
+                <form method="get">
+                  <div class="row mt-4">
+                    <h5>Filters</h5>
+
+                    <!-- Username filter -->
+                    <div class="col-2">
+                      <div class="form-group">
+                        <label for="id_username">Username</label>
+                        <input type="text" class="form-control" id="id_username" name="username"
+                               value="{{ students_filter.form.username.value|default:"" }}">
+                      </div>
+                    </div>
+
+                    <!-- First name filter -->
+                    <div class="col-3">
+                      <div class="form-group">
+                        <label for="id_first_name">First Name</label>
+                        <input type="text" class="form-control" id="id_first_name" name="first_name"
+                               value="{{ students_filter.form.first_name.value|default:"" }}">
+                      </div>
+                    </div>
+
+                    <!-- Last name filter -->
+                    <div class="col-3">
+                      <div class="form-group">
+                        <label for="id_last_name">Last Name</label>
+                        <input type="text" class="form-control" id="id_last_name" name="last_name"
+                               value="{{ students_filter.form.last_name.value|default:"" }}">
+                      </div>
+                    </div>
+
+                    <!-- Course Group filter -->
+                    <div class="col-2">
+                      <div class="form-group">
+                        <label for="id_course_group">Course Group</label>
+                        <select name="course_group" id="id_course_group" class="choices form-select">
+                          {% for value, text in students_filter.form.course_group.field.choices %}
+                            <option value="{{ value }}" {% if students_filter.form.course_group.value == value|stringformat:"s" %}selected{% endif %}>
+                              {{ text }}
+                            </option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- Filter and clear buttons -->
+                    <div class="col-2">
+                      <div class="form-group">
+                        <label for="id_course_group"></label><br>
+                        <button type="submit" class="btn btn-success me-1 mb-1">Filter</button>
+                        <a type="submit" class="btn btn-outline-danger me-1 mb-1" href="{% url 'course-details' course_id=course.id %}">Clear</a>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+                <hr>
+
+                <!-- Students table -->
+                <div class="table-responsive">
+                  <table class="table table-hover mb-0">
+                    <thead>
+                    <tr>
+                      <th>Username</th>
+                      <th>First Name</th>
+                      <th>Last Name</th>
+                      <th>Course Group</th>
+                      <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% if students_filter.qs.count == 0 %}
+                      <tr>
+                        <td colspan="5" class="text-center">No students found!</td>
+                      </tr>
+                    {% else %}
+                      {% for student in students_filter.qs %}
+                        <tr>
+                          <td>{{ student.username }}</td>
+                          <td>{{ student.first_name }}</td>
+                          <td>{{ student.last_name }}</td>
+                          <td>
+                            {% for cg in student.enrolled_groups.all %}
+                              {% if cg.course == course %}
+                                {{ cg.name }}
+                              {% endif %}
+                            {% endfor %}
+                          </td>
+                          <td>
+                            <button class="btn btn-sm btn-success" onclick="removeStudent({{ student.id }}, this)">Remove</button>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    {% endif %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Second tab -->
+              <div class="tab-pane fade" id="pills-profile" role="tabpanel" aria-labelledby="pills-profile-tab">...</div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 {% endblock %}
 
@@ -162,18 +224,80 @@
   <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
   <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
 
-  <!-- Student selector script -->
+  <!-- Remove students script -->
   <script>
-      const studentPicker = document.getElementById("student-picker");
-      let students_arr = [
-          {% for user in course.students.all %}
-              {value: '{{ user.id }}', label: '{{ user.username }} ({{ user.name }})', selected: false},
-          {% endfor %}
-      ]
-      let choice1 = new Choices(studentPicker, {
-          removeItemButton: true,
-          choices: students_arr
-      });
+      function removeStudent(student_id, clickedBtn) {
+          const tableRow = $(clickedBtn).closest("tr");
+
+          // prepare form data
+          let formData = new FormData();
+          formData.append("student_id", student_id);
+          formData.append("course_id", "{{ course.id }}");
+          formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+          if (confirm("Are you sure you wish to remove the student from the course?\nThis action cannot be reversed.") === true) {
+              console.log("Remove student confirmed.");
+          } else {
+              return false;
+          }
+
+          // disable button
+          $(clickedBtn).prop('disabled', true);
+          $(clickedBtn).html('<div class="spinner-border spinner-border-sm">');
+
+          // ajax request
+          $.ajax({
+              type: 'POST',
+              url: "{% url 'remove-student-from-course' %}",
+              data: formData,
+              processData: false,
+              contentType: false,
+          }).done((res) => {
+              setTimeout(() => {
+                  if (res.result === "success") {
+                      Toastify({
+                          text: "The student has been removed successfully!",
+                          duration: 2000,
+                          position: "center",
+                          style: {"background": "#77DD77"}
+                      }).showToast();
+
+                      // show check mark in button
+                      $(clickedBtn).html('<i class="fa-solid fa-check"></i>');
+
+                      // remove row from table
+                      tableRow.fadeOut('slow', () => {
+                          tableRow.remove();
+                      });
+                  } else {
+                      Toastify({
+                          text: res.msg,
+                          duration: -1,
+                          position: "center",
+                          style: {"background": "#ff6961"}
+                      }).showToast();
+
+                      // re-enable button
+                      $(clickedBtn).prop('disabled', false);
+                      $(clickedBtn).html('Remove');
+                  }
+              }, 300);
+          }).fail((res) => {
+              Toastify({
+                  text: "An error has occurred while removing the student. Please refresh the page.",
+                  duration: 5000,
+                  position: "center",
+                  style: {"background": "#ff6961"}
+              }).showToast();
+
+              // reset the button
+              $(clickedBtn).html('<i class="fa-solid fa-xmark"></i>');
+              $(clickedBtn).removeClass('btn-success');
+              $(clickedBtn).addClass('btn-danger');
+
+          }).always((res) => {
+          });
+      }
   </script>
 
   <!-- Maintainers selector script -->
@@ -299,181 +423,5 @@
       })
 
   </script>
-
-  <!-- Function to refresh enrolled students -->
-  <script>
-      // requests students list from api, clears and updates dropdown choices, updates enrolled count
-      function updateStudentsList() {
-          $.ajax({
-              type: 'GET',
-              url: "{% url 'get-course-students' %}?course_id={{ course.id }}",
-              processData: false,
-              contentType: false,
-          }).done((res) => {
-              if (res.result === "success") {
-                  // update students_arr
-                  students_arr = res.students.map(student => {
-                      return {
-                          value: student.id,
-                          label: `${student.username} (${student.last_name} ${student.first_name})`,
-                          select: false,
-                      }
-                  });
-
-                  // update students dropdown
-                  choice1.removeActiveItems(); // clear selection
-                  choice1.clearChoices(); // remove all choices
-                  choice1.setChoices(students_arr); // set new choices
-
-                  // update enrolled count
-                  $("#students_count").html(students_arr.length);
-              } else {
-                  Toastify({
-                      text: "An error has occurred while refreshing the students list.",
-                      duration: 5000,
-                      position: "center",
-                      style: {"background": "#ff6961"}
-                  }).showToast();
-              }
-          }).fail((res) => {
-              Toastify({
-                  text: "An error has occurred while refreshing the students list. Please refresh the page.",
-                  duration: 5000,
-                  position: "center",
-                  style: {"background": "#ff6961"}
-              }).showToast();
-          }).always((res) => {
-          });
-      }
-  </script>
-
-  <!-- Remove students form -->
-  <script>
-      const removeStudentsForm = document.getElementById("remove-student-form");
-      const removeStudentAlert = $("#remove-student-alert");
-
-      removeStudentsForm.onsubmit = function (event) {
-          event.preventDefault();
-
-          // hide and reset elements
-          removeStudentAlert.hide();
-          removeStudentAlert.removeClass("alert-success");
-          removeStudentAlert.removeClass("alert-danger");
-
-          // get selected students
-          let selectedStudents = choice1.getValue(true);
-
-          if (selectedStudents.length === 0) {
-              removeStudentAlert.addClass("alert-danger");
-              removeStudentAlert.text("No students selected!");
-              removeStudentAlert.show();
-          } else {
-              // create form data
-              let formData = new FormData();
-              formData.append("student_ids", selectedStudents);
-              formData.append("course_id", "{{ course.id }}");
-              formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
-
-              // ajax request
-              $.ajax({
-                  type: 'POST',
-                  url: "{% url 'remove-students-from-course' %}",
-                  data: formData,
-                  processData: false,
-                  contentType: false,
-              }).done((res) => {
-                  // set alert message and show
-                  removeStudentAlert.text(res.msg);
-                  removeStudentAlert.show();
-
-                  // set correct alert class
-                  if (res.result === "error") { //error
-                      removeStudentAlert.addClass("alert-danger");
-                  } else {
-                      removeStudentAlert.addClass("alert-success");
-
-                      // update students
-                      updateStudentsList();
-                  }
-              }).fail((res) => {
-                  removeStudentAlert.addClass("alert-danger");
-                  removeStudentAlert.html("Something went wrong with your request! 😰");
-                  removeStudentAlert.show();
-              }).always((res) => {
-              });
-          }
-
-          return false;
-      }
-  </script>
-
-  <!-- Add students form -->
-  <script>
-      const addStudentsForm = document.getElementById("add-students-form");
-      const addStudentsBtn = document.getElementById("addStudentsBtn");
-      const usernamesTextArea = $("#id_student-usernames");
-      const addStudentsAlert = $("#add-students-alert");
-      const addStudentsLogDiv = $("#add-students-log-div");
-      const ignoredUsernames = $("#ignored-usernames");
-
-      addStudentsForm.onsubmit = function (event) {
-          event.preventDefault();
-
-          // hide and reset elements
-          addStudentsAlert.hide();
-          addStudentsAlert.removeClass("alert-success");
-          addStudentsAlert.removeClass("alert-danger");
-          addStudentsLogDiv.hide();
-
-          //disable add button
-          addStudentsBtn.innerText = 'Processing...';
-          addStudentsBtn.disabled = true;
-
-          // prepare form data
-          let formData = new FormData();
-          formData.append("usernames", usernamesTextArea.val());
-          formData.append("course_id", "{{ course.id }}");
-          formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
-
-          $.ajax({
-              type: 'POST',
-              url: "{% url 'add-students-to-course' %}",
-              data: formData,
-              processData: false,
-              contentType: false,
-          }).done((res) => {
-              // set alert message and show
-              addStudentsAlert.text(res.msg);
-              addStudentsAlert.show();
-
-              // set correct alert class
-              if (res.result === "error") { //error
-                  addStudentsAlert.addClass("alert-danger");
-              } else { //success
-                  addStudentsAlert.addClass("alert-success");
-                  usernamesTextArea.val('');
-
-                  // if any of the usernames provided were not found, display them
-                  if (res.not_found.length !== 0) {
-                      ignoredUsernames.html(res.not_found.join('\n'));
-                      addStudentsLogDiv.show();
-                  }
-
-                  // update students
-                  updateStudentsList();
-              }
-          }).fail((res) => {
-              addStudentsAlert.addClass("alert-danger");
-              addStudentsAlert.html("Something went wrong with your request! 😰");
-              addStudentsAlert.show();
-          }).always((res) => {
-              // reset form
-              addStudentsBtn.innerText = 'Add';
-              addStudentsBtn.disabled = false;
-          })
-      }
-  </script>
-
-
 
 {% endblock %}

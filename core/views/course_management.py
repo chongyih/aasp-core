@@ -89,7 +89,6 @@ def update_course(request, course_id):
 
 @login_required()
 def course_details(request, course_id):
-    # mytodo: to optimize database hits
     # get course object
     course = get_object_or_404(Course.objects.prefetch_related('owner', 'maintainers', 'coursegroup_set'), id=course_id)
 

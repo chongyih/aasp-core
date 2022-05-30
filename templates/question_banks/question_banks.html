@@ -1,0 +1,193 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}Question Banks{% endblock %}
+
+{% block styles %}
+{% endblock %}
+
+{% block content %}
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-6 order-md-1 order-last">
+          <h2>Question Banks &#x2754</h2>
+          <p class="text-subtitle text-muted">View or manage your question banks here!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Your question banks -->
+    <div class="row">
+      <div class="col-12 m-2">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title ">Your question banks</h4>
+            <a class="btn btn-sm btn-danger" href="{% url 'create-question-bank' %}">Add Question Bank</a>
+          </div>
+          <div class="card-body">
+            <p class="card-text">Using the most basic table up, here’s how
+              <code>.table</code>-based tables look in Bootstrap. You can use any example
+              of below table for your table and it can be use with any type of bootstrap tables.
+            </p>
+
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Visibility</th>
+                  <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% if owned_qbs %}
+                  {% for qb in owned_qbs %}
+                    <tr>
+                      <td>{{ qb.name }}</td>
+                      <td>{{ qb.description }}</td>
+                      <td>
+                        {% if qb.private %}
+                          <span class="badge bg-success"><i class="fa-solid fa-lock pe-2"></i>Private</span>
+                        {% else %}
+                          <span class="badge bg-light-danger"><i class="fa-solid fa-lock-open pe-2"></i>Public</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <a class="btn btn-secondary" href="#">View</a>
+                        <a class="btn btn-secondary" href="#?next={{ request.path }}">Edit Details</a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td class="text-center" colspan="7">You have no question banks!</td>
+                  </tr>
+                {% endif %}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question banks shared with you -->
+    <div class="row">
+      <div class="col-12 m-2">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title ">Shared with you</h4>
+          </div>
+          <div class="card-body">
+            <p class="card-text">Using the most basic table up, here’s how
+              <code>.table</code>-based tables look in Bootstrap. You can use any example
+              of below table for your table and it can be use with any type of bootstrap tables.
+            </p>
+
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Owner</th>
+                  <th>Visibility</th>
+                  <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% if shared_qbs %}
+                  {% for qb in shared_qbs %}
+                    <tr>
+                      <td>{{ qb.name }}</td>
+                      <td>{{ qb.description }}</td>
+                      <td>{{ qb.owner.username }}</td>
+                      <td>
+                        {% if qb.private %}
+                          <span class="badge bg-success"><i class="fa-solid fa-lock pe-2"></i>Private</span>
+                        {% else %}
+                          <span class="badge bg-light-danger"><i class="fa-solid fa-lock-open pe-2"></i>Public</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <a class="btn btn-secondary" href="#">View</a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td class="text-center" colspan="5">No question banks shared with you!</td>
+                  </tr>
+                {% endif %}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Public question banks -->
+    <div class="row">
+      <div class="col-12 m-2">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title ">Public question banks</h4>
+          </div>
+          <div class="card-body">
+            <p class="card-text">Using the most basic table up, here’s how
+              <code>.table</code>-based tables look in Bootstrap. You can use any example
+              of below table for your table and it can be use with any type of bootstrap tables.
+            </p>
+
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Owner</th>
+                  <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% if public_qbs %}
+                  {% for qb in public_qbs %}
+                    <tr>
+                      <td>{{ qb.name }}</td>
+                      <td>{{ qb.description }}</td>
+                      <td>{{ qb.owner.username }}</td>
+                      <td>
+                        <a class="btn btn-secondary" href="#">View</a>
+                        {% if qb.owner == request.user %}
+                          <a class="btn btn-secondary" href="#">Edit Details</a>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td class="text-center" colspan="5">No public question banks!</td>
+                  </tr>
+                {% endif %}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+{% endblock %}
+
+{% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+{% endblock %}

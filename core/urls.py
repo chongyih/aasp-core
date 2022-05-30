@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import auth, user_management, dashboards, course_management
+from .views import auth, user_management, dashboards, course_management, question_banks
 
 urlpatterns = [
     # global auth
@@ -27,4 +27,11 @@ urlpatterns = [
     path('api/add-students-to-course/', course_management.add_students, name='add-students-to-course'),  # ajax
     path('api/get-course-students/', course_management.get_course_students, name='get-course-students'),  # ajax
     path('api/update-course-maintainer/', course_management.update_course_maintainer, name='update-course-maintainer'),  # ajax
+
+    # question banks
+    path('qb/', question_banks.view_question_banks, name='view-question-banks'),
+    path('qb/create/', question_banks.create_question_bank, name='create-question-bank'),
+
+
+
 ]

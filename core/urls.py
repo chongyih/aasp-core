@@ -32,7 +32,6 @@ urlpatterns = [
     path('qb/', question_banks.view_question_banks, name='view-question-banks'),
     path('qb/create/', question_banks.create_question_bank, name='create-question-bank'),
     path('qb/update/<int:question_bank_id>', question_banks.update_question_bank, name='update-question-bank'),
-
-
+    path('qb/details/<int:question_bank_id>/', question_banks.question_bank_details, name='question-bank-details'),
 
 ]

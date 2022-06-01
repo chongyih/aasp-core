@@ -53,8 +53,9 @@
                         {% endif %}
                       </td>
                       <td>
-                        <a class="btn btn-secondary" href="#">View</a>
-                        <a class="btn btn-secondary" href="{% url 'update-question-bank' question_bank_id=qb.id %}?next={{ request.path }}">Edit Details</a>
+                        <a class="btn btn-secondary" href="{% url 'question-bank-details' question_bank_id=qb.id %}">View</a>
+                        <a class="btn btn-secondary" href="{% url 'update-question-bank' question_bank_id=qb.id %}?next={{ request.path }}">Edit
+                          Details</a>
                       </td>
                     </tr>
                   {% endfor %}
@@ -109,7 +110,7 @@
                         {% endif %}
                       </td>
                       <td>
-                        <a class="btn btn-secondary" href="#">View</a>
+                        <a class="btn btn-secondary" href="{% url 'question-bank-details' question_bank_id=qb.id %}">View</a>
                       </td>
                     </tr>
                   {% endfor %}
@@ -156,9 +157,10 @@
                       <td>{{ qb.description }}</td>
                       <td>{{ qb.owner.username }}</td>
                       <td>
-                        <a class="btn btn-secondary" href="#">View</a>
+                        <a class="btn btn-secondary" href="{% url 'question-bank-details' question_bank_id=qb.id %}">View</a>
                         {% if qb.owner == request.user %}
-                          <a class="btn btn-secondary" href="{% url 'update-question-bank' question_bank_id=qb.id %}?next={{ request.path }}">Edit Details</a>
+                          <a class="btn btn-secondary" href="{% url 'update-question-bank' question_bank_id=qb.id %}?next={{ request.path }}">Edit
+                            Details</a>
                         {% endif %}
                       </td>
                     </tr>
@@ -176,7 +178,6 @@
         </div>
       </div>
     </div>
-
   </div>
 
 

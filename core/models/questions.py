@@ -22,6 +22,9 @@ class QuestionBank(models.Model):
     private = models.BooleanField(default=True, blank=False, null=False)
     shared_with = models.ManyToManyField(User, blank=True, related_name="qbs_shared_with_me")
 
+    def __str__(self):
+        return self.name
+
 
 class CodeQuestion(models.Model):
     class Meta:

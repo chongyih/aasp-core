@@ -83,3 +83,21 @@ def update_question_bank(request, question_bank_id):
     }
 
     return render(request, 'question_banks/update-question-bank.html', context)
+
+
+@login_required()
+def question_bank_details(request, question_bank_id):
+    # get question bank object
+    question_bank = get_object_or_404(QuestionBank.objects.prefetch_related('owner', 'shared_with'), id=question_bank_id)
+
+    # if no permissions, redirect back to course page
+    if check_permissions_qb(question_bank, request.user) == 0:
+        messages.warning(request, "You do not have permissions to update the question bank.")
+        return redirect('view-question-banks')
+
+    context = {
+        'question_bank': question_bank,
+
+    }
+
+    return render(request, 'question_banks/question-bank-details.html', context)

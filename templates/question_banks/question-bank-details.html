@@ -1,0 +1,92 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}View Question Bank{% endblock %}
+
+{% block styles %}
+  <link rel="stylesheet" href="{% static 'vendors/choices.js/choices.min.css' %}"/>
+  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
+{% endblock %}
+
+{% block content %}
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-12 order-md-1 order-last pb-3">
+          <h5>Question Bank</h5>
+          <h2>{{ question_bank.name }}</h2>
+          {% if question_bank.private %}
+            <span class="badge bg-success"><i class="fa-solid fa-lock pe-2"></i>Private</span>
+          {% else %}
+            <span class="badge bg-light-danger"><i class="fa-solid fa-lock-open pe-2"></i>Public</span>
+          {% endif %}
+          {% if question_bank.owner != request.user %}
+             <span class="badge bg-light-secondary"><i class="fa-solid fa-user-group pe-2"></i>Shared with you</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab group row -->
+    <div class="row">
+      <div class="col-12 m-2">
+        <div class="card">
+          <div class="card-body">
+            <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" id="pill-code-questions-tab" data-bs-toggle="pill" href="#pill-code-questions" role="tab"
+                   aria-controls="pill-code-questions-tab"
+                   aria-selected="true">Code Questions</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="pill-visibility-tab" data-bs-toggle="pill" href="#pill-visibility" role="tab"
+                   aria-controls="pill-visibility-tab"
+                   aria-selected="false">Visibility</a>
+              </li>
+            </ul>
+            <div class="tab-content" id="pills-tabContent">
+
+              <!-- First tab (code questions) -->
+              <div class="tab-pane fade show active" id="pill-code-questions" role="tabpanel" aria-labelledby="pill-code-questions-tab">
+
+                <!-- Students table -->
+                <div class="table-responsive">
+                  <table class="table table-hover mb-0">
+                    <thead>
+                    <tr>
+                      <th>Username</th>
+                      <th>First Name</th>
+                      <th>Last Name</th>
+                      <th>Course Group</th>
+                      <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% if students_filter.qs.count == 0 %}
+                      <tr>
+                        <td colspan="5" class="text-center">No code questions found!</td>
+                      </tr>
+                    {% endif %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Second tab (visibility) -->
+              <div class="tab-pane fade" id="pill-visibility" role="tabpanel" aria-labelledby="pill-visibility-tab">...</div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+{% endblock %}
+
+{% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+  <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
+
+{% endblock %}

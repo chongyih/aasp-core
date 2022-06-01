@@ -1,15 +1,22 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
+from django.http import HttpResponseRedirect
+from django.shortcuts import render, redirect, get_object_or_404
 
 from core.forms.question_banks import QuestionBankForm
 from core.models import QuestionBank
+from core.views.utils import check_permissions_qb
 
 
 @login_required()
 def view_question_banks(request):
+    # all question banks (public/private) owned by the current user
     owned_question_banks = QuestionBank.objects.filter(owner=request.user)
-    shared_question_banks = QuestionBank.objects.filter(shared_with=request.user)
+
+    # private question banks that were shared with the current user
+    shared_question_banks = QuestionBank.objects.filter(shared_with=request.user, private=True)
+
+    # all public question banks regardless of ownership
     public_question_banks = QuestionBank.objects.filter(private=False)
 
     context = {
@@ -23,7 +30,6 @@ def view_question_banks(request):
 
 @login_required()
 def create_question_bank(request):
-
     # initialize form
     form = QuestionBankForm()
 
@@ -43,3 +49,37 @@ def create_question_bank(request):
 
     return render(request, 'question_banks/create-question-bank.html', context)
 
+
+@login_required()
+def update_question_bank(request, question_bank_id):
+    # get question bank object
+    question_bank = get_object_or_404(QuestionBank.objects.prefetch_related('owner'), id=question_bank_id)
+
+    # check permissions of question bank
+    if check_permissions_qb(question_bank, request.user) != 2:
+        messages.warning(request, "You do not have permissions to update the question bank.")
+        return redirect('view-question-banks')
+
+    # initialize form with question bank instance
+    form = QuestionBankForm(instance=question_bank)
+
+    # process POST request
+    if request.method == "POST":
+        form = QuestionBankForm(request.POST, instance=question_bank)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, "The question bank has been updated! ✅")
+
+            # redirect to where the user came from
+            next_url = request.GET.get("next")
+            if next_url:
+                return HttpResponseRedirect(next_url)
+            else:
+                return redirect('view-question-banks')
+
+    context = {
+        'form': form,
+    }
+
+    return render(request, 'question_banks/update-question-bank.html', context)

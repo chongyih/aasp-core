@@ -52,6 +52,7 @@ def clean_csv(rows):
     return cleaned2, removed
 
 
+# mytodo: refactor this to check_permissions_course()
 def check_permissions(course, user):
     """
     Returns the permission level of a user for this course.
@@ -62,5 +63,19 @@ def check_permissions(course, user):
     if course.owner == user:
         return 2
     if user in course.maintainers.all():
+        return 1
+    return 0
+
+
+def check_permissions_qb(question_bank, user):
+    """
+    Returns the permission level of a user for this question bank.
+    0 - no permissions
+    1 - owner shared with this user (viewing rights)
+    2 - owner
+    """
+    if question_bank.owner == user:
+        return 2
+    if user in question_bank.shared_with.all():
         return 1
     return 0

@@ -74,7 +74,7 @@ def update_course(request, course_id):
             form.save()
             messages.success(request, "The course has been updated! ✅")
 
-            # redirect to where user the came from
+            # redirect to where the user came from
             next_url = request.GET.get("next")
             if next_url:
                 return HttpResponseRedirect(next_url)

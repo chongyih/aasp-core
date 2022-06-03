@@ -5,11 +5,15 @@ from core.models import User, Assessment
 
 
 class Language(models.Model):
-    name = models.CharField(max_length=50, blank=False, null=False)
+    name = models.CharField(max_length=50, blank=False, null=False, unique=True)
+    judge_language_id = models.IntegerField(blank=False, null=False)
 
     def clean(self):
         super().clean()
         self.name = self.name.upper()
+
+    def __str__(self):
+        return f"Language - {self.name} (JudgeID: {self.judge_language_id})"
 
 
 class QuestionBank(models.Model):
@@ -34,7 +38,6 @@ class CodeQuestion(models.Model):
     description = models.TextField(blank=False, null=False)
     sample_in = models.CharField(max_length=250, blank=False, null=False)
     sample_out = models.CharField(max_length=250, blank=False, null=False)
-    sample_explanation = models.TextField(blank=False, null=False)
 
     # foreign keys (either linked to a QuestionBank or Assessment instance)
     question_bank = models.ForeignKey(QuestionBank, null=True, blank=True, on_delete=models.PROTECT)
@@ -70,3 +73,13 @@ class TestCase(models.Model):
     time_limit = models.PositiveIntegerField()
     memory_limit = models.PositiveIntegerField()
     hidden = models.BooleanField(default=True)
+
+
+class CodeTemplate(models.Model):
+    class Meta:
+        pass
+
+    language = models.ForeignKey(Language, null=False, blank=False, on_delete=models.CASCADE)
+    name = models.CharField(max_length=50, blank=False, null=False)
+    code = models.TextField(blank=False, null=False)
+

@@ -15,14 +15,74 @@
         <div class="col-12 col-md-12 order-md-1 order-last pb-3">
           <h5>Question Bank</h5>
           <h2>{{ question_bank.name }}</h2>
-          {% if question_bank.private %}
-            <span class="badge bg-success"><i class="fa-solid fa-lock pe-2"></i>Private</span>
+          {% if question_bank.owner == request.user %}
+            <span class="badge bg-light-secondary"><i class="fa-solid fa-check pe-2"></i>You own this question bank</span>
           {% else %}
-            <span class="badge bg-light-danger"><i class="fa-solid fa-lock-open pe-2"></i>Public</span>
+            <span class="badge bg-light-secondary"><i class="fa-solid fa-user-group pe-2"></i>Shared with you</span>
           {% endif %}
-          {% if question_bank.owner != request.user %}
-             <span class="badge bg-light-secondary"><i class="fa-solid fa-user-group pe-2"></i>Shared with you</span>
-          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Question bank information card -->
+    <div class="row">
+      <div class="col-8">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title ">Question Bank Information</h4>
+            {# edit details button #}
+            {% if question_bank.owner == request.user %}
+              <a class="btn btn-sm btn-danger" href="{% url 'update-question-bank' question_bank_id=question_bank.id %}?next={{ request.path }}">Edit
+                Details</a>
+            {% endif %}
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-7">
+                <h6>Name</h6>
+                <p>{{ question_bank.name }}</p>
+              </div>
+              <div class="col-3">
+                <h6>Owner</h6>
+                <p>{{ question_bank.owner }}</p>
+              </div>
+              <div class="col-2">
+                <h6>Visibility</h6>
+                {% if question_bank.private %}
+                  <span class="badge bg-success"><i class="fa-solid fa-lock pe-2"></i>Private</span>
+                {% else %}
+                  <span class="badge bg-light-danger"><i class="fa-solid fa-lock-open pe-2"></i>Public</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-12">
+                <h6>Description</h6>
+                <p>{{ question_bank.description }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Maintainers card -->
+      <div class="col-4">
+        <div class="card">
+          <div class="card-content">
+            <div class="card-body">
+              <h4 class="card-title">Shared with</h4>
+              <p class="card-text">
+                These users can view and use questions from this question bank.
+              </p>
+              <form>
+                <!-- Shared With picker -->
+                <div class="spinner-border spinner-border-sm" id="shared-with-loading" style="display:none"></div>
+                <select multiple class="form-group" id="shared-with-picker" name="shared-with"
+                        {% if question_bank.owner != request.user %} disabled {% endif %}>
+                </select>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -49,22 +109,25 @@
               <!-- First tab (code questions) -->
               <div class="tab-pane fade show active" id="pill-code-questions" role="tabpanel" aria-labelledby="pill-code-questions-tab">
 
-                <!-- Students table -->
+                <!-- Add new code question button -->
+                <a class="btn btn-success" href="{% url 'create-code-question' %}?qb_id={{ question_bank.id }}">New Code Question</a>
+
+                <!-- Code questions table -->
                 <div class="table-responsive">
                   <table class="table table-hover mb-0">
                     <thead>
                     <tr>
-                      <th>Username</th>
-                      <th>First Name</th>
-                      <th>Last Name</th>
-                      <th>Course Group</th>
+                      <th>Name</th>
+                      <th>Description</th>
+                      <th>Max Marks</th>
+                      <th>Tags</th>
                       <th>Actions</th>
                     </tr>
                     </thead>
                     <tbody>
-                    {% if students_filter.qs.count == 0 %}
+                    {% if question_bank.codequestion_set.count == 0 %}
                       <tr>
-                        <td colspan="5" class="text-center">No code questions found!</td>
+                        <td colspan="5" class="text-center">No code questions found</td>
                       </tr>
                     {% endif %}
                     </tbody>
@@ -73,7 +136,9 @@
               </div>
 
               <!-- Second tab (visibility) -->
-              <div class="tab-pane fade" id="pill-visibility" role="tabpanel" aria-labelledby="pill-visibility-tab">...</div>
+              <div class="tab-pane fade" id="pill-visibility" role="tabpanel" aria-labelledby="pill-visibility-tab">
+                <h3>Coming soon!</h3>
+              </div>
 
             </div>
           </div>
@@ -88,5 +153,129 @@
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
   <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
   <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
+
+  <!-- Shared with selector script -->
+  <script>
+      const loadingSpinner = $("#shared-with-loading");
+      const sharedWithPicker = document.getElementById("shared-with-picker");
+      let staff_arr = [
+          {% for user in staff %}
+              {
+                  value: '{{ user.id }}',
+                  label: '{{ user.username }} ({{ user.name }})',
+                  selected: {% if user in question_bank.shared_with.all %} true {% else %} false {% endif %}
+              },
+          {% endfor %}
+      ]
+      let choice = new Choices(sharedWithPicker, {
+          removeItemButton: true,
+          choices: staff_arr,
+      });
+
+      // user added to share
+      sharedWithPicker.addEventListener("addItem", (event) => {
+          loadingSpinner.show();
+          choice.disable();
+
+          // prepare data
+          let formData = new FormData();
+          formData.append("user_id", event.detail.value);
+          formData.append("action", "add");
+          formData.append("question_bank_id", "{{ question_bank.id }}");
+          formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+          // ajax request
+          $.ajax({
+              type: 'POST',
+              url: "{% url 'update-qb-shared-with' %}",
+              data: formData,
+              processData: false,
+              contentType: false,
+          }).done((res) => {
+              setTimeout(() => {
+                  if (res.result === "success")
+                      Toastify({
+                          text: "The user has been added successfully!",
+                          duration: 2000,
+                          position: "center",
+                          style: {"background": "#77DD77"}
+                      }).showToast();
+                  else {
+                      Toastify({
+                          text: "Unable to add user to the question bank! Please refresh the page.",
+                          duration: 5000,
+                          position: "center",
+                          style: {"background": "#ff6961"}
+                      }).showToast();
+                  }
+              }, 300);
+          }).fail((res) => {
+              Toastify({
+                  text: "An error has occurred while adding the user. Please refresh the page.",
+                  duration: 5000,
+                  position: "center",
+                  style: {"background": "#ff6961"}
+              }).showToast();
+          }).always((res) => {
+              setTimeout(() => {
+                  choice.enable();
+                  loadingSpinner.hide();
+              }, 300)
+          });
+      })
+
+      // user removed from share
+      sharedWithPicker.addEventListener("removeItem", (event) => {
+          choice.disable();
+          loadingSpinner.show();
+
+          // prepare data
+          let formData = new FormData();
+          formData.append("user_id", event.detail.value);
+          formData.append("action", "remove");
+          formData.append("question_bank_id", "{{ question_bank.id }}");
+          formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+          // ajax request
+          $.ajax({
+              type: 'POST',
+              url: "{% url 'update-qb-shared-with' %}",
+              data: formData,
+              processData: false,
+              contentType: false,
+          }).done((res) => {
+              setTimeout(() => {
+                  if (res.result === "success")
+                      Toastify({
+                          text: "User successfully removed from share!",
+                          duration: 2000,
+                          position: "center",
+                          style: {"background": "#77DD77"}
+                      }).showToast();
+                  else {
+                      Toastify({
+                          text: "Unable to remove user from the question bank! Please refresh the page.",
+                          duration: 5000,
+                          position: "center",
+                          style: {"background": "#ff6961"}
+                      }).showToast();
+                  }
+              }, 300);
+          }).fail((res) => {
+              Toastify({
+                  text: "An error has occurred while removing the user. Please refresh the page.",
+                  duration: 5000,
+                  position: "center",
+                  style: {"background": "#ff6961"}
+              }).showToast();
+          }).always((res) => {
+              setTimeout(() => {
+                  choice.enable();
+                  loadingSpinner.hide();
+              }, 300);
+          });
+      })
+
+  </script>
 
 {% endblock %}

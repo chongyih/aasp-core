@@ -137,6 +137,7 @@ def create_code_question(request):
     context = {
         'question_bank': question_bank,
         'assessment': assessment,
+        'description_placeholder': "# Heading 1\n## Heading 2\n\nThis editor supports **markdown**!\n"
     }
 
     return render(request, 'code_questions/create-code-question.html', context)

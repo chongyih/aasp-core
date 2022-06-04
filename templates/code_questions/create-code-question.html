@@ -6,6 +6,8 @@
 {% block styles %}
   <link rel="stylesheet" href="{% static 'vendors/choices.js/choices.min.css' %}"/>
   <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+
 {% endblock %}
 
 {% block content %}
@@ -25,12 +27,11 @@
 
     <!-- Tab group row -->
     <div class="row">
-      <div class="col-12 m-2">
+      <div class="col-10 m-2">
         <div class="card">
-          <div class="card-header">
-            <h1 class="card-title">Code Question Details</h1>
-          </div>
+
           <div class="card-body">
+
             <!-- Tabs -->
             <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
               <li class="nav-item">
@@ -51,22 +52,59 @@
             </ul>
 
             <!-- Tab contents -->
-            <div class="tab-content" id="pills-tabContent">
-              <!-- First tab (Description) -->
-              <div class="tab-pane fade show active" id="pill-description" role="tabpanel" aria-labelledby="pill-description-tab">
-                <h5>Work in progress! 1</h5>
-              </div>
+            <form>
+              <div class="tab-content" id="pills-tabContent">
 
-              <!-- Second tab (Test cases) -->
-              <div class="tab-pane fade" id="pill-test-cases" role="tabpanel" aria-labelledby="pill-test-cases-tab">
-                <h5>Work in progress! 2</h5>
-              </div>
+                <!-- First tab (Description) -->
+                <div class="tab-pane fade show active pt-3" id="pill-description" role="tabpanel" aria-labelledby="pill-description-tab">
 
-              <!-- Second tab (Languages) -->
-              <div class="tab-pane fade" id="pill-languages" role="tabpanel" aria-labelledby="pill-languages-tab">
-                <h5>Work in progress! 3</h5>
+                  <!-- Question Name input -->
+                  <div class="form-group">
+                    <label for="id_name" class="mb-2">Question Name</label>
+                    <input type="text" class="form-control" id="id_name" placeholder="e.g. Two sum" value="{{ form.name.value|default:"" }}" required>
+                  </div>
+
+                  <!-- Description input -->
+                  <div class="form-group mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <label for="id_description">Question Description</label>
+                      <button type="button" class="btn btn-warning btn-sm" id="preview-btn">Show Preview</button>
+                    </div>
+                    <textarea id="id_description" name="description">{{ description_placeholder|default:"" }}</textarea>
+                  </div>
+
+                  <!-- Next button (to test cases tab) -->
+                  <div class="pull-right">
+                    <button type="button" class="btn btn-sm btn-success" onclick="$('#pill-test-cases-tab').tab('show')">Next</button>
+                  </div>
+                </div>
+
+                <!-- Second tab (Test cases) -->
+                <div class="tab-pane fade pt-3" id="pill-test-cases" role="tabpanel" aria-labelledby="pill-test-cases-tab">
+                  <h5>Work in progress! 2</h5>
+
+
+                  <!-- Navigation buttons -->
+                  <div class="pull-right">
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="$('#pill-description-tab').tab('show')">Previous</button>
+                    <button type="button" class="btn btn-sm btn-success" onclick="$('#pill-languages-tab').tab('show')">Next</button>
+                  </div>
+                </div>
+
+                <!-- Second tab (Languages) -->
+                <div class="tab-pane fade pt-3" id="pill-languages" role="tabpanel" aria-labelledby="pill-languages-tab">
+                  <h5>Work in progress! 3</h5>
+
+                  <!-- Navigation buttons -->
+                  <div class="pull-right">
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="$('#pill-test-cases-tab').tab('show')">Previous</button>
+                    <button type="button" class="btn btn-sm btn-success">Submit</button>
+                  </div>
+
+                </div>
+
               </div>
-            </div>
+            </form>
 
           </div>
         </div>
@@ -80,5 +118,27 @@
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
   <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
   <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
+  <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+
+  <script>
+      let simplemde = new SimpleMDE({
+          element: document.getElementById("id_description"),
+          toolbar: false,
+      });
+
+      const previewButton = $("#preview-btn");
+
+      previewButton.click(function () {
+          if (simplemde.isPreviewActive()) {
+              previewButton.text("Show Preview")
+          } else {
+              previewButton.text("Show Markdown")
+          }
+
+          simplemde.togglePreview();
+      });
+
+  </script>
+
 
 {% endblock %}

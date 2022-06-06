@@ -44,7 +44,7 @@
                   {% for qb in owned_qbs %}
                     <tr>
                       <td>{{ qb.name }}</td>
-                      <td>{{ qb.description|truncatechars:80 }}</td>
+                      <td>{{ qb.description|truncatechars:70 }}</td>
                       <td>
                         {% if qb.private %}
                           <span class="badge bg-success"><i class="fa-solid fa-lock pe-2"></i>Private</span>
@@ -100,7 +100,7 @@
                   {% for qb in shared_qbs %}
                     <tr>
                       <td>{{ qb.name }}</td>
-                      <td>{{ qb.description|truncatechars:80}}</td>
+                      <td>{{ qb.description|truncatechars:70}}</td>
                       <td>{{ qb.owner.username }}</td>
                       <td>
                         {% if qb.private %}
@@ -154,7 +154,7 @@
                   {% for qb in public_qbs %}
                     <tr>
                       <td>{{ qb.name }}</td>
-                      <td>{{ qb.description|truncatechars:80}}</td>
+                      <td>{{ qb.description|truncatechars:70}}</td>
                       <td>{{ qb.owner.username }}</td>
                       <td>
                         <a class="btn btn-secondary" href="{% url 'question-bank-details' question_bank_id=qb.id %}">View</a>

@@ -36,8 +36,6 @@ class CodeQuestion(models.Model):
 
     name = models.CharField(max_length=50, blank=False, null=False)
     description = models.TextField(blank=False, null=False)
-    sample_in = models.CharField(max_length=250, blank=False, null=False)
-    sample_out = models.CharField(max_length=250, blank=False, null=False)
 
     # foreign keys (either linked to a QuestionBank or Assessment instance)
     question_bank = models.ForeignKey(QuestionBank, null=True, blank=True, on_delete=models.PROTECT)
@@ -63,16 +61,23 @@ class CodeSnippet(models.Model):
 
 
 class TestCase(models.Model):
+    """
+    Two types of test cases: Sample and Internal
+      - Sample: displayed to the user together with the problem description, has no score.
+      - Internal: input/output are hidden by default, has score.
+    """
     class Meta:
         pass
 
     code_question = models.ForeignKey(CodeQuestion, null=False, blank=False, on_delete=models.CASCADE)
     stdin = models.TextField(blank=False, null=False)
     stdout = models.TextField(blank=False, null=False)
-    marks = models.PositiveIntegerField()
     time_limit = models.PositiveIntegerField()
     memory_limit = models.PositiveIntegerField()
+
+    marks = models.PositiveIntegerField()
     hidden = models.BooleanField(default=True)
+    sample = models.BooleanField(default=False)
 
 
 class CodeTemplate(models.Model):

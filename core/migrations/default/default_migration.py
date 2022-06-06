@@ -77,6 +77,16 @@ class Migration(migrations.Migration):
         c.maintainers.add(User.objects.get(username="LIM287"))
         c.maintainers.add(User.objects.get(username="YRLOKE"))
 
+    def create_question_bank(apps, schema_editor):
+        User = apps.get_model('core', 'User')
+        QuestionBank = apps.get_model('core', 'QuestionBank')
+
+        qb = QuestionBank.objects.create(
+            name="Basic Algorithms Practice",
+            description="These questions will be used to test the students on their understanding of basic algorithms.",
+            owner=User.objects.get(username="ADMIN"),
+            private=True
+        )
     dependencies = [
         ('core', '0001_initial'),
     ]
@@ -86,4 +96,5 @@ class Migration(migrations.Migration):
         migrations.RunPython(create_admin),
         migrations.RunPython(create_users),
         migrations.RunPython(create_courses),
+        migrations.RunPython(create_question_bank),
     ]

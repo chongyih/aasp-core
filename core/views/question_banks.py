@@ -1,10 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.forms import formset_factory
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
-from core.forms.question_banks import QuestionBankForm
+from core.forms.question_banks import QuestionBankForm, TestCaseForm
 from core.models import QuestionBank, Assessment, User
 from core.views.utils import check_permissions_qb
 
@@ -131,13 +132,18 @@ def create_code_question(request):
     else:
         assessment = get_object_or_404(Assessment, id=assessment_id)
 
+    # formset
+    TestCaseFormset = formset_factory(TestCaseForm)
+    testcase_formset = TestCaseFormset(prefix='tc')
+
     if request.method == "POST":
         pass
 
     context = {
         'question_bank': question_bank,
         'assessment': assessment,
-        'description_placeholder': "# Heading 1\n## Heading 2\n\nThis editor supports **markdown**!\n"
+        'description_placeholder': "# Heading 1\n## Heading 2\n\nThis editor supports **markdown**!\n",
+        'testcase_formset': testcase_formset,
     }
 
     return render(request, 'code_questions/create-code-question.html', context)

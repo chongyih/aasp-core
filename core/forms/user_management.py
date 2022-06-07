@@ -8,6 +8,11 @@ from core.models import User, Course, CourseGroup
 
 
 class StudentCreationForm(forms.Form):
+    """
+    Form used for single student enrolment to a course.
+    Creates a user account only if an account with the username does not exist yet.
+    The user account is then added to the specified course group.
+    """
     first_name = forms.CharField(max_length=150, required=True, strip=True)
     last_name = forms.CharField(max_length=150, required=True, strip=True)
     username = forms.CharField(max_length=150, required=True, strip=True)

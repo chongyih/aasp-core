@@ -87,6 +87,22 @@ class Migration(migrations.Migration):
             owner=User.objects.get(username="ADMIN"),
             private=True
         )
+
+    def create_languages(apps, schema_editor):
+        Language = apps.get_model('core', 'Language')
+        CodeTemplate = apps.get_model('core', 'CodeTemplate')
+
+        c = Language.objects.create(name='C (GCC 9.2.0)', judge_language_id=50)
+        java = Language.objects.create(name='Java (OpenJDK 13.0.1)', judge_language_id=62)
+        python3 = Language.objects.create(name='Python 3.8.1', judge_language_id=71)
+
+        # create code templates
+        ct1 = CodeTemplate(language=c, name="Default", code="#include <stdio.h>\n#include<stdlib.h>\n")
+        ct2 = CodeTemplate(language=java, name="Default", code="public class Main {\npublic static void main(String [] args) {\nSystem.out.println(\"Hello world!\");}\n}\n")
+        ct3 = CodeTemplate(language=python3, name="Default", code="#include <stdio.h>\n#include<stdlib.h>\n")
+
+        CodeTemplate.objects.bulk_create([ct1, ct2, ct3])
+
     dependencies = [
         ('core', '0001_initial'),
     ]
@@ -97,4 +113,5 @@ class Migration(migrations.Migration):
         migrations.RunPython(create_users),
         migrations.RunPython(create_courses),
         migrations.RunPython(create_question_bank),
+        migrations.RunPython(create_languages),
     ]

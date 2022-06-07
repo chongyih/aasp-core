@@ -81,3 +81,6 @@ class CourseGroup(models.Model):
     def clean(self):
         super().clean()
         self.name = self.name.upper()
+
+    def students_enrolled(self):
+        return self.students.count()

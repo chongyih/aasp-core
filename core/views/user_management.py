@@ -26,7 +26,7 @@ def enrol_students(request):
         form = StudentCreationForm(courses, request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "The user has been created! ✅")
+            messages.success(request, "The user has been added to the Course! ✅")
             return redirect('enrol-students')
     else:  # GET
         form = StudentCreationForm(courses=courses)

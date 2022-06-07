@@ -7,7 +7,10 @@ from django.db import transaction
 from core.models import User, Course, CourseGroup
 
 
-class StudentCreationForm(forms.ModelForm):
+class StudentCreationForm(forms.Form):
+    first_name = forms.CharField(max_length=150, required=True, strip=True)
+    last_name = forms.CharField(max_length=150, required=True, strip=True)
+    username = forms.CharField(max_length=150, required=True, strip=True)
     course = forms.ModelChoiceField(queryset=Course.objects.none(), required=True)
     group = forms.CharField(max_length=20, required=True, strip=True)
 
@@ -15,30 +18,44 @@ class StudentCreationForm(forms.ModelForm):
         super(StudentCreationForm, self).__init__(*args, **kwargs)
         self.fields['course'].queryset = courses
 
-    class Meta:
-        model = User
-        fields = ("first_name", "last_name", "username")
+    def clean_first_name(self):
+        return self.cleaned_data['first_name'].upper()
+
+    def clean_last_name(self):
+        return self.cleaned_data['last_name'].upper()
+
+    def clean_username(self):
+        return self.cleaned_data['username'].upper()
 
     def clean_group(self):
         return self.cleaned_data['group'].upper()
 
-    def save(self, commit=True):
+    def save(self):
         # ensures that changes are rolled back if any operation fails
         with transaction.atomic():
-            # create user with parent save()
-            user = super(StudentCreationForm, self).save(commit=True)
+            # check if user already exists
+            user = User.objects.filter(username=self.cleaned_data['username']).first()
 
-            # set email automatically based on username
-            user.email = f"{user.username}@E.NTU.EDU.SG"
+            # create only if user does not exist
+            if not user:
+                # create user instance
+                user = User(
+                    first_name=self.cleaned_data['first_name'],
+                    last_name=self.cleaned_data['last_name'],
+                    username=self.cleaned_data['username'],
+                )
 
-            # set default password (configured in project settings file)
-            user.password = make_password(settings.DEFAULT_STUDENT_PASSWORD)
+                # set email automatically based on username
+                user.email = f"{user.username}@E.NTU.EDU.SG"
 
-            # save changes
-            user.save()
+                # set default password (configured in project settings file)
+                user.password = make_password(settings.DEFAULT_STUDENT_PASSWORD)
 
-            # add user to the student group
-            Group.objects.get(name="student").user_set.add(user)
+                # save changes
+                user.save()
+
+                # add user to the student group
+                Group.objects.get(name="student").user_set.add(user)
 
             # get course
             course = self.cleaned_data.get("course")

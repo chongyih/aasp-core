@@ -13,7 +13,7 @@ class Language(models.Model):
         self.name = self.name.upper()
 
     def __str__(self):
-        return f"Language - {self.name} (JudgeID: {self.judge_language_id})"
+        return self.name
 
 
 class QuestionBank(models.Model):
@@ -50,6 +50,9 @@ class CodeQuestion(models.Model):
         elif self.question_bank and self.assessment:
             raise ValidationError("The question cannot be be linked to both a Question Bank and an Assessment instance.")
 
+    def __str__(self):
+        return self.name
+
 
 class CodeSnippet(models.Model):
     class Meta:
@@ -75,7 +78,7 @@ class TestCase(models.Model):
     time_limit = models.PositiveIntegerField()
     memory_limit = models.PositiveIntegerField()
 
-    marks = models.PositiveIntegerField()
+    score = models.PositiveIntegerField()
     hidden = models.BooleanField(default=True)
     sample = models.BooleanField(default=False)
 

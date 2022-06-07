@@ -1,13 +1,15 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Q
-from django.forms import formset_factory
-from django.http import HttpResponseRedirect, JsonResponse
+from django.forms import formset_factory, inlineformset_factory
+from django.http import HttpResponseRedirect, JsonResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 
-from core.forms.question_banks import QuestionBankForm, TestCaseForm
-from core.models import QuestionBank, Assessment, User
-from core.views.utils import check_permissions_qb
+from core.forms.question_banks import QuestionBankForm, TestCaseForm, CodeQuestionForm
+from core.models import QuestionBank, Assessment, User, CodeQuestion
+from core.models.questions import TestCase, CodeSnippet, Language
+from core.views.utils import check_permissions_qb, check_permissions, check_permissions_code_question
 
 
 @login_required()
@@ -109,47 +111,6 @@ def question_bank_details(request, question_bank_id):
 
 
 @login_required()
-def create_code_question(request):
-    """
-    Allows the user to create a code question for either a question bank, or an assessment.
-    Thus, a question bank id or assessment id must be passed as a GET parameter, but not both.
-    """
-    # check validity of question bank or assessment id
-    qb_id = request.GET.get('qb_id')
-    assessment_id = request.GET.get('assessment_id')
-    if qb_id is not None and assessment_id is not None:
-        messages.warning(request, "Something went wrong, both qb and assessment IDs were passed to the view.")
-        return redirect('dashboard')
-    elif qb_id is None and assessment_id is None:
-        messages.warning(request, "Something went wrong, no qb or assessment ID were passed to the view.")
-        return redirect('dashboard')
-
-    # get question bank or assessment object
-    question_bank = None
-    assessment = None
-    if qb_id is not None:
-        question_bank = get_object_or_404(QuestionBank, id=qb_id)
-    else:
-        assessment = get_object_or_404(Assessment, id=assessment_id)
-
-    # formset
-    TestCaseFormset = formset_factory(TestCaseForm)
-    testcase_formset = TestCaseFormset(prefix='tc')
-
-    if request.method == "POST":
-        pass
-
-    context = {
-        'question_bank': question_bank,
-        'assessment': assessment,
-        'description_placeholder': "# Heading 1\n## Heading 2\n\nThis editor supports **markdown**!\n",
-        'testcase_formset': testcase_formset,
-    }
-
-    return render(request, 'code_questions/create-code-question.html', context)
-
-
-@login_required()
 def update_qb_shared_with(request):
     """
     Function to share/unshare a question bank with a user.
@@ -196,3 +157,85 @@ def update_qb_shared_with(request):
 
         # return success
         return JsonResponse({"result": "success"}, status=200)
+
+
+@login_required()
+def create_code_question(request, parent, parent_id):
+    question_bank = None
+    assessment = None
+
+    # get object instance and check permissions
+    if parent == "qb":
+        question_bank = get_object_or_404(QuestionBank, id=parent_id)
+        if question_bank.owner != request.user:
+            messages.warning(request, "You do not have permissions for this question bank.")
+            return redirect('view-question-banks')
+    elif parent == "as":
+        assessment = get_object_or_404(Assessment, id=parent_id)
+        if check_permissions(assessment.course, request.user) == 0:
+            messages.warning(request, "You do not have permissions for this course.")
+            return redirect('view-courses')
+    else:
+        raise Http404()
+
+    # create form
+    form = CodeQuestionForm()
+
+    # process POST requests
+    if request.method == "POST":
+        form = CodeQuestionForm(request.POST)
+        if form.is_valid():
+            code_question = form.save()
+            messages.success(request, "The code question has been created, please proceed to add some test cases!")
+            return redirect('update-test-cases', code_question_id=code_question.id)
+
+    context = {
+        'assessment': assessment,
+        'question_bank': question_bank,
+        'description_placeholder': "# Heading 1\n## Heading 2\n\nThis editor supports **markdown**!\n",
+        'form': form,
+    }
+
+    return render(request, 'code_questions/create-code-question.html', context)
+
+
+@login_required()
+def update_test_cases(request, code_question_id):
+    # get CodeQuestion instance
+    code_question = get_object_or_404(CodeQuestion, id=code_question_id)
+
+    # check permissions
+    if not check_permissions_code_question(code_question, request.user):
+        messages.warning(request, "You do not have permissions to perform that action.")
+        return redirect('dashboard')
+
+    # prepare formset
+    if code_question.testcase_set.count() == 0:
+        TestCaseFormset = inlineformset_factory(CodeQuestion, TestCase, extra=3,
+                                                fields=['stdin', 'stdout', 'time_limit', 'memory_limit', 'score', 'hidden', 'sample'])
+    else:
+        TestCaseFormset = inlineformset_factory(CodeQuestion, TestCase, extra=0,
+                                                fields=['stdin', 'stdout', 'time_limit', 'memory_limit', 'score', 'hidden', 'sample'])
+    testcase_formset = TestCaseFormset(prefix='tc', instance=code_question)
+
+    # process POST requests
+    if request.method == "POST":
+        testcase_formset = TestCaseFormset(request.POST, instance=code_question, prefix='tc')
+        if testcase_formset.is_valid():
+            print("valid form")
+            testcase_formset.save()
+            messages.success(request, "Test cases updated!")
+            return redirect('update-languages', code_question_id=code_question.id)
+        else:
+            print("invalid form!")
+
+    context = {
+        'code_question': code_question,
+        'testcase_formset': testcase_formset,
+    }
+    return render(request, 'code_questions/update-test-cases.html', context)
+
+
+def update_languages(request, code_question_id):
+    return redirect('dashboard')
+

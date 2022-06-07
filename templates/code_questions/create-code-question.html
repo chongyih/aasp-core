@@ -28,7 +28,6 @@
     <div class="row">
       <div class="col-10 m-2">
         <div class="card">
-
           <div class="card-body">
 
             <!-- Tabs -->
@@ -51,7 +50,16 @@
             </ul>
 
             <!-- Tab contents -->
-            <form>
+            <form method="POST">
+              {% csrf_token %}
+
+              {% if question_bank %}
+                <input type="hidden" name="question_bank" value="{{ question_bank.id }}">
+              {% endif %}
+              {% if assessment %}
+                <input type="hidden" name="assessment" value="{{ assessment.id }}">
+              {% endif %}
+
               <div class="tab-content" id="pills-tabContent">
 
                 <!-- First tab (Description) -->
@@ -60,7 +68,16 @@
                   <!-- Question Name input -->
                   <div class="form-group">
                     <label for="id_name" class="mb-2">Question Name</label>
-                    <input type="text" class="form-control" id="id_name" placeholder="e.g. Two sum" value="{{ form.name.value|default:"" }}" required>
+                    <input type="text" name="name" class="form-control {% if form.name.errors %}is-invalid{% endif %}" id="id_name"
+                           placeholder="e.g. Two sum" value="{{ form.name.value|default:"" }}" required>
+                    {# name errors #}
+                    {% if form.name.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.name.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
                   </div>
 
                   <!-- Description input -->
@@ -70,86 +87,20 @@
                       <button type="button" class="btn btn-warning btn-sm" id="preview-btn">Show Preview</button>
                     </div>
                     <textarea id="id_description" name="description">{{ description_placeholder|default:"" }}</textarea>
+                    {# description errors #}
+                    {% if form.description.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.description.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
                   </div>
 
-                  <!-- Next button (to test cases tab) -->
+                  <!-- Create button -->
                   <div class="pull-right">
-                    <button type="button" class="btn btn-sm btn-success" onclick="$('#pill-test-cases-tab').tab('show')">Next</button>
+                    <button type="submit" class="btn btn-sm btn-success">Create</button>
                   </div>
-                </div>
-
-                <!-- Second tab (Test cases) -->
-                <div class="tab-pane fade pt-3" id="pill-test-cases" role="tabpanel" aria-labelledby="pill-test-cases-tab">
-                  {{ testcase_formset.management_form }}
-                  {{ testcase_formset.empty_form }}
-                  <h4>Sample Test Cases</h4>
-
-                  <div class="row">
-                    <h6>Test Case 1</h6>
-                    <div class="col-3">
-                      <div class="form-group">
-                        <label for="first-name-column">Input</label>
-                        <textarea rows="4" id="first-name-column" class="form-control" placeholder="First Name"></textarea>
-                      </div>
-                    </div>
-
-                    <div class="col-3">
-                      <div class="form-group">
-                        <label for="last-name-column">Output</label>
-                        <textarea rows="4" id="last-name-column" class="form-control" placeholder="Last Name"></textarea>
-                      </div>
-                    </div>
-
-                    <div class="col-3">
-                      <div class="form-group">
-                        <label for="id_tc-1-time_limit">Time Limit (ms)</label>
-                        <input type="number" class="form-control" name="tc-1-time_limit" min="0" id="id_tc-1-time_limit" value="1000">
-                      </div>
-                      <div class="form-group">
-                        <label for="id_tc-1-memory_limit">Memory Limit (KB)</label>
-                        <input type="number" class="form-control" name="tc-1-memory_limit" min="0" id="id_tc-1-memory_limit" value="1000">
-                      </div>
-                    </div>
-
-                    <div class="col-3">
-                      <div class="form-group">
-                        <label for="id_tc-1-marks">Score</label>
-                        <input type="number" class="form-control" name="tc-1-marks" min="0" id="id_tc-1-marks" value="5">
-                      </div>
-                      <div class="form-group">
-                        <label>Test</label>
-                        <div class="form-check">
-                          <div class="checkbox">
-                            <input type="checkbox" id="checkbox5" class="form-check-input" checked="" control-id="ControlID-35">
-                            <label for="checkbox5">Sample</label>
-                          </div>
-                          <div class="checkbox">
-                            <input type="checkbox" id="checkbox5" class="form-check-input" checked="" control-id="ControlID-35">
-                            <label for="checkbox5">Hidden</label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  <!-- Navigation buttons -->
-                  <div class="pull-right">
-                    <button type="button" class="btn btn-sm btn-secondary" onclick="$('#pill-description-tab').tab('show')">Previous</button>
-                    <button type="button" class="btn btn-sm btn-success" onclick="$('#pill-languages-tab').tab('show')">Next</button>
-                  </div>
-                </div>
-
-                <!-- Second tab (Languages) -->
-                <div class="tab-pane fade pt-3" id="pill-languages" role="tabpanel" aria-labelledby="pill-languages-tab">
-                  <h5>Work in progress! 3</h5>
-
-                  <!-- Navigation buttons -->
-                  <div class="pull-right">
-                    <button type="button" class="btn btn-sm btn-secondary" onclick="$('#pill-test-cases-tab').tab('show')">Previous</button>
-                    <button type="button" class="btn btn-sm btn-success">Submit</button>
-                  </div>
-
                 </div>
 
               </div>
@@ -159,7 +110,6 @@
         </div>
       </div>
     </div>
-
   </div>
 {% endblock %}
 
@@ -169,25 +119,82 @@
   <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
   <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
 
+  <!-- Configure and initialize SimpleMDE -->
   <script>
+      const previewButton = $("#preview-btn");
+
+      // initialize simpleMDE
       let simplemde = new SimpleMDE({
           element: document.getElementById("id_description"),
           toolbar: false,
       });
 
-      const previewButton = $("#preview-btn");
-
+      // toggle preview on button click
       previewButton.click(function () {
-          if (simplemde.isPreviewActive()) {
+          if (simplemde.isPreviewActive())
               previewButton.text("Show Preview")
-          } else {
+          else
               previewButton.text("Show Markdown")
-          }
-
           simplemde.togglePreview();
       });
-
   </script>
 
+  <!-- TestCase dynamic formset management script -->
+  <script>
+      const testCasesContainer = $("#test-cases-container");
+      const emptyTestCaseRow = $("#empty-test-case-row");
+      const totalFormsInput = $("#id_tc-TOTAL_FORMS");
+      let totalForms = totalFormsInput.val();
+
+      // function to update all prefixes (internal test cases only as sample test case is always 0)
+      const updatePrefixes = () => {
+          const regex = RegExp(`tc-(\\d)-`, 'g');
+          testCasesContainer.children().each((idx, tcRow) => {
+              $(tcRow).html($(tcRow).html().replaceAll(regex, `tc-${idx + 1}-`));
+              $("#tc-" + (idx + 1) + "-label").html(idx + 1); // update label
+          });
+      };
+
+      // add test case row button clicked
+      $("#addTestCase-btn").click(() => {
+          // increment totalForms
+          totalForms++;
+          totalFormsInput.val(totalForms);
+
+          // clone empty test-case-row
+          const cloned = emptyTestCaseRow.clone();
+
+          // remove id, style
+          cloned.removeAttr('id style');
+
+          // update predix
+          $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+
+          // append to container
+          testCasesContainer.append(cloned);
+      });
+
+      // remove test case clicked
+      const removeClicked = (btn) => {
+          // decrement total forms
+          totalForms--;
+          totalFormsInput.val(totalForms);
+
+          // get the parent div
+          const toRemove = $(btn).parent().parent();
+
+          // remove and update prefixes
+          toRemove.fadeOut('slow', () => {
+              toRemove.remove();
+              updatePrefixes();
+          });
+          return false;
+      };
+  </script>
+
+  <!-- Code Snippet dynamic formset management script -->
+  <script>
+
+  </script>
 
 {% endblock %}

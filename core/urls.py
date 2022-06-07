@@ -33,9 +33,11 @@ urlpatterns = [
     path('qb/create/', question_banks.create_question_bank, name='create-question-bank'),
     path('qb/update/<int:question_bank_id>', question_banks.update_question_bank, name='update-question-bank'),
     path('qb/details/<int:question_bank_id>/', question_banks.question_bank_details, name='question-bank-details'),
+    path('api/update-qb-shared-with/', question_banks.update_qb_shared_with, name='update-qb-shared-with'),  # ajax
 
     # code questions
-    path('code-question/create/', question_banks.create_code_question, name='create-code-question'),
-    path('api/update-qb-shared-with/', question_banks.update_qb_shared_with, name='update-qb-shared-with'),  # ajax
+    path('code-question/create/<str:parent>/<int:parent_id>/', question_banks.create_code_question, name='create-code-question'),  # step 1
+    path('code-question/<int:code_question_id>/update-test-cases/', question_banks.update_test_cases, name='update-test-cases'),  # step 2
+    path('code-question/<int:code_question_id>/update-languages/', question_banks.update_languages, name='update-languages'),  # step 3
 
 ]

@@ -1,0 +1,80 @@
+<div class="row test-case-row"
+     {% if hidden %}id="empty-test-case-row" style="display:none"{% endif %}
+     {% if form.DELETE.value %}style="display:none"{% endif %}
+>
+
+  {# if id is not None, this is an existing row #}
+  {% if form.id.value != None %}
+    <input type="hidden" name="tc-{{ prefix|default:"__prefix__" }}-id" value="{{ form.id.value }}" id="id_tc-{{ prefix|default:"__prefix__" }}-id">
+    <input type="checkbox" style="visibility:hidden" class="delete-checkbox" name="tc-{{ prefix|default:"__prefix__" }}-DELETE"
+           id="id_tc-{{ prefix|default:"__prefix__" }}-DELETE" {% if form.DELETE.value %}checked{% endif %}>
+  {% endif %}
+
+  <!-- Label and delete button row -->
+  {% if not sample %}
+    <div class="d-flex justify-content-between align-items-center">
+      <h6>Test Case <span style="display:none" id="tc-{{ prefix|default:"__prefix__" }}-label">{{ prefix|default:"__prefix__" }}</span></h6>
+      <button type="button" class="btn btn-sm btn-danger float-end justify-content-center d-flex align-items-center"
+              onclick="removeClicked(this, {% if form.id.value != None %}true{% else %}false{% endif %});"><i
+              class="fa-solid fa-xmark"></i></button>
+    </div>
+  {% endif %}
+
+  <!-- stdin input -->
+  <div class="col-3">
+    <div class="form-group">
+      <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdin">Input</label>
+      <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdin" id="id_tc-{{ prefix|default:"__prefix__" }}-stdin" rows="4"
+                class="form-control">{{ form.stdin.value|default:"" }}</textarea>
+    </div>
+  </div>
+
+  <!-- stdout input -->
+  <div class="col-3">
+    <div class="form-group">
+      <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdout">Output</label>
+      <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdout" id="id_tc-{{ prefix|default:"__prefix__" }}-stdout" rows="4"
+                class="form-control">{{ form.stdout.value|default:"" }}</textarea>
+    </div>
+  </div>
+
+  <!-- time and memory limit inputs -->
+  <div class="col-3">
+    <div class="form-group">
+      <label for="id_tc-{{ prefix|default:"__prefix__" }}-time_limit">Time Limit (ms)</label>
+      <input name="tc-{{ prefix|default:"__prefix__" }}-time_limit" id="id_tc-{{ prefix|default:"__prefix__" }}-time_limit" type="number"
+             class="form-control" min="0" value="{{ form.time_limit.value|default:1000 }}">
+    </div>
+    <div class="form-group">
+      <label for="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit">Memory Limit (KB)</label>
+      <input name="tc-{{ prefix|default:"__prefix__" }}-memory_limit" id="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit" type="number"
+             class="form-control" min="0" value="{{ form.memory_limit.value|default:1000 }}">
+    </div>
+  </div>
+
+  <!-- score and sample/hidden checkboxes input -->
+  <div class="col-3">
+    <div class="form-group">
+      <label for="id_tc-{{ prefix|default:"__prefix__" }}-score">Score</label>
+      <input name="tc-{{ prefix|default:"__prefix__" }}-score" id="id_tc-{{ prefix|default:"__prefix__" }}-score" type="number" class="form-control"
+             min="0" value="{{ form.score.value|default:5 }}">
+    </div>
+
+    <div class="form-group" {% if sample %} style="visibility:hidden"{% endif %}>
+      <label>Options</label>
+      <div class="form-check">
+        <div class="checkbox">
+          <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-hidden" id="id_tc-{{ prefix|default:"__prefix__" }}-hidden"
+                 class="form-check-input" {% if form.hidden.value %}checked{% endif %}>
+          <label for="id_tc-{{ prefix|default:"__prefix__" }}-hidden">Hidden</label>
+        </div>
+        <div class="checkbox" style="visibility:hidden">
+          <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-sample" id="id_tc-{{ prefix|default:"__prefix__" }}-sample"
+                 class="form-check-input" {% if sample %}checked{% endif %}>
+          <label for="id_tc-{{ prefix|default:"__prefix__" }}-sample">Sample</label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <hr>
+</div>

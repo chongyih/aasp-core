@@ -1,0 +1,177 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}Test Cases{% endblock %}
+
+{% block styles %}
+  <link rel="stylesheet" href="{% static 'vendors/choices.js/choices.min.css' %}"/>
+  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
+{% endblock %}
+
+{% block content %}
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-12 order-md-1 order-last pb-3">
+          <h2>Update Test Cases</h2>
+          {% if code_question.question_bank != None %}
+            <h5 class="text-muted">For {{ code_question.name }} in question bank: {{ code_question.question_bank.name }}</h5>
+          {% else %}
+            <h5 class="text-muted">For {{ code_question.name }} in assessment: {{ code_question.assessment.name }}</h5>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab group row -->
+    <div class="row">
+      <div class="col-10 m-2">
+        <div class="card">
+          <div class="card-body">
+
+            <!-- Tabs (Not clickable) -->
+            <ul class="nav nav-pills mb-3" id="pills-tab">
+              <li class="nav-item">
+                <p class="nav-link" id="pill-description-tab">Step 1: Description</p>
+              </li>
+              <li class="nav-item">
+                <p class="nav-link active" id="pill-test-cases-tab">Step 2: Test Cases</p>
+              </li>
+              <li class="nav-item">
+                <p class="nav-link" id="pill-languages-tab">Step 3: Languages</p>
+              </li>
+            </ul>
+
+            <!-- Tab contents -->
+            <form method="POST">
+              {% csrf_token %}
+
+              <div class="pt-3">
+                <!-- Tab two error -->
+                <div class="alert alert-danger" id="tab-two-error" style="display:none;">Please fill up all fields!</div>
+
+                {% for error in testcase_formset.errors %}
+                  {{ error }}
+                  <div class="alert alert-danger">Please fill up all fields!</div>
+                {% endfor %}
+
+                <h4>Test Cases</h4>
+                <!-- test cases & code snippet management forms -->
+                {{ testcase_formset.management_form }}
+
+                <!-- Sample Test case -->
+                <h6>Sample Test Case</h6>
+                {% include 'question_banks/snippets/test-case-row.html' with sample=True prefix="0" form=testcase_formset.0 %}
+
+                <!-- this div holds all internal test case rows -->
+                <h6>Internal Test Cases</h6>
+                <div id="test-cases-container" class="mt-4">
+                  {% for f in testcase_formset|slice:"1:" %}
+                    {% include 'question_banks/snippets/test-case-row.html' with prefix=forloop.counter form=f %}
+                  {% endfor %}
+                </div>
+
+                <!-- buttons -->
+                <div>
+                  <button type="button" class="btn btn-sm btn-warning" id="addTestCase-btn">Add Test Case</button>
+                  <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save Test Cases</button>
+                </div>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- hidden test-case-row -->
+    {% include 'question_banks/snippets/test-case-row.html' with form=testcase_formset.empty_form hidden=True %}
+
+  </div>
+{% endblock %}
+
+{% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+  <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
+
+  <!-- TestCase dynamic formset management script -->
+  <script>
+      const testCasesContainer = $("#test-cases-container");
+      const emptyTestCaseRow = $("#empty-test-case-row");
+      const totalFormsInput = $("#id_tc-TOTAL_FORMS");
+      let totalForms = totalFormsInput.val();
+
+      // function to update all prefixes (internal test cases only as sample test case is always 0)
+      const updatePrefixes = () => {
+          const regex = RegExp(`tc-(\\d)-`, 'g');
+          testCasesContainer.children().each((idx, tcRow) => {
+              $(tcRow).html($(tcRow).html().replaceAll(regex, `tc-${idx + 1}-`));
+              $("#tc-" + (idx + 1) + "-label").html(idx + 1); // update label
+          });
+      };
+
+      // add test case row button clicked
+      $("#addTestCase-btn").click(() => {
+          // increment totalForms
+          totalForms++;
+          totalFormsInput.val(totalForms);
+
+          // clone empty test-case-row
+          const cloned = emptyTestCaseRow.clone();
+
+          // remove id, style
+          cloned.removeAttr('id style');
+
+          // update predix
+          $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+
+          // append to container
+          testCasesContainer.append(cloned);
+      });
+
+      // remove new row
+      const removeClicked = (btn, in_db) => {
+          // get the parent div
+          const toRemove = $(btn).parent().parent();
+
+          if (in_db) {
+              // simply check the checkbox and hide the row
+              toRemove.fadeOut('slow', () => {
+                  const delete_checkbox = $(toRemove).children(".delete-checkbox").first();
+                  $(delete_checkbox).prop('checked', true);
+              });
+          } else {
+              // decrement totalForms
+              totalForms--;
+              totalFormsInput.val(totalForms);
+
+              // remove and update prefixes
+              toRemove.fadeOut('slow', () => {
+                  toRemove.remove();
+                  updatePrefixes();
+              });
+              return false;
+          }
+      }
+
+      // remove test case clicked
+      const removeClicked2 = (btn) => {
+          // decrement total forms
+          totalForms--;
+          totalFormsInput.val(totalForms);
+
+          // get the parent div
+          const toRemove = $(btn).parent().parent();
+
+          // remove and update prefixes
+          toRemove.fadeOut('slow', () => {
+              toRemove.remove();
+              updatePrefixes();
+          });
+          return false;
+      };
+  </script>
+
+{% endblock %}

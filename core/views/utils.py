@@ -79,3 +79,14 @@ def check_permissions_qb(question_bank, user):
     if user in question_bank.shared_with.all():
         return 1
     return 0
+
+
+def check_permissions_code_question(code_question, user):
+    """
+    Returns if a user can make changes to a code question
+    """
+    if code_question.question_bank and code_question.question_bank.owner != user:
+        return False
+    if code_question.assessment and check_permissions(code_question.assessment.course, user) == 0:
+        return False
+    return True

@@ -1,7 +1,7 @@
 from django.forms import models
 
 from core.models import QuestionBank
-from core.models.questions import TestCase
+from core.models.questions import TestCase, CodeQuestion
 
 
 class QuestionBankForm(models.ModelForm):
@@ -10,8 +10,14 @@ class QuestionBankForm(models.ModelForm):
         fields = ['name', 'description', 'private']
 
 
+class CodeQuestionForm(models.ModelForm):
+    class Meta:
+        model = CodeQuestion
+        fields = ['name', 'description', 'question_bank', 'assessment']
+
+
 class TestCaseForm(models.ModelForm):
     class Meta:
         model = TestCase
-        fields = ['stdin', 'stdout', 'time_limit', 'memory_limit', 'marks', 'hidden', 'sample']
+        fields = ['stdin', 'stdout', 'time_limit', 'memory_limit', 'score', 'hidden', 'sample']
 

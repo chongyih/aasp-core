@@ -110,7 +110,7 @@
               <div class="tab-pane fade show active" id="pill-code-questions" role="tabpanel" aria-labelledby="pill-code-questions-tab">
 
                 <!-- Add new code question button -->
-                <a class="btn btn-success" href="{% url 'create-code-question' %}?qb_id={{ question_bank.id }}">New Code Question</a>
+                <a class="btn btn-success" href="{% url 'create-code-question' parent='qb' parent_id=question_bank.id %}">New Code Question</a>
 
                 <!-- Code questions table -->
                 <div class="table-responsive">
@@ -118,7 +118,7 @@
                     <thead>
                     <tr>
                       <th>Name</th>
-                      <th>Description</th>
+                      <th>No. of Test Cases</th>
                       <th>Max Marks</th>
                       <th>Tags</th>
                       <th>Actions</th>
@@ -129,6 +129,19 @@
                       <tr>
                         <td colspan="5" class="text-center">No code questions found</td>
                       </tr>
+                    {% else %}
+                      {% for q in question_bank.codequestion_set.all %}
+                      <tr>
+                        <td>{{ q.name }}</td>
+                        <td>{{ q.testcase_set.count }}</td>
+                        <td>TODO</td>
+                        <td>TODO</td>
+                        <td>
+                          <a href="#" class="btn btn-sm btn-primary">Edit</a>
+                          <a href="#" class="btn btn-sm btn-danger">Delete</a>
+                        </td>
+                      </tr>
+                      {% endfor %}
                     {% endif %}
                     </tbody>
                   </table>

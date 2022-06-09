@@ -6,7 +6,7 @@ from django.forms import formset_factory, inlineformset_factory
 from django.http import HttpResponseRedirect, JsonResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 
-from core.forms.question_banks import QuestionBankForm, TestCaseForm, CodeQuestionForm
+from core.forms.question_banks import QuestionBankForm, CodeQuestionForm
 from core.models import QuestionBank, Assessment, User, CodeQuestion
 from core.models.questions import TestCase, CodeSnippet, Language
 from core.views.utils import check_permissions_qb, check_permissions, check_permissions_code_question
@@ -237,5 +237,34 @@ def update_test_cases(request, code_question_id):
 
 
 def update_languages(request, code_question_id):
-    return redirect('dashboard')
+    # get CodeQuestion instance
+    code_question = get_object_or_404(CodeQuestion, id=code_question_id)
 
+    # check permissions
+    if not check_permissions_code_question(code_question, request.user):
+        messages.warning(request, "You do not have permissions to perform that action.")
+        return redirect('dashboard')
+
+    # prepare formset
+    CodeSnippetFormset = inlineformset_factory(CodeQuestion, CodeSnippet, extra=0, fields=['language', 'code'])
+    code_snippet_formset = CodeSnippetFormset(prefix='cs', instance=code_question)
+
+    # process POST requests
+    if request.method == "POST":
+        code_snippet_formset = CodeSnippetFormset(request.POST, instance=code_question, prefix='cs')
+        if code_snippet_formset.is_valid():
+            print("valid form")
+            code_snippet_formset.save()
+            messages.success(request, "Code Snippets saved!")
+            return redirect('question-bank-details', question_bank_id=code_question.question_bank.id)
+        else:
+            print("invalid form!")
+
+    context = {
+        'code_question': code_question,
+        'code_snippet_formset': code_snippet_formset,
+        'languages': Language.objects.all(),
+        'existing_languages': code_question.codesnippet_set.all().values_list('language', flat=True).distinct()
+    }
+
+    return render(request, 'code_questions/update-languages.html', context)

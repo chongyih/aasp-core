@@ -15,9 +15,3 @@ class CodeQuestionForm(models.ModelForm):
         model = CodeQuestion
         fields = ['name', 'description', 'question_bank', 'assessment']
 
-
-class TestCaseForm(models.ModelForm):
-    class Meta:
-        model = TestCase
-        fields = ['stdin', 'stdout', 'time_limit', 'memory_limit', 'score', 'hidden', 'sample']
-

@@ -1,0 +1,191 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}Allowed Languages{% endblock %}
+
+{% block styles %}
+{% endblock %}
+
+{% block content %}
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-12 order-md-1 order-last pb-3">
+          <h2>Update Allowed Languages</h2>
+          {% if code_question.question_bank != None %}
+            <h5 class="text-muted">For {{ code_question.name }} in question bank: {{ code_question.question_bank.name }}</h5>
+          {% else %}
+            <h5 class="text-muted">For {{ code_question.name }} in assessment: {{ code_question.assessment.name }}</h5>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab group row -->
+    <div class="row">
+      <div class="col-10 m-2">
+        <div class="card">
+          <div class="card-body">
+
+            <!-- Tabs (Not clickable) -->
+            <ul class="nav nav-pills mb-3">
+              <li class="nav-item">
+                <p class="nav-link">Step 1: Description</p>
+              </li>
+              <li class="nav-item">
+                <p class="nav-link">Step 2: Test Cases</p>
+              </li>
+              <li class="nav-item">
+                <p class="nav-link active" id="pill-languages-tab">Step 3: Languages</p>
+              </li>
+            </ul>
+
+            <!-- Tab contents -->
+            <div class="pt-3">
+
+              <h4>Allowed Languages</h4>
+              <p>
+                Select the programming languages in which candidates can write their code for a programming question.
+              </p>
+
+              <!-- Languages checkboxes -->
+              <div class="form-group row">
+                {% for lang in languages %}
+                  <div class="checkbox col-4">
+                    <input type="checkbox" id="lang-{{ lang.id }}" data-lang-id="{{ lang.id }}" data-lang-name="{{ lang.name }}"
+                           class="form-check-input language-checkbox"
+                           {% if lang.id in existing_languages %}checked data-existing="true"
+                           {% else %}
+                           data-existing="false"
+                           {% endif %}
+                    >
+                    <label for="lang-{{ lang.id }}">{{ lang.name }}</label>
+                  </div>
+                {% endfor %}
+              </div>
+
+              <!-- mytodo: Form errors -->
+              {% for error in code_snippet_formset.errors %}
+                {{ error }}
+                <div class="alert alert-danger">Please fill up all fields!</div>
+              {% endfor %}
+
+              <form method="POST">
+                {% csrf_token %}
+
+                <!-- code snippet management form -->
+                {{ code_snippet_formset.management_form }}
+
+                <!-- this div holds all code snippet rows -->
+                <h5 class="mt-5">Code Snippets</h5>
+
+                <div id="code-snippets-container" class="mt-4">
+                  {# have existing code snippets #}
+                  {% for f in code_snippet_formset %}
+                    {% include 'code_questions/snippets/code-snippet-row.html' with prefix=forloop.counter0 form=f lang_id=f.language.value %}
+                  {% endfor %}
+                </div>
+
+                <!-- buttons -->
+                <div>
+                  <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save Languages</button>
+                </div>
+
+              </form>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- hidden code-snippet-row -->
+    {% include 'code_questions/snippets/code-snippet-row.html' with form=code_snippet_formset.empty_form hidden=True prefix=None %}
+
+  </div>
+{% endblock %}
+
+{% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+
+  <!-- Checkbox script -->
+  <script>
+      const snippetsContainer = $("#code-snippets-container");
+      const emptySnippetRow = $("#empty-code-snippet-row");
+      const totalFormsInput = $("#id_cs-TOTAL_FORMS");
+      let totalForms = totalFormsInput.val();
+
+      $(".language-checkbox").change(function () {
+          const checkbox = $(this);
+          const existing = checkbox.data("existing");
+          const langId = checkbox.data("lang-id");
+          const langName = checkbox.data("lang-name");
+
+          // function to update all prefixes (internal test cases only as sample test case is always 0)
+          const updatePrefixes = () => {
+              const regex = RegExp(`cs-(\\d)-`, 'g');
+
+              snippetsContainer.children().each((idx, tcRow) => {
+                  console.log(idx);
+                  console.log(tcRow);
+                  $(tcRow).html($(tcRow).html().replaceAll(regex, `cs-${idx}-`));
+              });
+          };
+
+          if (this.checked) { // checkbox was checked (add)
+              console.log("checked (add)");
+
+              if (existing) {
+                  const toShow = $("#code-snippets-container #code-snippet-row-" + langId);
+                  toShow.fadeIn(300, () => {
+                      const delete_checkbox = $(toShow).children(".delete-checkbox").first();
+                      $(delete_checkbox).prop('checked', false);
+                  });
+              } else {
+                  // increment totalForms
+                  totalForms++;
+                  totalFormsInput.val(totalForms);
+
+                  // clone empty snippet row
+                  const cloned = emptySnippetRow.clone();
+
+                  // remove id, style
+                  cloned.removeAttr('id style');
+
+                  // set id, label and language-id
+                  cloned.attr("id", `code-snippet-row-${langId}`);
+                  cloned.find(".lang-label").first().html(langName);
+                  cloned.find(".lang-id").first().val(langId);
+
+                  // update prefix
+                  $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+
+                  // append to container
+                  snippetsContainer.append(cloned);
+              }
+
+          } else {  // checkbox was unchecked (remove)
+              console.log("unchecked (remove)");
+              const toRemove = $("#code-snippets-container #code-snippet-row-" + langId);
+
+              if (existing) {
+                  // simply check the checkbox and hide the row
+                  toRemove.fadeOut(300, () => {
+                      const delete_checkbox = $(toRemove).children(".delete-checkbox").first();
+                      $(delete_checkbox).prop('checked', true);
+                  });
+              } else {
+                  // decrement totalForms
+                  totalForms--;
+                  totalFormsInput.val(totalForms);
+
+                  // remove and update prefixes
+                  toRemove.fadeOut('slow', () => {
+                      toRemove.remove();
+                      updatePrefixes();
+                  });
+              }
+          }
+      });
+  </script>
+{% endblock %}

@@ -60,7 +60,7 @@ class CodeSnippet(models.Model):
 
     code_question = models.ForeignKey(CodeQuestion, null=False, blank=False, on_delete=models.CASCADE)
     language = models.ForeignKey(Language, null=False, blank=False, on_delete=models.CASCADE)
-    code = models.TextField(blank=False, null=False)
+    code = models.TextField(blank=True, null=True)
 
 
 class TestCase(models.Model):
@@ -69,6 +69,7 @@ class TestCase(models.Model):
       - Sample: displayed to the user together with the problem description, has no score.
       - Internal: input/output are hidden by default, has score.
     """
+
     class Meta:
         pass
 
@@ -90,4 +91,3 @@ class CodeTemplate(models.Model):
     language = models.ForeignKey(Language, null=False, blank=False, on_delete=models.CASCADE)
     name = models.CharField(max_length=50, blank=False, null=False)
     code = models.TextField(blank=False, null=False)
-

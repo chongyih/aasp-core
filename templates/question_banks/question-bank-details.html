@@ -119,7 +119,7 @@
                     <tr>
                       <th>Name</th>
                       <th>No. of Test Cases</th>
-                      <th>Max Marks</th>
+                      <th>Max Score</th>
                       <th>Tags</th>
                       <th>Actions</th>
                     </tr>
@@ -131,16 +131,28 @@
                       </tr>
                     {% else %}
                       {% for q in question_bank.codequestion_set.all %}
-                      <tr>
-                        <td>{{ q.name }}</td>
-                        <td>{{ q.testcase_set.count }}</td>
-                        <td>TODO</td>
-                        <td>TODO</td>
-                        <td>
-                          <a href="#" class="btn btn-sm btn-primary">Edit</a>
-                          <a href="#" class="btn btn-sm btn-danger">Delete</a>
-                        </td>
-                      </tr>
+                        <tr>
+                          <td>{{ q.name }}</td>
+                          <td>{{ q.testcase_set.count }}</td>
+                          <td>TODO</td>
+                          <td>TODO</td>
+                          <td>
+                            <a href="#" class="btn btn-sm btn-success">View</a>
+                            <div class="btn-group">
+                              <div class="dropdown">
+                                <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true"
+                                        aria-expanded="false">Edit
+                                </button>
+                                <div class="dropdown-menu">
+                                  <a class="dropdown-item" href="#">Description</a>
+                                  <a class="dropdown-item" href="{% url 'update-test-cases' code_question_id=q.id %}">Test Cases</a>
+                                  <a class="dropdown-item" href="{% url 'update-languages' code_question_id=q.id %}">Languages</a>
+                                </div>
+                              </div>
+                            </div>
+                            <a href="#" class="btn btn-sm btn-danger">Delete</a>
+                          </td>
+                        </tr>
                       {% endfor %}
                     {% endif %}
                     </tbody>

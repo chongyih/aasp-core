@@ -4,8 +4,6 @@
 {% block title %}New Code Question{% endblock %}
 
 {% block styles %}
-  <link rel="stylesheet" href="{% static 'vendors/choices.js/choices.min.css' %}"/>
-  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
 {% endblock %}
 
@@ -30,22 +28,16 @@
         <div class="card">
           <div class="card-body">
 
-            <!-- Tabs -->
-            <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+            <!-- Tabs (Not clickable) -->
+            <ul class="nav nav-pills mb-3">
               <li class="nav-item">
-                <a class="nav-link active" id="pill-description-tab" data-bs-toggle="pill" href="#pill-description" role="tab"
-                   aria-controls="pill-description-tab"
-                   aria-selected="true">Step 1: Description</a>
+                <p class="nav-link active">Step 1: Description</p>
               </li>
               <li class="nav-item">
-                <a class="nav-link" id="pill-test-cases-tab" data-bs-toggle="pill" href="#pill-test-cases" role="tab"
-                   aria-controls="pill-test-cases-tab"
-                   aria-selected="false">Step 2: Test Cases</a>
+                <p class="nav-link">Step 2: Test Cases</p>
               </li>
               <li class="nav-item">
-                <a class="nav-link" id="pill-languages-tab" data-bs-toggle="pill" href="#pill-languages" role="tab"
-                   aria-controls="pill-languages-tab"
-                   aria-selected="false">Step 3: Languages</a>
+                <p class="nav-link" id="pill-languages-tab">Step 3: Languages</p>
               </li>
             </ul>
 
@@ -99,7 +91,7 @@
 
                   <!-- Create button -->
                   <div class="pull-right">
-                    <button type="submit" class="btn btn-sm btn-success">Create</button>
+                    <button type="submit" class="btn btn-sm btn-success">Save and Continue</button>
                   </div>
                 </div>
 
@@ -115,8 +107,6 @@
 
 {% block js %}
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
-  <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
-  <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
   <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
 
   <!-- Configure and initialize SimpleMDE -->

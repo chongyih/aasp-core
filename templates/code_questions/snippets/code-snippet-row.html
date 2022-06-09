@@ -1,0 +1,26 @@
+<div class="row code-snippet-row"
+        {% if hidden %}
+     id="empty-code-snippet-row" style="display:none"
+        {% else %}
+     id="code-snippet-row-{{ lang_id|default_if_none:"0" }}"
+        {% endif %}
+     {% if form.DELETE.value %}style="display:none"{% endif %}
+>
+
+  <!-- hidden fields -->
+  <input type="hidden" name="cs-{{ prefix|default_if_none:"__prefix__" }}-language" id="id_cs-{{ prefix|default_if_none:"__prefix__" }}-language"
+         value="{{ lang_id }}" class="lang-id"/>
+  <input type="checkbox" style="display:none" name="cs-{{ prefix|default_if_none:"__prefix__" }}-DELETE"
+         id="id_cs-{{ prefix|default_if_none:"__prefix__" }}-DELETE" class="delete-checkbox" {% if form.DELETE.value %}checked{% endif %}>
+  {% if form.id.value != None %}
+    <input type="hidden" name="cs-{{ prefix|default_if_none:"__prefix__" }}-id" value="{{ form.id.value }}"
+           id="id_cs-{{ prefix|default_if_none:"__prefix__" }}-id">
+  {% endif %}
+
+  <!-- code input -->
+  <div class="form-group">
+    <label for="id_cs-{{ prefix|default_if_none:"__prefix__" }}-code" class="lang-label">{{ form.instance.language }}</label>
+    <textarea name="cs-{{ prefix|default_if_none:"__prefix__" }}-code" cols="40" rows="10" id="id_cs-{{ prefix|default_if_none:"__prefix__" }}-code"
+              spellcheck="false" class="form-control">{{ form.code.value|default_if_none:"" }}</textarea>
+  </div>
+</div>

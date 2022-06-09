@@ -4,8 +4,6 @@
 {% block title %}Test Cases{% endblock %}
 
 {% block styles %}
-  <link rel="stylesheet" href="{% static 'vendors/choices.js/choices.min.css' %}"/>
-  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
 {% endblock %}
 
 {% block content %}
@@ -30,12 +28,12 @@
           <div class="card-body">
 
             <!-- Tabs (Not clickable) -->
-            <ul class="nav nav-pills mb-3" id="pills-tab">
+            <ul class="nav nav-pills mb-3">
               <li class="nav-item">
-                <p class="nav-link" id="pill-description-tab">Step 1: Description</p>
+                <p class="nav-link">Step 1: Description</p>
               </li>
               <li class="nav-item">
-                <p class="nav-link active" id="pill-test-cases-tab">Step 2: Test Cases</p>
+                <p class="nav-link active">Step 2: Test Cases</p>
               </li>
               <li class="nav-item">
                 <p class="nav-link" id="pill-languages-tab">Step 3: Languages</p>
@@ -47,9 +45,7 @@
               {% csrf_token %}
 
               <div class="pt-3">
-                <!-- Tab two error -->
-                <div class="alert alert-danger" id="tab-two-error" style="display:none;">Please fill up all fields!</div>
-
+                <!-- mytodo: do errors for specific fields -->
                 {% for error in testcase_formset.errors %}
                   {{ error }}
                   <div class="alert alert-danger">Please fill up all fields!</div>
@@ -61,20 +57,20 @@
 
                 <!-- Sample Test case -->
                 <h6>Sample Test Case</h6>
-                {% include 'question_banks/snippets/test-case-row.html' with sample=True prefix="0" form=testcase_formset.0 %}
+                {% include 'code_questions/snippets/test-case-row.html' with sample=True prefix="0" form=testcase_formset.0 %}
 
                 <!-- this div holds all internal test case rows -->
                 <h6>Internal Test Cases</h6>
                 <div id="test-cases-container" class="mt-4">
                   {% for f in testcase_formset|slice:"1:" %}
-                    {% include 'question_banks/snippets/test-case-row.html' with prefix=forloop.counter form=f %}
+                    {% include 'code_questions/snippets/test-case-row.html' with prefix=forloop.counter form=f %}
                   {% endfor %}
                 </div>
 
                 <!-- buttons -->
                 <div>
                   <button type="button" class="btn btn-sm btn-warning" id="addTestCase-btn">Add Test Case</button>
-                  <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save Test Cases</button>
+                  <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save and Continue</button>
                 </div>
               </div>
 
@@ -86,15 +82,13 @@
     </div>
 
     <!-- hidden test-case-row -->
-    {% include 'question_banks/snippets/test-case-row.html' with form=testcase_formset.empty_form hidden=True %}
+    {% include 'code_questions/snippets/test-case-row.html' with form=testcase_formset.empty_form hidden=True %}
 
   </div>
 {% endblock %}
 
 {% block js %}
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
-  <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
-  <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
 
   <!-- TestCase dynamic formset management script -->
   <script>
@@ -124,7 +118,7 @@
           // remove id, style
           cloned.removeAttr('id style');
 
-          // update predix
+          // update prefix
           $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
 
           // append to container
@@ -156,22 +150,6 @@
           }
       }
 
-      // remove test case clicked
-      const removeClicked2 = (btn) => {
-          // decrement total forms
-          totalForms--;
-          totalFormsInput.val(totalForms);
-
-          // get the parent div
-          const toRemove = $(btn).parent().parent();
-
-          // remove and update prefixes
-          toRemove.fadeOut('slow', () => {
-              toRemove.remove();
-              updatePrefixes();
-          });
-          return false;
-      };
   </script>
 
 {% endblock %}

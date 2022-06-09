@@ -107,12 +107,13 @@ def enrol_students_bulk(request):
 
             # generate User objects from contents of the csv file
             user_objects = []  # user accounts to be created
+            default_password = make_password(settings.DEFAULT_STUDENT_PASSWORD)
             for row in cleaned_rows:
                 # create only if account don't exist yet
                 if row[2] not in existing_usernames:
                     user_objects.append(
                         User(first_name=row[0], last_name=row[1], email=f"{row[2]}@E.NTU.EDU.SG", username=row[2],
-                             password=make_password(settings.DEFAULT_STUDENT_PASSWORD)))
+                             password=default_password))
 
             # bulk create with database
             created_users = User.objects.bulk_create(user_objects, ignore_conflicts=False)
@@ -123,15 +124,6 @@ def enrol_students_bulk(request):
             for k, v in course_groups.items():
                 course_group, _ = CourseGroup.objects.get_or_create(course=course, name=k)
                 course_group.students.add(*User.objects.filter(username__in=v))
-
-            # add to course (course group)
-            # all_users = created_users + existing_users
-            # for k, v in course_groups.items():
-            #     course_group, _ = CourseGroup.objects.get_or_create(course=course, name=k)
-            #
-            #     for user in all_users:
-            #         if user.username in v:
-            #             course_group.students.add(user)
 
             # success message
             msg = f"{len(created_users) + len(existing_users)} students enrolled successfully!"

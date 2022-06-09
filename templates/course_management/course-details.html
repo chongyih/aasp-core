@@ -1,5 +1,5 @@
 {% extends 'layouts/master-nav.html' %}
-{% load static %}
+{% load static utils %}
 
 {% block title %}{{ course }}{% endblock %}
 
@@ -178,12 +178,12 @@
                     </tr>
                     </thead>
                     <tbody>
-                    {% if students_filter.qs.count == 0 %}
+                    {% if students.count == 0 %}
                       <tr>
                         <td colspan="5" class="text-center">No students found!</td>
                       </tr>
                     {% else %}
-                      {% for student in students_filter.qs %}
+                      {% for student in students %}
                         <tr>
                           <td>{{ student.username }}</td>
                           <td>{{ student.first_name }}</td>
@@ -203,6 +203,43 @@
                     {% endif %}
                     </tbody>
                   </table>
+
+                  <!-- Pagination -->
+                  <div class="mt-4">
+                    <nav>
+                      <ul class="pagination pagination-primary justify-content-center">
+
+                        {% if students.has_previous %}
+                          <li class="page-item">
+                            <a class="page-link" href="?{% param_replace page=students.previous_page_number %}">Previous</a>
+                          </li>
+                        {% else %}
+                          <li class="page-item disabled">
+                            <a class="page-link">Previous</a>
+                          </li>
+                        {% endif %}
+
+                        {% for num in students.paginator.page_range %}
+                          {% if students.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                          {% elif num > students.number|add:'-3' and num < students.number|add:'+3' %}
+                            <li class="page-item"><a class="page-link" href="?{% param_replace page=num %}">{{ num }}</a></li>
+                          {% endif %}
+                        {% endfor %}
+
+                        {% if students.has_next %}
+                          <li class="page-item">
+                            <a class="page-link" href="?{% param_replace page=students.next_page_number %}">Next</a>
+                          </li>
+                        {% else %}
+                          <li class="page-item disabled">
+                            <a class="page-link">Next</a>
+                          </li>
+                        {% endif %}
+                      </ul>
+                    </nav>
+                  </div>
+
                 </div>
               </div>
 

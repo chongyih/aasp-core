@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Q
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -106,10 +107,21 @@ def course_details(request, course_id):
         'username')
     students_filter = CourseStudentFilter(course_groups, request.GET, queryset=all_students)
 
+    # paginate results
+    paginator = Paginator(students_filter.qs, 15)
+    page_num = request.GET.get('page', 1)
+    try:
+        students = paginator.page(page_num)
+    except PageNotAnInteger:
+        students = paginator.page(1)
+    except EmptyPage:
+        students = paginator.page(paginator.num_pages)
+
     context = {
         "course": course,
         "staff": staff,
         "students_filter": students_filter,
+        "students": students,
     }
 
     return render(request, 'course_management/course-details.html', context)

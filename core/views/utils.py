@@ -83,7 +83,9 @@ def check_permissions_qb(question_bank, user):
 
 def check_permissions_code_question(code_question, user):
     """
-    Returns if a user can make changes to a code question
+    Returns if a user can make changes to a code question.
+    True - Has permission (is the owner of the question bank, or course containing the assessment)
+    False - No permission
     """
     if code_question.question_bank and code_question.question_bank.owner != user:
         return False

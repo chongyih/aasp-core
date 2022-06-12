@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import auth, user_management, dashboards, course_management, question_banks
+from .views import auth, user_management, dashboards, course_management, question_banks, code_questions
 
 urlpatterns = [
     # global auth
@@ -34,9 +34,10 @@ urlpatterns = [
     path('qb/update/<int:question_bank_id>', question_banks.update_question_bank, name='update-question-bank'),
     path('qb/details/<int:question_bank_id>/', question_banks.question_bank_details, name='question-bank-details'),
     path('api/update-qb-shared-with/', question_banks.update_qb_shared_with, name='update-qb-shared-with'),  # ajax
+    path('api/delete-code-question/', question_banks.delete_code_question, name='delete-code-question'),  # ajax
 
     # code questions
-    path('code-question/create/<str:parent>/<int:parent_id>/', question_banks.create_code_question, name='create-code-question'),  # step 1
-    path('code-question/<int:code_question_id>/update-test-cases/', question_banks.update_test_cases, name='update-test-cases'),  # step 2
-    path('code-question/<int:code_question_id>/update-languages/', question_banks.update_languages, name='update-languages'),  # step 3
+    path('code-question/create/<str:parent>/<int:parent_id>/', code_questions.create_code_question, name='create-code-question'),  # step 1
+    path('code-question/<int:code_question_id>/update-test-cases/', code_questions.update_test_cases, name='update-test-cases'),  # step 2
+    path('code-question/<int:code_question_id>/update-languages/', code_questions.update_languages, name='update-languages'),  # step 3
 ]

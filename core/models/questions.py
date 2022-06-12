@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Sum
 
 from core.models import User, Assessment
 
@@ -38,7 +39,7 @@ class CodeQuestion(models.Model):
     description = models.TextField(blank=False, null=False)
 
     # foreign keys (either linked to a QuestionBank or Assessment instance)
-    question_bank = models.ForeignKey(QuestionBank, null=True, blank=True, on_delete=models.PROTECT)
+    question_bank = models.ForeignKey(QuestionBank, null=True, blank=True, on_delete=models.CASCADE)
     assessment = models.ForeignKey(Assessment, null=True, blank=True, on_delete=models.PROTECT)
 
     def clean(self):
@@ -52,6 +53,12 @@ class CodeQuestion(models.Model):
 
     def __str__(self):
         return self.name
+
+    def max_score(self):
+        total = self.testcase_set.all().aggregate(Sum('score')).get('score__sum')
+        if total is None:
+            total = 0
+        return total
 
 
 class CodeSnippet(models.Model):

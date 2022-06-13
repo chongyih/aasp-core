@@ -51,6 +51,48 @@ def create_code_question(request, parent, parent_id):
 
 
 @login_required()
+def update_code_question(request, code_question_id):
+    # get code question object
+    code_question = get_object_or_404(CodeQuestion, id=code_question_id)
+
+    # check permissions
+    if check_permissions_code_question(code_question, request.user) == 0:
+        if code_question.question_bank:
+            messages.warning(request, "You do not have permissions for this question bank.")
+            return redirect('view-question-banks')
+        else:
+            messages.warning(request, "You do not have permissions for this course.")
+            return redirect('view-courses')
+
+    # prepare form
+    form = CodeQuestionForm(instance=code_question)
+
+    # handle POST request
+    if request.method == "POST":
+        form = CodeQuestionForm(request.POST, instance=code_question)
+
+        if form.is_valid():
+            print("valid fomr")
+            form.save()
+            messages.success(request, "Code Question successfully updated! ✅")
+
+            if code_question.question_bank:
+                return redirect('question-bank-details', question_bank_id=code_question.question_bank.id)
+            else:
+                # mytodo: redirect to assessment
+                return redirect('')
+        else:
+            print("invalid form")
+
+    context = {
+        'code_question': code_question,
+        'form': form,
+    }
+
+    return render(request, 'code_questions/update-code-question.html', context)
+
+
+@login_required()
 def update_test_cases(request, code_question_id):
     # get CodeQuestion instance
     code_question = get_object_or_404(CodeQuestion, id=code_question_id)

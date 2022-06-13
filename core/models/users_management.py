@@ -46,7 +46,7 @@ class Course(models.Model):
 
     name = models.CharField(max_length=150, blank=False, null=False)
     code = models.CharField(max_length=20, blank=False, null=False)
-    year = models.PositiveSmallIntegerField(validators=[MaxValueValidator(9999)], blank=False, null=False)  # e.g. 2017 (means AY17/18)
+    year = models.PositiveIntegerField(validators=[MaxValueValidator(9999)], blank=False, null=False)  # e.g. 2017 (means AY17/18)
     semester = models.CharField(max_length=1, choices=Semesters.choices, default=Semesters.SEMESTER_1, blank=False, null=False)
     owner = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
     maintainers = models.ManyToManyField(User, related_name='maintained_courses', blank=True)  # maintainers can modify, but not delete the course

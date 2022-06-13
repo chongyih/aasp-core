@@ -1,0 +1,123 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}Update Code Question{% endblock %}
+
+{% block styles %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+{% endblock %}
+
+{% block content %}
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-12 order-md-1 order-last pb-3">
+          <h2>Update Code Question ✏️</h2>
+          {% if code_question.question_bank != None %}
+            <h5 class="text-muted">For question bank: {{ code_question.question_bank.name }}</h5>
+          {% else %}
+            <h5 class="text-muted">For assessment: {{ code_question.assessment.name }}</h5>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab group row -->
+    <div class="row">
+      <div class="col-10 m-2">
+        <div class="card">
+          <div class="card-body">
+
+            {# non-field errors #}
+            {% for error in form.non_field_errors %}
+              <div class="alert alert-danger py-2">{{ error }}</div>
+            {% endfor %}
+
+          {% for error in form.assessment.errors %}
+              <div class="alert alert-danger py-2">{{ error }}</div>
+            {% endfor %}
+
+            <!-- Tab contents -->
+            <form method="POST">
+              {% csrf_token %}
+
+              <input type="hidden" name="question_bank" value="{{ form.question_bank.value|default_if_none:"" }}">
+              <input type="hidden" name="assessment" value="{{ form.assessment.value|default_if_none:"" }}">
+
+              <div class="tab-content" id="pills-tabContent">
+
+                <!-- First tab (Description) -->
+                <div class="tab-pane fade show active pt-3" id="pill-description" role="tabpanel" aria-labelledby="pill-description-tab">
+
+                  <!-- Question Name input -->
+                  <div class="form-group">
+                    <label for="id_name" class="mb-2">Question Name</label>
+                    <input type="text" name="name" class="form-control {% if form.name.errors %}is-invalid{% endif %}" id="id_name"
+                           placeholder="e.g. Two sum" value="{{ form.name.value|default:"" }}" required>
+                    {# name errors #}
+                    {% if form.name.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.name.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+
+                  <!-- Description input -->
+                  <div class="form-group mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <label for="id_description">Question Description</label>
+                      <button type="button" class="btn btn-warning btn-sm" id="preview-btn">Show Preview</button>
+                    </div>
+                    <textarea id="id_description" name="description">{{ form.description.value|default:"" }}</textarea>
+                    {# description errors #}
+                    {% if form.description.errors %}
+                      <p class="text-danger">{{ e }}
+                        {% for e in form.description.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+
+                  <!-- Create button -->
+                  <div class="pull-right">
+                    <button type="submit" class="btn btn-sm btn-success">Save and Continue</button>
+                  </div>
+                </div>
+
+              </div>
+            </form>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+  <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+
+  <!-- Configure and initialize SimpleMDE -->
+  <script>
+      const previewButton = $("#preview-btn");
+
+      // initialize simpleMDE
+      let simplemde = new SimpleMDE({
+          element: document.getElementById("id_description"),
+          toolbar: false,
+      });
+
+      // toggle preview on button click
+      previewButton.click(function () {
+          if (simplemde.isPreviewActive())
+              previewButton.text("Show Preview")
+          else
+              previewButton.text("Show Markdown")
+          simplemde.togglePreview();
+      });
+  </script>
+{% endblock %}

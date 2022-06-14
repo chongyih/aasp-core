@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import auth, user_management, dashboards, course_management, question_banks, code_questions
+from .views import auth, user_management, dashboards, course_management, question_banks, code_questions, assessments
 
 urlpatterns = [
     # global auth
@@ -41,5 +41,9 @@ urlpatterns = [
     path('code-question/<int:code_question_id>/update-test-cases/', code_questions.update_test_cases, name='update-test-cases'),  # step 2
     path('code-question/<int:code_question_id>/update-languages/', code_questions.update_languages, name='update-languages'),  # step 3
     path('code-question/update/<int:code_question_id>/', code_questions.update_code_question, name='update-code-question'),
+
+    # assessments
+    path('assessment/create/', assessments.create_assessment, name='create-assessment'),
+
 
 ]

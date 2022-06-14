@@ -72,7 +72,6 @@ def update_code_question(request, code_question_id):
         form = CodeQuestionForm(request.POST, instance=code_question)
 
         if form.is_valid():
-            print("valid fomr")
             form.save()
             messages.success(request, "Code Question successfully updated! ✅")
 
@@ -81,8 +80,6 @@ def update_code_question(request, code_question_id):
             else:
                 # mytodo: redirect to assessment
                 return redirect('')
-        else:
-            print("invalid form")
 
     context = {
         'code_question': code_question,

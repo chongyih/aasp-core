@@ -92,3 +92,17 @@ def check_permissions_code_question(code_question, user):
     if code_question.assessment and check_permissions(code_question.assessment.course, user) == 0:
         return False
     return True
+
+
+def check_permissions_assessment(assessment, user):
+    """
+    Returns the permission level of a user for the course that this assessment belongs to.
+    0 - no permissions
+    1 - maintainer
+    2 - owner
+    """
+    if assessment.course.owner == user:
+        return 2
+    if user in assessment.course.maintainers.all():
+        return 1
+    return 0

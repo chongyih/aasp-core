@@ -1,0 +1,164 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static utils %}
+
+{% block title %}{{ assessment }}{% endblock %}
+
+{% block styles %}
+  <link rel="stylesheet" href="{% static 'vendors/choices.js/choices.min.css' %}"/>
+  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
+{% endblock %}
+
+{% block content %}
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-12 order-md-1 order-last pb-3">
+          <h2>{{ assessment }}</h2>
+          <span class="badge bg-success">{{ assessment.status }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assessment information card -->
+    <div class="row">
+      <div class="col-8">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title ">Assessment Information</h4>
+            {# edit details button (anyone who can view this page, can also edit) #}
+            <a class="btn btn-sm btn-danger" href="#?next={{ request.path }}">Edit Details</a>
+          </div>
+
+          <div class="card-body">
+            <div class="row">
+              <div class="col-4">
+                <h6>Course</h6>
+                <p>{{ assessment.course }}</p>
+              </div>
+              <div class="col-4">
+                <h6>Assessment Name</h6>
+                <p>{{ assessment.name }}</p>
+              </div>
+              <div class="col-4">
+                <h6>Course Owner</h6>
+                <p>{{ course.owner.username }} ({{ course.owner.name }})</p>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-4">
+                <h6>Academic Year</h6>
+                <p>{{ course.year }}</p>
+              </div>
+              <div class="col-4">
+                <h6>Semester</h6>
+                <p>{{ course.get_semester_display }}</p>
+              </div>
+              <div class="col-4">
+                <h6>Students</h6>
+                <p><span id="students_count">{{ course.students_count }}</span> students enrolled</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Maintainers card -->
+      <div class="col-4">
+        <div class="card">
+          <div class="card-content">
+            <div class="card-body">
+              <h4 class="card-title">xxx</h4>
+              <p class="card-text">
+                Maintainers <b>can add and remove students</b> from the course.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code questions card -->
+    <div class="row">
+      <div class="col-12 m-2">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title ">Code Questions</h4>
+          </div>
+          <div class="card-body">
+            <!-- Code questions table -->
+            <table class="table-responsive table table-hover mb-0">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>No. of Test Cases</th>
+                <th>Max Score</th>
+                <th>Tags</th>
+                <th>Actions
+                  <div class="spinner-border spinner-border-sm" id="actions-loading" style="display:none"></div>
+                </th>
+              </tr>
+              </thead>
+              <tbody>
+              {% if assessment.codequestion_set.count == 0 %}
+                <tr>
+                  <td colspan="5" class="text-center">No code questions found</td>
+                </tr>
+              {% else %}
+                {% for q in assessment.codequestion_set.all %}
+                  <tr>
+                    <td>{{ q.name }}</td>
+                    <td>{{ q.testcase_set.count }}</td>
+                    <td>{{ q.max_score }}</td>
+                    <td>TODO</td>
+                    <td>
+                      <a href="#" class="btn btn-sm btn-success">View</a>
+                      <div class="btn-group">
+                        <div class="dropdown">
+                          <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true"
+                                  aria-expanded="false">Edit
+                          </button>
+                          <div class="dropdown-menu">
+                            <a class="dropdown-item" href="{% url 'update-code-question' code_question_id=q.id %}">Description</a>
+                            <a class="dropdown-item" href="{% url 'update-test-cases' code_question_id=q.id %}?next={{ request.path }}">Test
+                              Cases</a>
+                            <a class="dropdown-item"
+                               href="{% url 'update-languages' code_question_id=q.id %}?next={{ request.path }}">Languages</a>
+                          </div>
+                        </div>
+                      </div>
+                      <button data-code_question_id="{{ q.id }}" type="button" class="btn btn-sm btn-danger"
+                              onclick="deleteCodeQuestion(this);">Delete
+                      </button>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% endif %}
+              </tbody>
+            </table>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MCQ card -->
+    <div class="row">
+      <div class="col-12 m-2">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title ">Multiple Choice Questions</h4>
+          </div>
+          <div class="card-body">
+            <h6 class="text-muted text-center">Pending!!</h6>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+  <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
+{% endblock %}

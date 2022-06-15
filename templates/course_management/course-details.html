@@ -274,7 +274,7 @@
                         <td>{{ a.duration }} minutes</td>
                         <td>{{ a.num_attempts }}</td>
                         <td>
-                          <a class="btn btn-sm btn-success" href="#">View</a>
+                          <a class="btn btn-sm btn-success" href="{% url 'assessment-details' assessment_id=a.id %}">View</a>
                         </td>
                         </tr>
                       {% endfor %}

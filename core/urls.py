@@ -44,6 +44,6 @@ urlpatterns = [
 
     # assessments
     path('assessment/create/', assessments.create_assessment, name='create-assessment'),
-
+    path('assessment/details/<int:assessment_id>/', assessments.assessment_details, name='assessment-details'),
 
 ]

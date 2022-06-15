@@ -48,7 +48,7 @@
                     </div>
                     {# course errors #}
                     {% if form.course.errors %}
-                      <p class="text-danger">{{ e }}
+                      <p class="text-danger">
                         {% for e in form.course.errors %}
                           {{ e }}<br>
                         {% endfor %}
@@ -72,7 +72,7 @@
                     </div>
                     {# assessment name errors #}
                     {% if form.name.errors %}
-                      <p class="text-danger">{{ e }}
+                      <p class="text-danger">
                         {% for e in form.name.errors %}
                           {{ e }}<br>
                         {% endfor %}
@@ -93,7 +93,7 @@
                     </div>
                     {# instructions errors #}
                     {% if form.instructions.errors %}
-                      <p class="text-danger">{{ e }}
+                      <p class="text-danger">
                         {% for e in form.instructions.errors %}
                           {{ e }}<br>
                         {% endfor %}
@@ -110,15 +110,32 @@
                   <!-- Time start -->
                   <div class="form-group col-6">
                     <label for="id_time_start">Date/Time Start</label>
-                    <input class="flatpickr flatpickr-input active form-control" id="id_time_start" name="time_start" type="text"
-                           placeholder="Select Start Date..">
+                    <input class="flatpickr flatpickr-input active form-control {% if form.time_start.errors %}is-invalid{% endif %}"
+                           id="id_time_start" name="time_start" type="text" placeholder="Select Start Date.."
+                           value="{{ form.time_start.value|default:"" }}">
+                    {# time_start errors #}
+                    {% if form.time_start.errors %}
+                      <p class="text-danger">
+                        {% for e in form.time_start.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
                   </div>
 
                   <!-- Time end -->
                   <div class="form-group col-6">
                     <label for="id_time_end">Date/Time End</label>
-                    <input class="flatpickr flatpickr-input active form-control" id="id_time_end" name="time_end" type="text"
-                           placeholder="Select End Date..">
+                    <input class="flatpickr flatpickr-input active form-control {% if form.time_end.errors %}is-invalid{% endif %}"
+                           id="id_time_end" name="time_end" type="text" placeholder="Select End Date.." value="{{ form.time_end.value|default:"" }}">
+                    {# time_end errors #}
+                    {% if form.time_end.errors %}
+                      <p class="text-danger">
+                        {% for e in form.time_end.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
                   </div>
 
                   <!-- Clear button -->
@@ -134,20 +151,39 @@
                   <!-- Duration input -->
                   <div class="form-group col-6">
                     <label for="id_duration">Duration (mins)</label>
-                    <input type="number" name="duration" class="form-control" min="0" value="60" id="id_duration">
+                    <input type="number" name="duration" class="form-control {% if form.duration.errors %}is-invalid{% endif %}" min="0"
+                           value="{{ form.duration.value|default:"60" }}" id="id_duration">
                     <small class="text-muted">(0 for unlimited)</small>
+                    {# duration errors #}
+                    {% if form.duration.errors %}
+                      <p class="text-danger">
+                        {% for e in form.duration.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
                   </div>
 
                   <!-- No. attempts input -->
                   <div class="form-group col-6">
-                    <label for="id_duration">No. Attempts</label>
-                    <input type="number" name="duration" class="form-control" min="0" value="1" id="id_duration">
+                    <label for="id_num_attempts">No. Attempts</label>
+                    <input type="number" name="num_attempts" class="form-control {% if form.num_attempts.errors %}is-invalid{% endif %}" min="0"
+                           value="{{ form.num_attempts.value|default:"1" }}" id="id_num_attempts">
                     <small class="text-muted">(0 for unlimited)</small>
+                    {# num_attempts errors #}
+                    {% if form.num_attempts.errors %}
+                      <p class="text-danger">
+                        {% for e in form.num_attempts.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
                   </div>
 
                   <!-- Show grade checkbox -->
                   <div class="checkbox">
-                    <input type="checkbox" id="id_show_grade" name="show_grade" class="form-check-input me-2" checked="">
+                    <input type="checkbox" id="id_show_grade" name="show_grade" class="form-check-input me-2"
+                           {% if form.show_grade.value %}checked{% endif %}>
                     <label for="id_show_grade">Show Grade</label>
                   </div>
                 </div>

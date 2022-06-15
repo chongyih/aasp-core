@@ -4,14 +4,16 @@ from django.db import models
 class Assessment(models.Model):
     course = models.ForeignKey("Course", null=False, blank=False, on_delete=models.PROTECT)
     name = models.CharField(max_length=150, null=False, blank=False)
-    owner = models.ForeignKey("User", null=False, blank=False, on_delete=models.PROTECT)
     time_start = models.DateTimeField(null=True, blank=True)  # null if forever
     time_end = models.DateTimeField(null=True, blank=True)  # null if forever
-    duration = models.PositiveIntegerField(null=True, blank=True)  # null if unlimited
-    num_attempts = models.PositiveIntegerField(null=True, blank=True)  # null if unlimited
+    duration = models.PositiveIntegerField(null=False, blank=False)  # 0 if unlimited
+    num_attempts = models.PositiveIntegerField(null=False, blank=False)  # 0 if unlimited
     instructions = models.TextField(null=False, blank=False)
     deleted = models.BooleanField(default=False)
     show_grade = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.name}"
 
 
 class AssessmentAttempt(models.Model):
@@ -24,3 +26,4 @@ class AssessmentAttempt(models.Model):
     def status(self):
         if self.time_started and not self.time_submitted:
             return "Started but not submitted"
+

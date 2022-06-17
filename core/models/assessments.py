@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class Assessment(models.Model):
@@ -14,6 +15,20 @@ class Assessment(models.Model):
 
     def __str__(self):
         return f"{self.name}"
+
+    def status(self):
+        if self.deleted:
+            return "Deleted"
+        elif not self.time_start and not self.time_end:
+            return "Active"
+        elif self.time_start and timezone.now() < self.time_start:  # not started yet
+            return "Not started"
+        elif self.time_start and self.time_end and self.time_start <= timezone.now() <= self.time_end:
+            return "Active"
+        elif self.time_end and timezone.now() > self.time_end:
+            return "Finished"
+        else:
+            return "Active"
 
 
 class AssessmentAttempt(models.Model):

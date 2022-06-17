@@ -43,7 +43,7 @@ def create_code_question(request, parent, parent_id):
     context = {
         'assessment': assessment,
         'question_bank': question_bank,
-        'description_placeholder': "# Heading 1\n## Heading 2\n\nThis editor supports **markdown**!\n",
+        'description_placeholder': "This editor supports **markdown**!\n",
         'form': form,
     }
 
@@ -78,8 +78,7 @@ def update_code_question(request, code_question_id):
             if code_question.question_bank:
                 return redirect('question-bank-details', question_bank_id=code_question.question_bank.id)
             else:
-                # mytodo: redirect to assessment
-                return redirect('')
+                return redirect('assessment-details', assessment_id=code_question.assessment.id)
 
     context = {
         'code_question': code_question,

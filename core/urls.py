@@ -45,5 +45,6 @@ urlpatterns = [
     # assessments
     path('assessment/create/', assessments.create_assessment, name='create-assessment'),
     path('assessment/details/<int:assessment_id>/', assessments.assessment_details, name='assessment-details'),
-
+    path('api/add-code-question-to-assessment/', assessments.add_code_question_to_assessment, name='add-code-question-to-assessment'),
+    path('api/get-code-questions-questions/', assessments.get_code_questions, name='get-code-questions'),  # ajax
 ]

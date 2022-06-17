@@ -2,7 +2,7 @@
 
 import django_filters
 
-from core.models import User, CourseGroup
+from core.models import User, CourseGroup, QuestionBank, CodeQuestion
 
 
 class CourseStudentFilter(django_filters.FilterSet):
@@ -23,3 +23,19 @@ class CourseStudentFilter(django_filters.FilterSet):
     @staticmethod
     def filter_group(queryset, name, value):
         return queryset.filter(enrolled_groups=value)
+
+
+class CodeQuestionFilter(django_filters.FilterSet):
+    question_bank = django_filters.ModelChoiceFilter(queryset=QuestionBank.objects.none(), label="Question Bank", method="filter_qb")
+
+    class Meta:
+        model = CodeQuestion
+        fields = ['question_bank', 'name', 'tags']
+
+    def __init__(self, question_banks, *args, **kwargs):
+        super(CodeQuestionFilter, self).__init__(*args, **kwargs)
+        self.filters['question_bank'].queryset = question_banks
+
+    @staticmethod
+    def filter_qb(queryset, name, value):
+        return queryset.filter(question_bank=value)

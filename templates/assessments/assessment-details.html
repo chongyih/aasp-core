@@ -1,7 +1,7 @@
 {% extends 'layouts/master-nav.html' %}
 {% load static utils %}
 
-{% block title %}{{ assessment }}{% endblock %}
+{% block title %}{{ assessment }} | Assessment{% endblock %}
 
 {% block styles %}
   <link rel="stylesheet" href="{% static 'vendors/choices.js/choices.min.css' %}"/>
@@ -10,22 +10,24 @@
 
 {% block content %}
   <div class="page-heading">
+    <!-- Page Title -->
     <div class="page-title">
       <div class="row">
         <div class="col-12 col-md-12 order-md-1 order-last pb-3">
+          <h5>Assessment</h5>
           <h2>{{ assessment }}</h2>
           <span class="badge bg-success">{{ assessment.status }}</span>
         </div>
       </div>
     </div>
 
-    <!-- Assessment information card -->
+    <!-- Assessment information row -->
     <div class="row">
       <div class="col-8">
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h4 class="card-title ">Assessment Information</h4>
-            {# edit details button (anyone who can view this page, can also edit) #}
+            {# mytodo: edit details button (anyone who can view this page, can also edit) #}
             <a class="btn btn-sm btn-danger" href="#?next={{ request.path }}">Edit Details</a>
           </div>
 
@@ -40,36 +42,40 @@
                 <p>{{ assessment.name }}</p>
               </div>
               <div class="col-4">
-                <h6>Course Owner</h6>
-                <p>{{ course.owner.username }} ({{ course.owner.name }})</p>
+                <h6>Attempts Allowed</h6>
+                <p>{{ assessment.num_attempts|default:"Unlimited" }}</p>
               </div>
             </div>
             <div class="row">
-              <div class="col-4">
-                <h6>Academic Year</h6>
-                <p>{{ course.year }}</p>
+              <div class="col-3">
+                <h6>Duration</h6>
+                <p>{% if assessment.duration %}{{ assessment.duration }} minutes{% else %}Unlimited{% endif %}</p>
               </div>
-              <div class="col-4">
-                <h6>Semester</h6>
-                <p>{{ course.get_semester_display }}</p>
+              <div class="col-3">
+                <h6>Time Start</h6>
+                <p>{{ assessment.time_start|default_if_none:"-" }}</p>
               </div>
-              <div class="col-4">
-                <h6>Students</h6>
-                <p><span id="students_count">{{ course.students_count }}</span> students enrolled</p>
+              <div class="col-3">
+                <h6>Time End</h6>
+                <p>{{ assessment.time_end|default_if_none:"-" }}</p>
+              </div>
+              <div class="col-3">
+                <h6>Show Grade</h6>
+                <p><span id="students_count">{% if assessment.show_grade %}Yes{% else %}No{% endif %}</span></p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Maintainers card -->
+      <!-- Instructions card -->
       <div class="col-4">
         <div class="card">
           <div class="card-content">
             <div class="card-body">
-              <h4 class="card-title">xxx</h4>
+              <h4 class="card-title">Instructions for candidates</h4>
               <p class="card-text">
-                Maintainers <b>can add and remove students</b> from the course.
+                {{ assessment.instructions }}
               </p>
             </div>
           </div>
@@ -77,15 +83,26 @@
       </div>
     </div>
 
-    <!-- Code questions card -->
+    <!-- Questions card -->
     <div class="row">
       <div class="col-12 m-2">
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <h4 class="card-title ">Code Questions</h4>
+            <h3>Questions</h3>
           </div>
+
           <div class="card-body">
-            <!-- Code questions table -->
+            <!-- Code question section -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5>Code Questions</h5>
+              <div>
+                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#code-questions-modal">Add from Question
+                  Bank
+                </button>
+                <a href="#" class="btn btn-sm btn-secondary">Create New</a>
+              </div>
+            </div>
+
             <table class="table-responsive table table-hover mb-0">
               <thead>
               <tr>
@@ -109,7 +126,15 @@
                     <td>{{ q.name }}</td>
                     <td>{{ q.testcase_set.count }}</td>
                     <td>{{ q.max_score }}</td>
-                    <td>TODO</td>
+                    <td>
+                      {% if q.tags.all.count == 0 %}
+                        -
+                      {% else %}
+                        {% for tag in q.tags.all %}
+                          <span class="badge bg-light-secondary">{{ tag.name }}</span>
+                        {% endfor %}
+                      {% endif %}
+                    </td>
                     <td>
                       <a href="#" class="btn btn-sm btn-success">View</a>
                       <div class="btn-group">
@@ -135,22 +160,102 @@
               {% endif %}
               </tbody>
             </table>
-
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- MCQ card -->
-    <div class="row">
-      <div class="col-12 m-2">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h4 class="card-title ">Multiple Choice Questions</h4>
+  <!-- Modal: Add code questions -->
+  <div class="modal fade" id="code-questions-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable" role="document">
+      <div class="modal-content">
+        <!-- Modal Header -->
+        <div class="modal-header">
+          <h5 class="modal-title">Add Code Question from Question Bank</h5>
+          <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="modal-body">
+          <!-- Filter form -->
+          <div id="filter-form-div">
+            <h5>Filters</h5>
+            <p>Filter for the code question that you would like to copy into the assessment.</p>
+
+            <form id="code-questions-filter-form">
+              <div class="row">
+                <!-- Question bank input -->
+                <div class="col-4">
+                  <div class="form-group">
+                    <label for="cq_id_question_bank">Question Bank</label>
+                    <select class="form-select form-select-lg" name="question_bank" id="cq_id_question_bank">
+                      <option value="" selected="">---------</option>
+                      {% for qb in all_question_banks %}
+                        <option value="{{ qb.id }}">{{ qb.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Name -->
+                <div class="col-4">
+                  <div class="form-group">
+                    <label for="cq_id_name">Question Name</label>
+                    <input type="text" class="form-control form-control-lg" name="name" id="cq_id_name">
+                  </div>
+                </div>
+
+                <!-- Tags -->
+                <div class="col-3">
+                  <div class="form-group">
+                    <label for="cq_id_tags">Tags</label>
+                    <select name="tags" id="cq_id_tags" multiple>
+                      {% for tag in tags %}
+                        <option value="{{ tag.id }}">{{ tag.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Filter button -->
+                <div class="col-1">
+                  <div class="form-group">
+                    <button type="button" class="btn btn-primary mt-4" id="filter-cq-btn" onclick="filterCodeQuestion();">Filter</button>
+                  </div>
+                </div>
+              </div>
+            </form>
           </div>
-          <div class="card-body">
-            <h6 class="text-muted text-center">Pending!!</h6>
+
+          <!-- Results tables -->
+          <div id="questions-results-div">
+            <!-- Code questions table -->
+            <table class="table-responsive table table-hover mb-0" id="code-question-table">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th style="width: 60%">Description</th>
+                <th>Tags</th>
+                <th>Actions
+                  <div class="spinner-border spinner-border-sm" id="actions-loading" style="display:none"></div>
+                </th>
+              </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+
+            <!-- MCQ table, etc -->
           </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer d-flex justify-content-between align-items-center">
+          <p id="add-cq-result"></p>
+          <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Done</button>
         </div>
       </div>
     </div>
@@ -161,4 +266,154 @@
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
   <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
   <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
+
+  <!-- global variables -->
+  <script>
+      let refreshNeeded = false;
+  </script>
+
+  <!-- code questions modal script -->
+  <script>
+      let cqFirstLaunch = true;
+      const codeQuestionTableBody = $("#code-question-table > tbody");
+      const codeQuestionModal = $('#code-questions-modal');
+
+      // choices.js: code questions tag selector
+      const cq_tags = document.getElementById("cq_id_tags");
+      let choice1 = new Choices(cq_tags, {
+          removeItemButton: true,
+      });
+
+      // filter button clicked
+      const filterCodeQuestion = () => {
+          const form = document.getElementById("code-questions-filter-form");
+          const formData = new FormData(form);
+          const data = [...formData.entries()];
+          const asString = data.map(x => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`).join('&');
+
+          // show loading
+          codeQuestionLoading(true);
+
+          $.ajax({
+              type: 'GET',
+              url: "{% url 'get-code-questions' %}?" + asString,
+              data: formData,
+              processData: false,
+              contentType: false,
+          }).done((res) => {
+              setTimeout(() => {
+                  // hide loading
+                  codeQuestionLoading(false);
+
+                  // update table based on response
+                  if (res.result === "success") {
+                      if (res.code_questions.length === 0) {
+                          codeQuestionTableBody.html("<tr><td colspan='4' class='text-center p-5'>No code questions found! &#x1F622;</td></tr>");
+                      } else {
+                          let newRows = "";
+                          res.code_questions.forEach((cq) => {
+                              let tags = "";
+                              cq.tags.forEach((t) => {
+                                  tags += "<span class='badge bg-light-secondary me-1'>" + t.name + "</span>";
+                              })
+                              newRows += "<tr><td>" + cq.name + "</td><td>" + cq.description + "</td><td>" + tags + "</td><td><button type='button' class='btn btn-success btn-sm' onclick='addCodeQuestion(this)' data-cq-id='" + cq.id + "'>Add</button></td></tr>"
+                          })
+                          codeQuestionTableBody.append(newRows);
+                      }
+                  } else {
+                      codeQuestionTableBody.html("<tr><td colspan='4' class='text-center p-5'>Something went wrong with your request! &#x1F622;</td></tr>");
+                  }
+              }, 300);
+          }).fail((res) => {
+              // hide loading
+              codeQuestionLoading(false);
+              codeQuestionTableBody.html("<tr><td colspan='4' class='text-center p-5'>Something went wrong with your request! &#x1F622;</td></tr>");
+          })
+      }
+
+      // show and hide loading statuses
+      const codeQuestionLoading = (enabled) => {
+          const filterCodeQuestionButton = $("#filter-cq-btn");
+          if (enabled) {
+              // filter button
+              filterCodeQuestionButton.prop("disabled", true);
+              filterCodeQuestionButton.html("<div class='spinner-border spinner-border-sm'></div>");
+
+              // loading in table
+              codeQuestionTableBody.html("<tr><td colspan='4' class='text-center p-5'><div class='spinner-border spinner-border-sm me-1'></div> Loading ...</td></tr>");
+          } else {
+              // filter button
+              filterCodeQuestionButton.prop("disabled", false);
+              filterCodeQuestionButton.html("Filter");
+              codeQuestionTableBody.empty();
+          }
+      }
+
+      // add code question clicked
+      const addCodeQuestion = (btn) => {
+          const code_question_id = $(btn).data('cq-id');
+          const addCqResult = $("#add-cq-result");
+
+          // set button state
+          $(btn).prop("disabled", true);
+          $(btn).html("<div class='spinner-border spinner-border-sm'></div>");
+
+          // clear result message
+          addCqResult.removeClass("text-success text-danger");
+          addCqResult.empty();
+
+          // set refresh flag
+          refreshNeeded = true;
+
+          // prepare form data
+          let formData = new FormData();
+          formData.append("code_question_id", code_question_id);
+          formData.append("assessment_id", "{{ assessment.id }}");
+          formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+          // ajax request
+          $.ajax({
+              type: 'POST',
+              url: "{% url 'add-code-question-to-assessment' %}",
+              data: formData,
+              processData: false,
+              contentType: false,
+          }).done((res) => {
+              setTimeout(() => {
+                  // set message
+                  if (res.result === "success") {
+                      addCqResult.html("The question has been added to the assessment! &#x2705;")
+                      addCqResult.addClass("text-success");
+                  } else {
+                      addCqResult.html("Something went wrong with your request! &#x1F622;")
+                      addCqResult.addClass("text-danger");
+                  }
+                  // reset button state
+                  $(btn).prop("disabled", false);
+                  $(btn).html("Add");
+              }, 300);
+          }).fail((res) => {
+              // set message
+              addCqResult.html("Something went wrong with your request! &#x1F622;")
+              addCqResult.addClass("text-danger");
+              // reset button state
+              $(btn).prop("disabled", false);
+              $(btn).html("Add");
+          });
+      };
+
+      // refresh page when modal is closed, if needed
+      codeQuestionModal.on('hide.bs.modal', function (e) {
+          if (refreshNeeded) location.reload();
+      });
+
+      // load table when modal is opened, if needed
+      codeQuestionModal.on('show.bs.modal', function (e) {
+          if (cqFirstLaunch){
+              filterCodeQuestion();
+              cqFirstLaunch = false;
+          }
+      });
+  </script>
+
 {% endblock %}

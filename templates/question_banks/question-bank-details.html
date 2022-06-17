@@ -143,7 +143,15 @@
                           <td>{{ q.name }}</td>
                           <td>{{ q.testcase_set.count }}</td>
                           <td>{{ q.max_score }}</td>
-                          <td>TODO</td>
+                          <td>
+                            {% if q.tags.all.count == 0 %}
+                              -
+                            {% else %}
+                              {% for tag in q.tags.all %}
+                                <span class="badge bg-light-secondary">{{ tag.name }}</span>
+                              {% endfor %}
+                            {% endif %}
+                          </td>
                           <td>
                             <a href="#" class="btn btn-sm btn-success">View</a>
                             <div class="btn-group">

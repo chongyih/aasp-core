@@ -5,6 +5,16 @@ from django.db.models import Sum
 from core.models import User, Assessment
 
 
+class Tag(models.Model):
+    class Meta:
+        pass
+
+    name = models.CharField(max_length=50, blank=False, null=False)
+
+    def __str__(self):
+        return self.name
+
+
 class Language(models.Model):
     name = models.CharField(max_length=50, blank=False, null=False, unique=True)
     judge_language_id = models.IntegerField(blank=False, null=False)
@@ -37,6 +47,7 @@ class CodeQuestion(models.Model):
 
     name = models.CharField(max_length=50, blank=False, null=False)
     description = models.TextField(blank=False, null=False)
+    tags = models.ManyToManyField(Tag, blank=True)
 
     # foreign keys (either linked to a QuestionBank or Assessment instance)
     question_bank = models.ForeignKey(QuestionBank, null=True, blank=True, on_delete=models.CASCADE)

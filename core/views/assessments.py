@@ -50,6 +50,45 @@ def create_assessment(request):
     return render(request, 'assessments/create-assessment.html', context)
 
 
+def update_assessment(request, assessment_id):
+    # retrieve courses for this user
+    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct().prefetch_related('owner', 'maintainers')
+
+    # get assessment
+    assessment = get_object_or_404(Assessment, id=assessment_id)
+
+    # check permissions
+    if check_permissions_assessment(assessment, request.user) == 0:
+        messages.warning(request, "You do not have permissions to edit the assessment.")
+        return redirect('dashboard')
+
+    # form
+    form = AssessmentForm(courses=courses, instance=assessment)
+
+    # process POST request
+    if request.method == "POST":
+        form = AssessmentForm(courses, request.POST, instance=assessment)
+        if form.is_valid():
+            # get course object
+            course = get_object_or_404(Course, id=form.data['course'])
+
+            # check permissions before saving form
+            if check_permissions(course, request.user) == 0:
+                messages.success(request, "You do not have permissions for this course.")
+                return redirect('view-courses')
+
+            assessment = form.save()
+
+            # redirect
+            messages.success(request, "The assessment has been successfully updated! ✅")
+            return redirect('assessment-details', assessment_id=assessment.id)
+
+    context = {
+        'form': form,
+    }
+    return render(request, 'assessments/update-assessment.html', context)
+
+
 @login_required()
 def assessment_details(request, assessment_id):
     # get assessment object

@@ -106,14 +106,19 @@
                    aria-selected="false">Assessments</a>
               </li>
             </ul>
-            <div class="tab-content" id="pills-tabContent">
+            <div class="tab-content mt-4" id="pills-tabContent">
 
               <!-- First tab (Students) -->
               <div class="tab-pane fade show active" id="pills-students" role="tabpanel" aria-labelledby="pills-students-tab">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5>Enrolled Students</h5>
+                  <a class="btn btn-sm btn-success" href="{% url 'enrol-students' %}" target="_blank">Enrol Students</a>
+                </div>
+
                 <!-- Filters form -->
                 <form method="get">
                   <div class="row mt-4">
-                    <h5>Filters</h5>
+                    <h6>Filters</h6>
 
                     <!-- Username filter -->
                     <div class="col-2">
@@ -199,7 +204,7 @@
                             {% endfor %}
                           </td>
                           <td>
-                            <button class="btn btn-sm btn-success" onclick="removeStudent({{ student.id }}, this)">Remove</button>
+                            <button class="btn btn-sm btn-danger" onclick="removeStudent({{ student.id }}, this)">Remove</button>
                           </td>
                         </tr>
                       {% endfor %}
@@ -248,6 +253,11 @@
 
               <!-- Second tab (Assessments) -->
               <div class="tab-pane fade" id="pills-assessments" role="tabpanel" aria-labelledby="pills-assessments-tab">
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5>Assessments</h5>
+                  <a class="btn btn-sm btn-success" href="{% url 'create-assessment' %}?course_id={{ course.id }}" target="_blank">New</a>
+                </div>
                 <!-- Assessments table -->
                 <div class="table-responsive">
                   <table class="table table-hover mb-0">
@@ -269,14 +279,14 @@
                     {% else %}
                       {% for a in course.assessment_set.all %}
                         <tr>
-                        <td>{{ a.name }}</td>
-                        <td>{{ a.time_start|default_if_none:"-" }}</td>
-                        <td>{{ a.time_end|default_if_none:"-" }}</td>
-                        <td>{{ a.duration }} minutes</td>
-                        <td>{{ a.num_attempts }}</td>
-                        <td>
-                          <a class="btn btn-sm btn-success" href="{% url 'assessment-details' assessment_id=a.id %}">View</a>
-                        </td>
+                          <td>{{ a.name }}</td>
+                          <td>{{ a.time_start|default_if_none:"-" }}</td>
+                          <td>{{ a.time_end|default_if_none:"-" }}</td>
+                          <td>{% if a.duration %}{{ a.duration }} minutes{% else %}Unlimited{% endif %}</td>
+                          <td>{% if a.num_attempts %}{{ a.num_attempts }}{% else %}Unlimited{% endif %}</td>
+                          <td>
+                            <a class="btn btn-sm btn-secondary" href="{% url 'assessment-details' assessment_id=a.id %}">View</a>
+                          </td>
                         </tr>
                       {% endfor %}
                     {% endif %}

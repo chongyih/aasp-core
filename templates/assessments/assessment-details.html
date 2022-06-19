@@ -28,7 +28,7 @@
           <div class="card-header d-flex justify-content-between align-items-center">
             <h4 class="card-title ">Assessment Information</h4>
             {# mytodo: edit details button (anyone who can view this page, can also edit) #}
-            <a class="btn btn-sm btn-danger" href="#?next={{ request.path }}">Edit Details</a>
+            <a class="btn btn-sm btn-danger" href="{% url 'update-assessment' assessment_id=assessment.id %}?next={{ request.path }}">Edit Details</a>
           </div>
 
           <div class="card-body">
@@ -99,7 +99,7 @@
                 <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#code-questions-modal">Add from Question
                   Bank
                 </button>
-                <a href="#" class="btn btn-sm btn-secondary">Create New</a>
+                <a href="{% url 'create-code-question' parent='as' parent_id=assessment.id %}" class="btn btn-sm btn-secondary">Create New</a>
               </div>
             </div>
 
@@ -282,6 +282,7 @@
       const cq_tags = document.getElementById("cq_id_tags");
       let choice1 = new Choices(cq_tags, {
           removeItemButton: true,
+          renderChoiceLimit: 5,
       });
 
       // filter button clicked
@@ -409,7 +410,7 @@
 
       // load table when modal is opened, if needed
       codeQuestionModal.on('show.bs.modal', function (e) {
-          if (cqFirstLaunch){
+          if (cqFirstLaunch) {
               filterCodeQuestion();
               cqFirstLaunch = false;
           }

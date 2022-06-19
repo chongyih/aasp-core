@@ -1,12 +1,13 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.forms import inlineformset_factory
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from core.forms.question_banks import CodeQuestionForm
 from core.models import QuestionBank, Assessment, CodeQuestion
-from core.models.questions import TestCase, CodeSnippet, Language
+from core.models.questions import TestCase, CodeSnippet, Language, Tag
 from core.views.utils import check_permissions, check_permissions_code_question
 
 
@@ -36,9 +37,30 @@ def create_code_question(request, parent, parent_id):
     if request.method == "POST":
         form = CodeQuestionForm(request.POST)
         if form.is_valid():
-            code_question = form.save()
-            messages.success(request, "The code question has been created, please proceed to add some test cases!")
-            return redirect('update-test-cases', code_question_id=code_question.id)
+            with transaction.atomic():
+                # create tags
+                tags = request.POST.get('tags')
+                if tags:
+                    # get a list of tags
+                    tags = set([t.title() for t in tags.split(",")])
+
+                    # get tags that already exist (so that we don't create them again)
+                    existing_tags = set(Tag.objects.filter(name__in=tags).values_list('name', flat=True))
+
+                    # create the new tags
+                    new_tags = tags - existing_tags
+                    new_tags = [Tag(name=t) for t in new_tags]
+                    Tag.objects.bulk_create(new_tags)
+
+                # save code question
+                code_question = form.save()
+
+                # add tags to code question
+                tags = Tag.objects.filter(name__in=tags).values_list('id', flat=True)
+                code_question.tags.add(*tags)
+
+                messages.success(request, "The code question has been created, please proceed to add some test cases!")
+                return redirect('update-test-cases', code_question_id=code_question.id)
 
     context = {
         'assessment': assessment,
@@ -72,13 +94,33 @@ def update_code_question(request, code_question_id):
         form = CodeQuestionForm(request.POST, instance=code_question)
 
         if form.is_valid():
-            form.save()
-            messages.success(request, "Code Question successfully updated! ✅")
+            with transaction.atomic():
+                # create tags
+                tags = request.POST.get('tags')
+                if tags:
+                    # get a list of tags
+                    tags = set([t.title() for t in tags.split(",")])
 
-            if code_question.question_bank:
-                return redirect('question-bank-details', question_bank_id=code_question.question_bank.id)
-            else:
-                return redirect('assessment-details', assessment_id=code_question.assessment.id)
+                    # get tags that already exist (so that we don't create them again)
+                    existing_tags = set(Tag.objects.filter(name__in=tags).values_list('name', flat=True))
+
+                    # create the new tags
+                    new_tags = tags - existing_tags
+                    new_tags = [Tag(name=t) for t in new_tags]
+                    Tag.objects.bulk_create(new_tags)
+
+                code_question = form.save()
+                messages.success(request, "Code Question successfully updated! ✅")
+
+                # clear old tags and add tags to code question
+                code_question.tags.clear()
+                tags = Tag.objects.filter(name__in=tags).values_list('id', flat=True)
+                code_question.tags.add(*tags)
+
+                if code_question.question_bank:
+                    return redirect('question-bank-details', question_bank_id=code_question.question_bank.id)
+                else:
+                    return redirect('assessment-details', assessment_id=code_question.assessment.id)
 
     context = {
         'code_question': code_question,
@@ -154,7 +196,10 @@ def update_languages(request, code_question_id):
             if next_url:
                 return redirect(next_url)
 
-            return redirect('question-bank-details', question_bank_id=code_question.question_bank.id)
+            if code_question.question_bank:
+                return redirect('question-bank-details', question_bank_id=code_question.question_bank.id)
+            else:
+                return redirect('assessment-details', assessment_id=code_question.assessment.id)
 
     context = {
         'creation': request.GET.get('next') is None,

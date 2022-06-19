@@ -9,10 +9,14 @@ class Tag(models.Model):
     class Meta:
         pass
 
-    name = models.CharField(max_length=50, blank=False, null=False)
+    name = models.CharField(max_length=50, blank=False, null=False, unique=True)
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        super().clean()
+        self.name = self.name.title()
 
 
 class Language(models.Model):

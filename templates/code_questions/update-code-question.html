@@ -4,6 +4,7 @@
 {% block title %}Update Code Question{% endblock %}
 
 {% block styles %}
+  <link rel="stylesheet" href="{% static 'vendors/choices.js/choices.min.css' %}"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
 {% endblock %}
 
@@ -33,7 +34,7 @@
               <div class="alert alert-danger py-2">{{ error }}</div>
             {% endfor %}
 
-          {% for error in form.assessment.errors %}
+            {% for error in form.assessment.errors %}
               <div class="alert alert-danger py-2">{{ error }}</div>
             {% endfor %}
 
@@ -50,18 +51,29 @@
                 <div class="tab-pane fade show active pt-3" id="pill-description" role="tabpanel" aria-labelledby="pill-description-tab">
 
                   <!-- Question Name input -->
-                  <div class="form-group">
-                    <label for="id_name" class="mb-2">Question Name</label>
-                    <input type="text" name="name" class="form-control {% if form.name.errors %}is-invalid{% endif %}" id="id_name"
-                           placeholder="e.g. Two sum" value="{{ form.name.value|default:"" }}" required>
-                    {# name errors #}
-                    {% if form.name.errors %}
-                      <p class="text-danger">{{ e }}
-                        {% for e in form.name.errors %}
-                          {{ e }}<br>
-                        {% endfor %}
-                      </p>
-                    {% endif %}
+                  <div class="row">
+                    <div class="col-8">
+                      <div class="form-group">
+                        <label for="id_name" class="mb-2">Question Name</label>
+                        <input type="text" name="name" class="form-control form-control-lg {% if form.name.errors %}is-invalid{% endif %}" id="id_name"
+                               placeholder="e.g. Two sum" value="{{ form.name.value|default:"" }}" required>
+                        {# name errors #}
+                        {% if form.name.errors %}
+                          <p class="text-danger">{{ e }}
+                            {% for e in form.name.errors %}
+                              {{ e }}<br>
+                            {% endfor %}
+                          </p>
+                        {% endif %}
+                      </div>
+                    </div>
+
+                    <div class="col-4">
+                      <div class="form-group">
+                        <label for="id_tags" class="mb-2">Tags</label>
+                        <input type="text" name="tags" id="id_tags" value="{{ code_question.tags.all|join:"," }}"/>
+                      </div>
+                    </div>
                   </div>
 
                   <!-- Description input -->
@@ -100,6 +112,7 @@
 {% block js %}
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
   <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+  <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
 
   <!-- Configure and initialize SimpleMDE -->
   <script>
@@ -120,4 +133,14 @@
           simplemde.togglePreview();
       });
   </script>
+
+  <!-- choices.js tags -->
+  <script>
+      // choices.js: code questions tag selector
+      const tags = document.getElementById("id_tags");
+      let choice1 = new Choices(tags, {
+          removeItemButton: true,
+      });
+  </script>
+
 {% endblock %}

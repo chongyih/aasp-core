@@ -35,6 +35,7 @@ class CodeQuestionFilter(django_filters.FilterSet):
     def __init__(self, question_banks, *args, **kwargs):
         super(CodeQuestionFilter, self).__init__(*args, **kwargs)
         self.filters['question_bank'].queryset = question_banks
+        self.filters['name'].lookup_expr = "icontains"
 
     @staticmethod
     def filter_qb(queryset, name, value):

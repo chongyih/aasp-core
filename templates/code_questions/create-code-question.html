@@ -4,6 +4,7 @@
 {% block title %}New Code Question{% endblock %}
 
 {% block styles %}
+  <link rel="stylesheet" href="{% static 'vendors/choices.js/choices.min.css' %}"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
 {% endblock %}
 
@@ -58,18 +59,28 @@
                 <div class="tab-pane fade show active pt-3" id="pill-description" role="tabpanel" aria-labelledby="pill-description-tab">
 
                   <!-- Question Name input -->
-                  <div class="form-group">
-                    <label for="id_name" class="mb-2">Question Name</label>
-                    <input type="text" name="name" class="form-control {% if form.name.errors %}is-invalid{% endif %}" id="id_name"
-                           placeholder="e.g. Two sum" value="{{ form.name.value|default:"" }}" required>
-                    {# name errors #}
-                    {% if form.name.errors %}
-                      <p class="text-danger">{{ e }}
-                        {% for e in form.name.errors %}
-                          {{ e }}<br>
-                        {% endfor %}
-                      </p>
-                    {% endif %}
+                  <div class="row">
+                    <div class="col-8">
+                      <div class="form-group">
+                        <label for="id_name" class="mb-2">Question Name</label>
+                        <input type="text" name="name" class="form-control form-control-lg {% if form.name.errors %}is-invalid{% endif %}" id="id_name"
+                               placeholder="e.g. Two sum" value="{{ form.name.value|default:"" }}" required>
+                        {# name errors #}
+                        {% if form.name.errors %}
+                          <p class="text-danger">{{ e }}
+                            {% for e in form.name.errors %}
+                              {{ e }}<br>
+                            {% endfor %}
+                          </p>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="col-4">
+                      <div class="form-group">
+                        <label for="id_tags" class="mb-2">Tags</label>
+                        <input type="text" name="tags" id="id_tags"/>
+                      </div>
+                    </div>
                   </div>
 
                   <!-- Description input -->
@@ -108,6 +119,8 @@
 {% block js %}
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
   <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+  <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
+
 
   <!-- Configure and initialize SimpleMDE -->
   <script>
@@ -129,62 +142,13 @@
       });
   </script>
 
-  <!-- TestCase dynamic formset management script -->
+  <!-- choices.js tags -->
   <script>
-      const testCasesContainer = $("#test-cases-container");
-      const emptyTestCaseRow = $("#empty-test-case-row");
-      const totalFormsInput = $("#id_tc-TOTAL_FORMS");
-      let totalForms = totalFormsInput.val();
-
-      // function to update all prefixes (internal test cases only as sample test case is always 0)
-      const updatePrefixes = () => {
-          const regex = RegExp(`tc-(\\d)-`, 'g');
-          testCasesContainer.children().each((idx, tcRow) => {
-              $(tcRow).html($(tcRow).html().replaceAll(regex, `tc-${idx + 1}-`));
-              $("#tc-" + (idx + 1) + "-label").html(idx + 1); // update label
-          });
-      };
-
-      // add test case row button clicked
-      $("#addTestCase-btn").click(() => {
-          // increment totalForms
-          totalForms++;
-          totalFormsInput.val(totalForms);
-
-          // clone empty test-case-row
-          const cloned = emptyTestCaseRow.clone();
-
-          // remove id, style
-          cloned.removeAttr('id style');
-
-          // update predix
-          $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
-
-          // append to container
-          testCasesContainer.append(cloned);
+      // choices.js: code questions tag selector
+      const tags = document.getElementById("id_tags");
+      let choice1 = new Choices(tags, {
+          removeItemButton: true,
       });
-
-      // remove test case clicked
-      const removeClicked = (btn) => {
-          // decrement total forms
-          totalForms--;
-          totalFormsInput.val(totalForms);
-
-          // get the parent div
-          const toRemove = $(btn).parent().parent();
-
-          // remove and update prefixes
-          toRemove.fadeOut('slow', () => {
-              toRemove.remove();
-              updatePrefixes();
-          });
-          return false;
-      };
-  </script>
-
-  <!-- Code Snippet dynamic formset management script -->
-  <script>
-
   </script>
 
 {% endblock %}

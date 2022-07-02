@@ -147,3 +147,6 @@ SHOW_COLLAPSED = True
 
 # default password for new student accounts
 DEFAULT_STUDENT_PASSWORD = "password123"
+
+# celery settings
+CELERY_BROKER_URL = "amqp://127.0.0.1:5672/"

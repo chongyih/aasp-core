@@ -2,9 +2,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.csrf import csrf_exempt
 
 from core.filters import CodeQuestionFilter
 from core.forms.assessments import AssessmentForm
@@ -50,6 +49,7 @@ def create_assessment(request):
     return render(request, 'assessments/create-assessment.html', context)
 
 
+@login_required()
 def update_assessment(request, assessment_id):
     # retrieve courses for this user
     courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct().prefetch_related('owner', 'maintainers')

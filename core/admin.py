@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from core.models import User, Course, CourseGroup, QuestionBank, CodeQuestion, Assessment, TestCase, Language, CodeSnippet, CodeTemplate, Tag
+from core.models import User, Course, CourseGroup, QuestionBank, CodeQuestion, Assessment, TestCase, Language, CodeSnippet, CodeTemplate, Tag, \
+    AssessmentAttempt
 
 
 class CourseAdmin(admin.ModelAdmin):
@@ -36,6 +37,10 @@ class TagAdmin(admin.ModelAdmin):
     list_display = ('id', 'name')
 
 
+class AssessmentAttemptAdmin(admin.ModelAdmin):
+    list_display = ('id', 'candidate')
+
+
 admin.site.register(User, UserAdmin)
 admin.site.register(Course, CourseAdmin)
 admin.site.register(CourseGroup, CourseGroupAdmin)
@@ -47,4 +52,5 @@ admin.site.register(CodeSnippet)
 admin.site.register(CodeTemplate, CodeTemplateAdmin)
 admin.site.register(Assessment, AssessmentAdmin)
 admin.site.register(Tag, TagAdmin)
+admin.site.register(AssessmentAttempt, AssessmentAttemptAdmin)
 

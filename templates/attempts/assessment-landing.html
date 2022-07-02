@@ -1,0 +1,120 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}{{ assessment.name }}{% endblock %}
+
+{% block styles %}
+{% endblock %}
+
+{% block content %}
+
+  <!-- Page Title -->
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-12 order-md-1 order-last">
+          <h5>Assessment</h5>
+          <h2>{{ assessment }}</h2>
+          <span class="badge bg-secondary">{{ assessment.status }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if assessment.status == "Upcoming" %}
+    <!-- No more attempt alert -->
+    <div class="alert alert-secondary">
+      <h4 class="alert-heading">Upcoming &#x1F4C6;</h4>
+      <p>This assessment is not available for participation yet.</p>
+    </div>
+  {% elif assessment.status == "Ended" %}
+    <div class="alert alert-secondary">
+      <h4 class="alert-heading">Ended &#x1F3C1;</h4>
+      <p>The allowed period for this assessment has ended.</p>
+    </div>
+  {% elif incomplete_attempt %}
+    <!-- No more attempt alert -->
+    <div class="alert alert-warning mb-4">
+      <h4 class="alert-heading">Incomplete attempt &#x23F3;</h4>
+      <p><b>You have an incomplete attempt for this assessment, please continue.</b></p>
+    </div>
+  {% elif no_more_attempts %}
+    <!-- No more attempt alert -->
+    <div class="alert alert-danger mb-4">
+      <h4 class="alert-heading">No more attempts &#x26D4;</h4>
+      <p><b>You have used up all available attempts for this assessment.</b></p>
+    </div>
+  {% endif %}
+
+  <!-- Assessment information row -->
+  <div class="row">
+    <div class="col-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h4 class="card-title ">Assessment Information</h4>
+        </div>
+
+        <div class="card-body">
+          <div class="row">
+            <div class="col-8">
+              <h6>Course</h6>
+              <p>{{ assessment.course }}</p>
+            </div>
+            <div class="col-4">
+              <h6>Used Attempts</h6>
+              <p>{{ attempt_count }} of {{ assessment.num_attempts|default:"Unlimited" }}</p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-4">
+              <h6>Duration</h6>
+              <p>{% if assessment.duration %}{{ assessment.duration }} minutes{% else %}Unlimited{% endif %}</p>
+            </div>
+            <div class="col-4">
+              <h6>Time Start</h6>
+              <p>{{ assessment.time_start|default_if_none:"-" }}</p>
+            </div>
+            <div class="col-4">
+              <h6>Time End</h6>
+              <p>{{ assessment.time_end|default_if_none:"-" }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructions card -->
+    <div class="col-6">
+      <div class="card">
+        <div class="card-content">
+          <div class="card-body">
+            <h4 class="card-title">Instructions for candidates</h4>
+            <p class="card-text">
+              {{ assessment.instructions|linebreaks }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="row pb-4">
+    <div class="col-12  d-flex justify-content-end align-items-center">
+      <a class="btn btn-lg btn-outline-secondary me-2" href="{% url 'dashboard' %}">Back to Home</a>
+
+      {# only show button if the assessment is still active #}
+      {% if assessment.status == "Active" %}
+        {% if incomplete_attempt %}
+          <a class="btn btn-lg btn-warning" href="#">Resume</a>
+        {% else %}
+          <a class="btn btn-lg btn-success" href="#">Begin</a>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+
+{% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+{% endblock %}

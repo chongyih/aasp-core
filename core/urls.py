@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import auth, user_management, dashboards, course_management, question_banks, code_questions, assessments
+from .views import auth, user_management, dashboards, course_management, question_banks, code_questions, assessments, attempts
 
 urlpatterns = [
     # global auth
@@ -31,7 +31,7 @@ urlpatterns = [
     # question banks
     path('qb/', question_banks.view_question_banks, name='view-question-banks'),
     path('qb/create/', question_banks.create_question_bank, name='create-question-bank'),
-    path('qb/update/<int:question_bank_id>', question_banks.update_question_bank, name='update-question-bank'),
+    path('qb/update/<int:question_bank_id>/', question_banks.update_question_bank, name='update-question-bank'),
     path('qb/details/<int:question_bank_id>/', question_banks.question_bank_details, name='question-bank-details'),
     path('api/update-qb-shared-with/', question_banks.update_qb_shared_with, name='update-qb-shared-with'),  # ajax
     path('api/delete-code-question/', question_banks.delete_code_question, name='delete-code-question'),  # ajax
@@ -44,8 +44,12 @@ urlpatterns = [
 
     # assessments
     path('assessment/create/', assessments.create_assessment, name='create-assessment'),
-    path('assessment/update/<int:assessment_id>', assessments.update_assessment, name='update-assessment'),
+    path('assessment/update/<int:assessment_id>/', assessments.update_assessment, name='update-assessment'),
     path('assessment/details/<int:assessment_id>/', assessments.assessment_details, name='assessment-details'),
     path('api/add-code-question-to-assessment/', assessments.add_code_question_to_assessment, name='add-code-question-to-assessment'),
     path('api/get-code-questions-questions/', assessments.get_code_questions, name='get-code-questions'),  # ajax
+
+    # taking assessments (attempts)
+    path('assessment/landing/<int:assessment_id>/', attempts.assessment_landing, name='assessment-landing'),
+
 ]

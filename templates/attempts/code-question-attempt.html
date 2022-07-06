@@ -1,0 +1,483 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}{{ assessment.name }}{% endblock %}
+
+{% block styles %}
+  <!-- Split.js, ace editor css -->
+  <style>
+      .split {
+          display: flex;
+          flex-direction: row;
+      }
+
+      .gutter {
+          background-color: #eee;
+          background-repeat: no-repeat;
+          background-position: 50%;
+      }
+
+      .gutter.gutter-horizontal {
+          background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+          cursor: col-resize;
+      }
+
+      @font-face {
+          font-family: 'JetBrains Mono';
+          src: url('{% static 'fonts/JetBrainsMono-Regular.ttf' %}') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+      }
+  </style>
+  <link rel="stylesheet" href="{% static 'vendors/highlight.js/styles/night-owl.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
+
+{% endblock %}
+
+{% block content %}
+  <!-- Page Title -->
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-12 order-md-1 order-last">
+          <h5>Assessment</h5>
+          <h2>{{ question_attempt.assessment_attempt.assessment }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assessment information row -->
+  <div class="row">
+    <div class="col-8">
+      <div class="card">
+        <div class="card-body">
+          <div class="row">
+            <!-- Question number buttons -->
+            <div class="col-9">
+              {% for i in question_counts %}
+                {% if i == question_index %}
+                  <a class="btn btn-sm btn-success"
+                     href="{% url 'attempt-question' assessment_attempt_id=assessment_attempt.id question_index=i %}">
+                    {{ i|add:"1" }} (Current)
+                  </a>
+                {% else %}
+                  <a class="btn btn-sm btn-secondary"
+                     href="{% url 'attempt-question' assessment_attempt_id=assessment_attempt.id question_index=i %}">
+                    {{ i|add:"1" }}
+                  </a>
+                {% endif %}
+              {% endfor %}
+            </div>
+
+            <!-- Previous and next buttons -->
+            <div class="col-3 d-flex justify-content-end">
+              <!-- Previous -->
+              {% if prev_index != -1 %}
+                <a class="btn btn-sm btn-primary me-2"
+                   href="{% url 'attempt-question' assessment_attempt_id=assessment_attempt.id question_index=prev_index %}">Previous</a>
+              {% else %}
+                <a class="btn btn-sm btn-primary disabled me-2" href="#">Previous</a>
+              {% endif %}
+
+              <!-- Next -->
+              {% if next_index != -1 %}
+                <a class="btn btn-sm btn-primary"
+                   href="{% url 'attempt-question' assessment_attempt_id=assessment_attempt.id question_index=next_index %}">Next</a>
+              {% else %}
+                <a class="btn btn-sm btn-primary disabled" href="#">Next</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructions card -->
+    <div class="col-4">
+      <div class="card">
+        <div class="card-content">
+          <div class="card-body">
+            <h4 class="card-title">Time Remaining</h4>
+            <h1 class="card-text">00:40:43</h1>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Question & Answer row -->
+  <div class="row">
+    <div class="card">
+      <!-- split panes -->
+      <div class="split">
+        <!-- Question pane -->
+        <div id="split-0">
+          <div class="p-4">
+            <h4>{{ code_question.name }}</h4>
+
+            <div id="question-desc">
+              {{ code_question.description }}
+            </div>
+
+            <hr>
+
+            <!-- sample test case -->
+            <h5>Sample Input</h5>
+            <pre><code class="language-plaintext rounded">{{ sample_tc.stdin }}</code></pre>
+
+            <h5>Sample Output</h5>
+            <pre><code class="language-plaintext rounded">{{ sample_tc.stdout }}</code></pre>
+
+            <hr>
+
+            <!-- tags -->
+            <div id="tags-div">
+              <h6>Tags</h6>
+              {% for tag in code_question.tags.all %}
+                <span class="badge bg-light-secondary">{{ tag.name }}</span>
+              {% endfor %}
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Answer pane -->
+        <div id="split-1">
+          <div class="p-4">
+            <h4>Your answer</h4>
+
+            <div class="row">
+              <!-- Language selection -->
+              <div class="col-8">
+                <label for="lang-select">Language</label>
+                <select class="form-select" id="lang-select">
+                  {% for cs in code_snippets %}
+                    <option data-code="{{ cs.code }}" data-judgeid="{{ cs.language.judge_language_id }}"
+                            data-ace-mode="{{ cs.language.ace_mode }}">{{ cs.language.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- theme selection -->
+              <div class="col-4">
+                <label for="theme-select">Theme</label>
+                <select class="form-select" id="theme-select">
+                  <option value="cloud9_day">Light (Cloud9 Day)</option>
+                  <option value="one_dark">Dark (One Dark)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Ace Code Editor -->
+            <div class="row p-2">
+              <pre id="editor" class="inner rounded" style="height: 500px;"></pre>
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <div>
+                <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile and Run<i
+                        class="fa-solid fa-play ms-2"></i></button>
+                <button type="button" id="submit-btn" class="btn btn-success">Submit</button>
+              </div>
+              <div>
+                <span class="h5" id="run-status">Ready</span>
+                <div class="spinner-border spinner-border-sm ms-2" id="main-loading" style="display:none;"></div>
+                <br>
+                <button type="button" id="more-details" class="btn btn-link show-modal p-0 view-modal" style="display:none;">More
+                  Details
+                </button>
+              </div>
+            </div>
+
+            <hr>
+
+            <div>
+              <h4>Submission History</h4>
+              <!-- Button trigger modal -->
+              <a data-bs-toggle="modal" data-bs-target="#exampleModalCenter" href="#">
+                Launch static backdrop modal
+              </a>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Case Details Modal -->
+  <div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-labelledby="detailsModal" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLongTitle">Test Case Details</h5>
+          <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- modal loading -->
+          <div class="p-3 d-flex justify-content-center" id="m-loading">
+            <div class='spinner-border spinner-border-sm me-1'></div>
+            Loading ...
+          </div>
+
+          <!-- modal body details -->
+          <div id="m-body" style="display:none;">
+            <!-- token -->
+            <h6>Token</h6>
+            <p id="m-token">d6050933-cf4a-4124-a893-f76fee79459e</p>
+            <hr>
+            <!-- stdin -->
+            <h6>stdin</h6>
+            <pre><code class="language-plaintext rounded" id="m-stdin">hidden</code></pre>
+            <div class="row">
+              <!-- stdout -->
+              <div class="col-6">
+                <h6>stdout</h6>
+                <pre><code class="language-plaintext rounded" id="m-stdout">2</code></pre>
+              </div>
+              <!-- expected output -->
+              <div class="col-6">
+                <h6>Expected Output</h6>
+                <pre><code class="language-plaintext rounded" id="m-expected-output">3</code></pre>
+              </div>
+            </div>
+            <hr>
+
+            <!-- outcome -->
+            <h6>Outcome</h6>
+            <p id="m-outcome">Execution Failed</p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+
+{% endblock %}
+
+{% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js"></script>
+  <script src="{% static 'vendors/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
+  <script type="text/javascript" src="{% static 'vendors/highlight.js/highlight.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
+
+  <!-- General script -->
+  <script>
+      Split(['#split-0', '#split-1'], {
+          sizes: [40, 60],
+          minSize: 400,
+          onDrag: () => {
+              editor.resize() // resize code editor when panes are resized
+          }
+      })
+
+      // warn before navigation
+      window.onbeforeunload = function () {
+          return "";
+      }
+
+      // hljs
+      hljs.highlightAll();
+  </script>
+
+  <!-- Ace code editor config -->
+  <script>
+      // language and theme selections
+      const langSelect = $("#lang-select");
+      const themeSelect = $("#theme-select");
+
+      // initialize ace editor
+      let editor = ace.edit("editor");
+      editor.renderer.setScrollMargin(10);
+      editor.setOptions({
+          fontFamily: "JetBrains Mono",
+          fontSize: "16px",
+          theme: "ace/theme/cloud9_day",
+          showPrintMargin: false,
+          highlightActiveLine: false,
+          wrap: true,
+          tabSize: 4,
+      });
+
+      // function that sets the language and code snippet
+      const setLanguage = () => {
+          // get the selected option
+          const selected = langSelect.find("option:selected");
+          // set the code snippet
+          editor.session.setValue(selected.data('code'));
+          // set ace mode
+          editor.session.setMode("ace/mode/" + selected.data('ace-mode'));
+      }
+
+      // set language on first load
+      setLanguage();
+
+      // when language dropdown changed
+      langSelect.change(function () {
+          setLanguage();
+      })
+
+      // when theme dropdown changed
+      themeSelect.change(function () {
+          editor.setTheme("ace/theme/" + $(this).val());
+      })
+  </script>
+
+  <!-- Code running and submission scripts -->
+  <script>
+      const runStatus = $("#run-status");
+      const moreDetails = $("#more-details");
+      const mainLoading = $("#main-loading");
+      const sampleBtn = $("#sample-btn");
+      const submitBtn = $("#submit-btn");
+
+      // error actions
+      const showError = (msg) => {
+          mainLoading.hide();
+          moreDetails.hide();
+
+          runStatus.html(msg);
+          Toastify({
+              text: "An error has occurred, please refresh the page and try again.",
+              duration: 5000,
+              position: "center",
+              style: {"background": "#ff6961"}
+          }).showToast();
+      };
+
+      // compile and run
+      const compileAndRun = () => {
+          // disable buttons
+          sampleBtn.prop("disabled", true);
+          submitBtn.prop("disabled", true);
+
+          // hide more details link
+          mainLoading.show();
+          moreDetails.hide();
+
+          // prepare form data
+          let formData = new FormData();
+          formData.append("code", editor.getValue());
+          formData.append("lang-id", langSelect.find("option:selected").data('judgeid'));
+          formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+          // ajax call
+          $.ajax({
+              type: 'POST',
+              url: "{% url 'submit-sample' test_case_id=sample_tc.id %}",
+              data: formData,
+              processData: false,
+              contentType: false,
+          }).done((res) => {
+              if (res.result === "success") {
+                  const token = res.token;
+                  updateSampleStatus(token);
+              } else {
+                  window.setTimeout(() => {
+                      console.error('Internal API returned an error.');
+                      showError("Internal API Error &#x274C;");
+                  }, 1000);
+              }
+          }).fail((res) => {
+              window.setTimeout(() => {
+                  console.error('Error making request to External API');
+                  showError("External API Error &#x274C;");
+              }, 1000);
+          }).always((res) => {
+          });
+      };
+
+      // updates status by polling
+      const updateSampleStatus = (token) => {
+          $.ajax({
+              type: 'GET',
+              url: "{% url 'get-sample-status' %}",
+              data: {token: token},
+          }).done((res) => {
+              if (res.result === "success") {
+                  // update run status label
+                  runStatus.html(res.data.status);
+
+                  if (res.data.status_id === 1 || res.data.status_id === 2) {  // not finished
+                      window.setTimeout(() => {
+                          updateSampleStatus(token);
+                      }, 1000);
+                  } else { // finished
+                      // enable buttons
+                      sampleBtn.prop("disabled", false);
+                      submitBtn.prop("disabled", false);
+                      // hide loading, show more details link
+                      mainLoading.hide();
+                      moreDetails.show();
+                      // set token
+                      moreDetails.data('token', token);
+                  }
+              } else {
+                  console.error("Internal API Error &#x274C;");
+                  showError("Internal API Error &#x274C;");
+              }
+          }).fail((res) => {
+              console.error("External API Error &#x274C;");
+              showError("External API Error &#x274C;");
+          });
+      }
+
+      // modal elements
+      const modalToken = $("#m-token");
+      const modalLoading = $("#m-loading");
+      const modalBody = $("#m-body");
+      const modalStdin = $("#m-stdin");
+      const modalStdout = $("#m-stdout");
+      const modalExpectedOutput = $("#m-expected-output");
+
+      $(".view-modal").click(function (e) {
+          // get the token of the clicked button
+          const token = $(this).data('token');
+
+          // show m-loading, hide m-body
+          modalBody.hide();
+          modalLoading.show();
+
+          // set token
+          modalToken.html(token);
+
+          // ajax request
+          $.ajax({
+              type: 'GET',
+              url: "",
+              data: {token},
+          }).done((res) => {
+              if (res.result === "success") {
+                  // set values
+                  modalStdin.html(res.data.stdin)
+                  modalStdout.html(res.data.stdout)
+                  modalExpectedOutput.html(res.data.expected_output)
+
+                  setTimeout(() => {
+                      modalBody.show();
+                      modalLoading.hide();
+                  }, 300);
+              }else{
+
+              }
+          }).fail((res) => {
+
+          });
+
+          // show modal
+          $('#detailsModal').modal('show');
+      });
+
+
+  </script>
+{% endblock %}

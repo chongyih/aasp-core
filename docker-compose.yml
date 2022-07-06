@@ -6,6 +6,7 @@ services:
     ports:
       - 5672:5672
       - 15672:15672
+    restart: unless-stopped
 
   celery_worker:
     build:
@@ -14,5 +15,51 @@ services:
     network_mode: host
     volumes:
       - .:/app
-    depends_on: 
+    restart: unless-stopped
+    depends_on:
       - rabbitmq
+
+  server:
+    image: judge0/judge0:latest
+    volumes:
+      - ./compose/judge0/judge0.conf:/judge0.conf:ro
+    ports:
+      - "2358:2358"
+    privileged: true
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    image: judge0/judge0:latest
+    command: ["./scripts/workers"]
+    volumes:
+      - ./compose/judge0/judge0.conf:/judge0.conf:ro
+    privileged: true
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:13.0
+    env_file: ./compose/judge0/judge0.conf
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+    restart: unless-stopped
+
+  redis:
+    image: redis:6.0
+    command: [
+      "bash", "-c",
+      'docker-entrypoint.sh --appendonly yes --requirepass "$$REDIS_PASSWORD"'
+    ]
+    env_file: ./compose/judge0/judge0.conf
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:

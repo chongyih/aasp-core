@@ -150,3 +150,6 @@ DEFAULT_STUDENT_PASSWORD = "password123"
 
 # celery settings
 CELERY_BROKER_URL = "amqp://127.0.0.1:5672/"
+
+# judge0 settings
+JUDGE0_URL = "http://localhost:2358"

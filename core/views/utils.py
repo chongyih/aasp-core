@@ -1,4 +1,7 @@
 # utility functions for checking group membership
+from core.models import CodeQuestionAttempt
+
+
 def is_student(user):
     return user.is_superuser or user.groups.filter(name='student').exists()
 
@@ -106,3 +109,21 @@ def check_permissions_assessment(assessment, user):
     if user in assessment.course.maintainers.all():
         return 1
     return 0
+
+
+def get_assessment_attempt_question(assessment_attempt, question_index=None):
+    """
+    Get a specific question in an assessment attempt.
+    If question_index is specified and within bounds, return only the question object.
+    Else, return the entire list.
+    """
+    questions = []
+    cq_attempts = CodeQuestionAttempt.objects.filter(assessment_attempt=assessment_attempt).order_by('id').prefetch_related('code_question')
+    questions.extend(list(cq_attempts))
+
+    if question_index is None:  # return all questions
+        return len(questions), questions
+    elif question_index > len(questions) - 1:  # return None
+        return 0, None
+    else:  # return specific question
+        return len(questions), questions[question_index]

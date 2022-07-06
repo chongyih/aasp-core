@@ -51,5 +51,9 @@ urlpatterns = [
 
     # taking assessments (attempts)
     path('assessment/landing/<int:assessment_id>/', attempts.assessment_landing, name='assessment-landing'),
+    path('assessment/enter/<int:assessment_id>/', attempts.enter_assessment, name='enter-assessment'),
+    path('attempt/<int:assessment_attempt_id>/question/<int:question_index>/', attempts.attempt_question, name='attempt-question'),
+    path('api/submit-sample/<int:test_case_id>/', attempts.submit_sample, name='submit-sample'),  # ajax
+    path('api/get-sample-status/', attempts.get_sample_status, name='get-sample-status'),  # ajax
 
 ]

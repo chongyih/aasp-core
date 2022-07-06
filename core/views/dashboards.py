@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect
 
+from core.models import Course, CourseGroup, Assessment
 from core.views.utils import is_student, is_educator, is_lab_assistant
 
 
@@ -22,8 +23,11 @@ def dashboard(request):
 @login_required
 @user_passes_test(is_student, login_url='dashboard')
 def dashboard_students(request):
-    user = request.user
-    context = {}
+    # retrieve all assessments for this user
+    assessments = Assessment.objects.filter(course__coursegroup__students=request.user)
+    context = {
+        'assessments': assessments
+    }
     return render(request, 'dashboards/students.html', context)
 
 

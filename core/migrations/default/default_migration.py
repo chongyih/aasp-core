@@ -92,9 +92,9 @@ class Migration(migrations.Migration):
         Language = apps.get_model('core', 'Language')
         CodeTemplate = apps.get_model('core', 'CodeTemplate')
 
-        c = Language.objects.create(name='C (GCC 9.2.0)', judge_language_id=50)
-        java = Language.objects.create(name='Java (OpenJDK 13.0.1)', judge_language_id=62)
-        python3 = Language.objects.create(name='Python 3.8.1', judge_language_id=71)
+        c = Language.objects.create(name='C (GCC 9.2.0)', judge_language_id=50, ace_mode='c_cpp')
+        java = Language.objects.create(name='Java (OpenJDK 13.0.1)', judge_language_id=62, ace_mode='java')
+        python3 = Language.objects.create(name='Python 3.8.1', judge_language_id=71, ace_mode='python')
 
         # create code templates
         ct1 = CodeTemplate(language=c, name="Default", code="#include <stdio.h>\n#include<stdlib.h>\n")

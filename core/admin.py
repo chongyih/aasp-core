@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
 from core.models import User, Course, CourseGroup, QuestionBank, CodeQuestion, Assessment, TestCase, Language, CodeSnippet, CodeTemplate, Tag, \
-    AssessmentAttempt
+    AssessmentAttempt, CodeQuestionAttempt, CodeQuestionSubmission, TestCaseAttempt
 
 
 class CourseAdmin(admin.ModelAdmin):
@@ -41,6 +41,18 @@ class AssessmentAttemptAdmin(admin.ModelAdmin):
     list_display = ('id', 'candidate')
 
 
+class CodeQuestionAttemptAdmin(admin.ModelAdmin):
+    list_display = ('id', 'assessment_attempt', 'code_question', 'answered')
+
+
+class CodeQuestionSubmissionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'cq_attempt', 'time_submitted', 'finished')
+
+
+class TestCaseAttemptAdmin(admin.ModelAdmin):
+    list_display = ('id', 'cq_submission', 'test_case', 'token', 'status')
+
+
 admin.site.register(User, UserAdmin)
 admin.site.register(Course, CourseAdmin)
 admin.site.register(CourseGroup, CourseGroupAdmin)
@@ -53,4 +65,6 @@ admin.site.register(CodeTemplate, CodeTemplateAdmin)
 admin.site.register(Assessment, AssessmentAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(AssessmentAttempt, AssessmentAttemptAdmin)
-
+admin.site.register(CodeQuestionAttempt, CodeQuestionAttemptAdmin)
+admin.site.register(CodeQuestionSubmission, CodeQuestionSubmissionAdmin)
+admin.site.register(TestCaseAttempt, TestCaseAttemptAdmin)

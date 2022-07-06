@@ -12,15 +12,19 @@ class Assessment(models.Model):
     instructions = models.TextField(null=False, blank=False)
     deleted = models.BooleanField(default=False)
     show_grade = models.BooleanField(default=False)
+    published = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.name}"
 
+    @property
     def status(self):
         """
-        Deleted, Active, Upcoming, Ended
+        Unpublished, Deleted, Active, Upcoming, Ended
         """
-        if self.deleted:
+        if not self.published:
+            return "Unpublished"
+        elif self.deleted:
             return "Deleted"
         elif not self.time_start and not self.time_end:  # unlimited
             return "Active"

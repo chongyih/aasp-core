@@ -89,10 +89,14 @@
           <div class="col-12">
             <div class="card">
               <div class="card-header">
-                <h4>Profile Visit</h4>
+                <h4>Your Assessments</h4>
               </div>
               <div class="card-body">
-                <div id="chart-profile-visit"></div>
+                {% for assessment in assessments %}
+                  <p>{{ assessment.name }}
+                    <a class="btn btn-success btn-sm" href="{% url 'assessment-landing' assessment_id=assessment.id %}">View</a>
+                  </p>
+                {% endfor %}
               </div>
             </div>
           </div>

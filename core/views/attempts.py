@@ -89,6 +89,7 @@ def enter_assessment(request, assessment_id):
     raise Http404
 
 
+@login_required()
 def generate_assessment_attempt(user, assessment):
     """
     Generates a AssessmentAttempt instance for a user and assessment then,
@@ -105,6 +106,7 @@ def generate_assessment_attempt(user, assessment):
         CodeQuestionAttempt.objects.bulk_create(cq_attempts)
 
 
+@login_required()
 def attempt_question(request, assessment_attempt_id, question_index):
     print("assessment_attempt_id:", assessment_attempt_id)
     print("question_index:", question_index)
@@ -143,7 +145,13 @@ def attempt_question(request, assessment_attempt_id, question_index):
         raise Exception("Unknown question!")
 
 
-def submit_sample(request, test_case_id):
+@login_required()
+def submit_single_test_case(request, test_case_id):
+    """
+    Submits a single test case to judge0 for execution, returns the token.
+    This is used for the "Compile and Run" option for users to run the sample test case.
+    This submission is not recorded.
+    """
     if request.method == "POST":
         # get test case instance
         test_case = TestCase.objects.filter(id=test_case_id).first()
@@ -156,8 +164,8 @@ def submit_sample(request, test_case_id):
             "language_id": request.POST.get('lang-id'),
             "stdin": test_case.stdin,
             "expected_output": test_case.stdout,
-            "cpu_time_limit": 15, #test_case.time_limit / 1000,
-            "memory_limit": 20480, #test_case.memory_limit,
+            "cpu_time_limit": test_case.time_limit,
+            "memory_limit": test_case.memory_limit,
         }
 
         # call judge0
@@ -174,7 +182,13 @@ def submit_sample(request, test_case_id):
         return JsonResponse({"result": "success", "token": token})
 
 
-def get_sample_status(request):
+@login_required()
+def get_tc_details(request):
+    """
+    Retrieves the status_id of a submission from Judge0, given a token.
+    Used for checking the status of a submitted sample test case.
+    """
+    # friendly names of status_ids
     STATUSES = {
         1: "In Queue",
         2: "Processing",
@@ -193,18 +207,51 @@ def get_sample_status(request):
     }
 
     if request.method == "GET":
-        # get token from request
+        # get parameters from request
+        status_only = request.GET.get('status_only') == 'true'
         token = request.GET.get('token')
         if not token:
             return JsonResponse({"result": "error"})
 
         # call judge0
         try:
-            url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id"
+            if status_only:
+                url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id"
+            else:
+                url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id,stdin,stdout,expected_output"
+
             res = requests.get(url)
             data = res.json()
+
+            # append friendly status name
             data['status'] = STATUSES[int(data['status_id'])]
+
+            # hide fields if this belongs to a hidden test case
+            if TestCase.objects.filter(hidden=True, testcaseattempt__token=token).exists():
+                data['stdin'] = "Hidden"
+                data['stdout'] = "Hidden"
+                data['expected_output'] = "Hidden"
+
+            return JsonResponse({"result": "success", "data": data})
+
         except ConnectionError:
             return JsonResponse({"result": "error", "msg": "API seems to be down."})
 
-        return JsonResponse({"result": "success", "data": data})
+
+@login_required()
+def code_question_submission(request):
+    """
+    Submits answer for a code question.
+    - Generates 'CodeQuestionSubmission' and 'TestCaseAttempt's and stores in the database.
+    - Calls Judge0 api for the submission of the test cases
+    - Queues celery tasks for updating the statuses of TestCaseAttempt
+    """
+
+
+
+@login_required()
+def get_cq_submission_status(request):
+    """
+    Returns the statuses of each TestCaseAttempt belonging to a CodeQuestionSubmission.
+
+    """

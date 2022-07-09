@@ -194,10 +194,7 @@
 
             <div>
               <h4>Submission History</h4>
-              <!-- Button trigger modal -->
-              <a data-bs-toggle="modal" data-bs-target="#exampleModalCenter" href="#">
-                Launch static backdrop modal
-              </a>
+
             </div>
 
           </div>
@@ -217,10 +214,13 @@
           </button>
         </div>
         <div class="modal-body">
+
           <!-- modal loading -->
-          <div class="p-3 d-flex justify-content-center" id="m-loading">
-            <div class='spinner-border spinner-border-sm me-1'></div>
-            Loading ...
+          <div id="m-loading">
+            <div class="p-3 d-flex justify-content-center">
+              <div class='spinner-border spinner-border-sm me-1'></div>
+              Loading ...
+            </div>
           </div>
 
           <!-- modal body details -->
@@ -230,25 +230,25 @@
             <p id="m-token">d6050933-cf4a-4124-a893-f76fee79459e</p>
             <hr>
             <!-- stdin -->
-            <h6>stdin</h6>
-            <pre><code class="language-plaintext rounded" id="m-stdin">hidden</code></pre>
+            <h6>Standard Input</h6>
+            <pre><code class="language-plaintext rounded" id="m-stdin"></code></pre>
             <div class="row">
               <!-- stdout -->
               <div class="col-6">
-                <h6>stdout</h6>
-                <pre><code class="language-plaintext rounded" id="m-stdout">2</code></pre>
+                <h6>Standard Output</h6>
+                <pre><code class="language-plaintext rounded" id="m-stdout"></code></pre>
               </div>
               <!-- expected output -->
               <div class="col-6">
                 <h6>Expected Output</h6>
-                <pre><code class="language-plaintext rounded" id="m-expected-output">3</code></pre>
+                <pre><code class="language-plaintext rounded" id="m-expected-output"></code></pre>
               </div>
             </div>
             <hr>
 
             <!-- outcome -->
             <h6>Outcome</h6>
-            <p id="m-outcome">Execution Failed</p>
+            <p id="m-outcome"></p>
           </div>
         </div>
 
@@ -335,11 +335,21 @@
 
   <!-- Code running and submission scripts -->
   <script>
+      // main elements
       const runStatus = $("#run-status");
       const moreDetails = $("#more-details");
       const mainLoading = $("#main-loading");
       const sampleBtn = $("#sample-btn");
       const submitBtn = $("#submit-btn");
+
+      // modal elements
+      const modalToken = $("#m-token");
+      const modalLoading = $("#m-loading");
+      const modalBody = $("#m-body");
+      const modalStdin = $("#m-stdin");
+      const modalStdout = $("#m-stdout");
+      const modalExpectedOutput = $("#m-expected-output");
+      const modalOutcome = $("#m-outcome");
 
       // error actions
       const showError = (msg) => {
@@ -364,6 +374,7 @@
           // hide more details link
           mainLoading.show();
           moreDetails.hide();
+          runStatus.html('Submitting...');
 
           // prepare form data
           let formData = new FormData();
@@ -374,7 +385,7 @@
           // ajax call
           $.ajax({
               type: 'POST',
-              url: "{% url 'submit-sample' test_case_id=sample_tc.id %}",
+              url: "{% url 'submit-single-test-case' test_case_id=sample_tc.id %}",
               data: formData,
               processData: false,
               contentType: false,
@@ -384,25 +395,25 @@
                   updateSampleStatus(token);
               } else {
                   window.setTimeout(() => {
-                      console.error('Internal API returned an error.');
+                      console.error('Internal API error!');
                       showError("Internal API Error &#x274C;");
                   }, 1000);
               }
           }).fail((res) => {
               window.setTimeout(() => {
-                  console.error('Error making request to External API');
+                  console.error('External API error!');
                   showError("External API Error &#x274C;");
               }, 1000);
           }).always((res) => {
           });
       };
 
-      // updates status by polling
+      // updates sample status by polling
       const updateSampleStatus = (token) => {
           $.ajax({
               type: 'GET',
-              url: "{% url 'get-sample-status' %}",
-              data: {token: token},
+              url: "{% url 'get-tc-details' %}",
+              data: {token, status_only: true},
           }).done((res) => {
               if (res.result === "success") {
                   // update run status label
@@ -423,23 +434,16 @@
                       moreDetails.data('token', token);
                   }
               } else {
-                  console.error("Internal API Error &#x274C;");
+                  console.error("Internal API Error!");
                   showError("Internal API Error &#x274C;");
               }
           }).fail((res) => {
-              console.error("External API Error &#x274C;");
+              console.error("External API Error!");
               showError("External API Error &#x274C;");
           });
       }
 
-      // modal elements
-      const modalToken = $("#m-token");
-      const modalLoading = $("#m-loading");
-      const modalBody = $("#m-body");
-      const modalStdin = $("#m-stdin");
-      const modalStdout = $("#m-stdout");
-      const modalExpectedOutput = $("#m-expected-output");
-
+      // more details clicked
       $(".view-modal").click(function (e) {
           // get the token of the clicked button
           const token = $(this).data('token');
@@ -448,35 +452,54 @@
           modalBody.hide();
           modalLoading.show();
 
-          // set token
-          modalToken.html(token);
-
           // ajax request
           $.ajax({
               type: 'GET',
-              url: "",
-              data: {token},
+              url: "{% url 'get-tc-details' %}",
+              data: {token, status_only: false},
           }).done((res) => {
               if (res.result === "success") {
                   // set values
-                  modalStdin.html(res.data.stdin)
-                  modalStdout.html(res.data.stdout)
-                  modalExpectedOutput.html(res.data.expected_output)
+                  modalToken.html(token);
+                  modalStdin.html(res.data.stdin ? res.data.stdin : '&nbsp;');
+                  modalStdout.html(res.data.stdout ? res.data.stdout : '&nbsp;');
+                  modalExpectedOutput.html(res.data.expected_output ? res.data.expected_output : '&nbsp;');
+                  modalOutcome.html(res.data.status);
 
                   setTimeout(() => {
-                      modalBody.show();
                       modalLoading.hide();
-                  }, 300);
-              }else{
-
+                      modalBody.show();
+                  }, 500);
+              } else {
+                  console.error("Internal API Error!");
               }
           }).fail((res) => {
-
+              console.error("External API Error!");
           });
 
           // show modal
           $('#detailsModal').modal('show');
       });
+
+      // submit button clicked
+      submitBtn.click(() => {
+          // disable buttons
+          sampleBtn.prop("disabled", true);
+          submitBtn.prop("disabled", true);
+
+          // hide more details link
+          mainLoading.show();
+          moreDetails.hide();
+          runStatus.html('Submitting...');
+
+          // prepare form data
+          let formData = new FormData();
+          formData.append("code", editor.getValue());
+          formData.append("lang-id", langSelect.find("option:selected").data('judgeid'));
+          formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+
+      })
 
 
   </script>

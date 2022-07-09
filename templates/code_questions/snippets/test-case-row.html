@@ -48,7 +48,7 @@
   <!-- time and memory limit inputs -->
   <div class="col-3">
     <div class="form-group">
-      <label for="id_tc-{{ prefix|default:"__prefix__" }}-time_limit">Time Limit (ms)</label>
+      <label for="id_tc-{{ prefix|default:"__prefix__" }}-time_limit">Time Limit (s)</label>
       <input name="tc-{{ prefix|default:"__prefix__" }}-time_limit"
              id="id_tc-{{ prefix|default:"__prefix__" }}-time_limit" type="number"
              class="form-control" min="0" value="{{ form.time_limit.value|default:1000 }}">

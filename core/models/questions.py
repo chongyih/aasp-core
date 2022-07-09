@@ -99,8 +99,8 @@ class TestCase(models.Model):
     code_question = models.ForeignKey(CodeQuestion, null=False, blank=False, on_delete=models.CASCADE)
     stdin = models.TextField(blank=False, null=False)
     stdout = models.TextField(blank=False, null=False)
-    time_limit = models.PositiveIntegerField()
-    memory_limit = models.PositiveIntegerField()
+    time_limit = models.PositiveIntegerField(default=5)
+    memory_limit = models.PositiveIntegerField(default=20480)
 
     score = models.PositiveIntegerField()
     hidden = models.BooleanField(default=True)

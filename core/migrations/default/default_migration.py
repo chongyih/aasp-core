@@ -134,8 +134,8 @@ class Migration(migrations.Migration):
             code_question=cq,
             stdin='sample in',
             stdout='sample out',
-            time_limit=200,
-            memory_limit=200,
+            time_limit=10,
+            memory_limit=20480,
             score=0,
             hidden=False,
             sample=True,
@@ -145,8 +145,8 @@ class Migration(migrations.Migration):
             code_question=cq,
             stdin='in1',
             stdout='out1',
-            time_limit=200,
-            memory_limit=200,
+            time_limit=10,
+            memory_limit=20480,
             score=5
         )
 
@@ -154,8 +154,8 @@ class Migration(migrations.Migration):
             code_question=cq,
             stdin='in2',
             stdout='out2',
-            time_limit=200,
-            memory_limit=200,
+            time_limit=10,
+            memory_limit=20480,
             score=5
         )
 

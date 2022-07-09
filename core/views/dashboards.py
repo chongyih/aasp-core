@@ -24,7 +24,7 @@ def dashboard(request):
 @user_passes_test(is_student, login_url='dashboard')
 def dashboard_students(request):
     # retrieve all assessments for this user
-    assessments = Assessment.objects.filter(course__coursegroup__students=request.user)
+    assessments = Assessment.objects.filter(course__coursegroup__students=request.user, published=True)
     context = {
         'assessments': assessments
     }

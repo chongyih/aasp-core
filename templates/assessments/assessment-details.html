@@ -21,6 +21,13 @@
       </div>
     </div>
 
+    {% if not assessment.published %}
+    <div class="alert alert-secondary">
+      <h4 class="alert-heading">Unpublished</h4>
+      <p>This assessment is unpublished and not visible to candidates.</p>
+    </div>
+  {% endif %}
+
     <!-- Assessment information row -->
     <div class="row">
       <div class="col-8">

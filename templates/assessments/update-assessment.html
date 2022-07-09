@@ -126,7 +126,8 @@
                   <div class="form-group col-6">
                     <label for="id_time_end">Date/Time End</label>
                     <input class="flatpickr flatpickr-input active form-control {% if form.time_end.errors %}is-invalid{% endif %}"
-                           id="id_time_end" name="time_end" type="text" placeholder="Select End Date.." value="{{ form.time_end.value|date:'Y-m-d H:i'|default:"" }}">
+                           id="id_time_end" name="time_end" type="text" placeholder="Select End Date.."
+                           value="{{ form.time_end.value|date:'Y-m-d H:i'|default:"" }}">
                     {# time_end errors #}
                     {% if form.time_end.errors %}
                       <p class="text-danger">
@@ -184,6 +185,13 @@
                     <input type="checkbox" id="id_show_grade" name="show_grade" class="form-check-input me-2"
                            {% if form.show_grade.value %}checked{% endif %}>
                     <label for="id_show_grade">Show Grade</label>
+                  </div>
+
+                  <!-- Show grade checkbox -->
+                  <div class="checkbox">
+                    <input type="checkbox" id="id_published" name="published" class="form-check-input me-2"
+                           {% if form.published.value %}checked{% endif %}>
+                    <label for="id_published">Published</label>
                   </div>
                 </div>
 

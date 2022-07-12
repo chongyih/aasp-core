@@ -7,8 +7,12 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.utils.timezone import make_aware
 
-from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet
+from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet, CodeQuestionSubmission, \
+    TestCaseAttempt
+from core.tasks import update_test_case_attempt_status, update_cqa_finished_flag
 from core.views.utils import get_assessment_attempt_question
 
 
@@ -81,15 +85,11 @@ def enter_assessment(request, assessment_id):
         else:
             # generate new assessment_attempt
             generate_assessment_attempt(request.user, assessment)
-            print("generated, sleeping now")
-            time.sleep(5)
-            print("sleep finished! redirecting.")
             return redirect('attempt-question', assessment_attempt_id=assessment.id, question_index=0)
 
     raise Http404
 
 
-@login_required()
 def generate_assessment_attempt(user, assessment):
     """
     Generates a AssessmentAttempt instance for a user and assessment then,
@@ -108,9 +108,6 @@ def generate_assessment_attempt(user, assessment):
 
 @login_required()
 def attempt_question(request, assessment_attempt_id, question_index):
-    print("assessment_attempt_id:", assessment_attempt_id)
-    print("question_index:", question_index)
-
     # get assessment attempt
     assessment_attempt = get_object_or_404(AssessmentAttempt, id=assessment_attempt_id)
 
@@ -129,16 +126,16 @@ def attempt_question(request, assessment_attempt_id, question_index):
 
     # render different template depending on question type (currently only CodeQuestion)
     if isinstance(question_attempt, CodeQuestionAttempt):
-        print("CodeQuestion detected!")
         code_question = question_attempt.code_question
         code_snippets = CodeSnippet.objects.filter(code_question=code_question)
         sample_tc = TestCase.objects.filter(code_question=code_question, sample=True).first()
-        print(code_snippets)
+        code_question_submissions = CodeQuestionSubmission.objects.filter(cq_attempt=question_attempt).order_by('-id')
         # add to base context
         context.update({
             'code_question': code_question,
             'sample_tc': sample_tc,
             'code_snippets': code_snippets,
+            'code_question_submissions': code_question_submissions,
         })
         return render(request, "attempts/code-question-attempt.html", context)
     else:
@@ -169,9 +166,12 @@ def submit_single_test_case(request, test_case_id):
         }
 
         # call judge0
-        url = settings.JUDGE0_URL + "/submissions/?base64_encoded=false&wait=false"
-        res = requests.post(url, json=params)
-        data = res.json()
+        try:
+            url = settings.JUDGE0_URL + "/submissions/?base64_encoded=false&wait=false"
+            res = requests.post(url, json=params)
+            data = res.json()
+        except requests.exceptions.ConnectionError:
+            return JsonResponse({"result": "error", "msg": "Judge0 API seems to be down."})
 
         # return error if no token
         token = data.get("token")
@@ -234,12 +234,12 @@ def get_tc_details(request):
 
             return JsonResponse({"result": "success", "data": data})
 
-        except ConnectionError:
-            return JsonResponse({"result": "error", "msg": "API seems to be down."})
+        except requests.exceptions.ConnectionError:
+            return JsonResponse({"result": "error", "msg": "Judge0 API seems to be down."})
 
 
 @login_required()
-def code_question_submission(request):
+def code_question_submission(request, code_question_attempt_id):
     """
     Submits answer for a code question.
     - Generates 'CodeQuestionSubmission' and 'TestCaseAttempt's and stores in the database.
@@ -247,11 +247,81 @@ def code_question_submission(request):
     - Queues celery tasks for updating the statuses of TestCaseAttempt
     """
 
+    if request.method == "POST":
+        # get cqa object
+        cqa = CodeQuestionAttempt.objects.filter(id=code_question_attempt_id).first()
+        if not cqa:
+            return JsonResponse({"result": "error", "msg": "CQA does not exist."})
+
+        # cqa does not belong to the request user
+        if cqa.assessment_attempt.candidate != request.user:
+            return JsonResponse({"result": "error", "msg": "You do not have permissions to perform this action."})
+
+        # get test cases
+        test_cases = TestCase.objects.filter(code_question__codequestionattempt=cqa)
+
+        # generate params for judge0 call
+        code = request.POST.get('code')
+        submissions = [{
+            "source_code": code,
+            "language_id": request.POST.get('lang-id'),
+            "stdin": test_case.stdin,
+            "expected_output": test_case.stdout,
+            "cpu_time_limit": test_case.time_limit,
+            "memory_limit": test_case.memory_limit,
+        } for test_case in test_cases]
+        params = {"submissions": submissions}
+
+        # call judge0
+        try:
+            url = settings.JUDGE0_URL + "/submissions/batch?base64_encoded=false"
+            res = requests.post(url, json=params)
+            data = res.json()
+        except ConnectionError:
+            return JsonResponse({"result": "error", "msg": "Judge0 API seems to be down."})
+
+        # retrieve tokens from judge0 response
+        tokens = [x['token'] for x in data]
+
+        with transaction.atomic():
+            # create CodeQuestionSubmission
+            cqs = CodeQuestionSubmission.objects.create(cq_attempt=cqa, code=code)
+
+            # create TestCaseAttempts
+            test_case_attempts = TestCaseAttempt.objects.bulk_create([
+                TestCaseAttempt(cq_submission=cqs, test_case=tc, token=token) for tc, token in zip(test_cases, tokens)
+            ])
+
+        # queue celery tasks
+        for tca in test_case_attempts:
+            update_test_case_attempt_status.delay(tca.id, tca.token, 1)
+        update_cqa_finished_flag.delay(cqs.id)
+
+        context = {
+            "result": "success",
+            "cqs_id": cqs.id,
+            "time_submitted": timezone.localtime(cqs.time_submitted).strftime("%d/%m/%Y %I:%M %p"),
+            "statuses": [[tca.id, tca.status, tca.token] for tca in test_case_attempts]
+        }
+        return JsonResponse(context)
 
 
 @login_required()
 def get_cq_submission_status(request):
     """
     Returns the statuses of each TestCaseAttempt belonging to a CodeQuestionSubmission.
-
     """
+    if request.method == "GET":
+        cq_submission_id = request.GET.get("cqs_id")
+
+        # get test case attempts
+        statuses = list(TestCaseAttempt.objects.filter(cq_submission=cq_submission_id).values_list('id', 'status', 'token'))
+        cqs = CodeQuestionSubmission.objects.get(id=cq_submission_id)
+
+        context = {
+            "result": "success",
+            "cqs_id": cq_submission_id,
+            "outcome": cqs.outcome,
+            "statuses": statuses
+        }
+        return JsonResponse(context)

@@ -178,90 +178,77 @@
               <div>
                 <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile and Run<i
                         class="fa-solid fa-play ms-2"></i></button>
-                <button type="button" id="submit-btn" class="btn btn-success">Submit</button>
+                <button type="button" id="submit-btn" onclick="submit();" class="btn btn-success">Submit</button>
               </div>
               <div>
                 <span class="h5" id="run-status">Ready</span>
                 <div class="spinner-border spinner-border-sm ms-2" id="main-loading" style="display:none;"></div>
                 <br>
-                <button type="button" id="more-details" class="btn btn-link show-modal p-0 view-modal" style="display:none;">More
-                  Details
+                <button type="button" id="more-details" class="btn btn-link p-0 view-modal" onclick="viewModal(this)" style="display:none;">
+                  More Details
                 </button>
               </div>
             </div>
 
             <hr>
 
-            <div>
-              <h4>Submission History</h4>
-
-            </div>
-
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Test Case Details Modal -->
-  <div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-labelledby="detailsModal" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLongTitle">Test Case Details</h5>
-          <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-
-          <!-- modal loading -->
-          <div id="m-loading">
-            <div class="p-3 d-flex justify-content-center">
-              <div class='spinner-border spinner-border-sm me-1'></div>
-              Loading ...
-            </div>
-          </div>
-
-          <!-- modal body details -->
-          <div id="m-body" style="display:none;">
-            <!-- token -->
-            <h6>Token</h6>
-            <p id="m-token">d6050933-cf4a-4124-a893-f76fee79459e</p>
-            <hr>
-            <!-- stdin -->
-            <h6>Standard Input</h6>
-            <pre><code class="language-plaintext rounded" id="m-stdin"></code></pre>
             <div class="row">
-              <!-- stdout -->
-              <div class="col-6">
-                <h6>Standard Output</h6>
-                <pre><code class="language-plaintext rounded" id="m-stdout"></code></pre>
-              </div>
-              <!-- expected output -->
-              <div class="col-6">
-                <h6>Expected Output</h6>
-                <pre><code class="language-plaintext rounded" id="m-expected-output"></code></pre>
+              <h4>Submission History</h4>
+              <div class="accordion" id="submissions-accordion">
+
+                {# generate one accordion-item for each submission #}
+                {% for cqs in code_question_submissions %}
+                  <div class="accordion-item">
+
+                    <h2 class="accordion-header">
+                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#submission-{{ cqs.id }}">
+                        {{ cqs.time_submitted }}
+                        {% if cqs.outcome == "Failed" %}
+                          <span class="badge bg-light-danger ms-3" id="cqs-status-{{ cqs.id }}">{{ cqs.outcome }}</span>
+                        {% elif cqs.outcome == "Passed" %}
+                          <span class="badge bg-light-success ms-3" id="cqs-status-{{ cqs.id }}">{{ cqs.outcome }}</span>
+                        {% else %}
+                          <span class="badge bg-light-warning ms-3" id="cqs-status-{{ cqs.id }}">{{ cqs.outcome }}</span>
+                        {% endif %}
+                      </button>
+                    </h2>
+
+                    <div id="submission-{{ cqs.id }}" class="accordion-collapse collapse" data-bs-parent="#submissions-accordion">
+                      <div class="accordion-body">
+                        <div class="row">
+                          {% for tca in cqs.testcaseattempt_set.all %}
+                            <div class="col-4">
+                              {# disable button if TCA is still in queue or processing #}
+                              <button id="tca-{{ tca.id }}" class="btn btn-link p-0 {% if tca.status == 1 or tca.status == 2 %}disabled{% endif %}"
+                                      data-token="{{ tca.token }}" onclick="viewModal(this);">
+                                Test Case {{ forloop.counter }}
+                              </button>
+                              <div class="spinner-border spinner-border-sm ms-2" id="tca-loading-{{ tca.id }}"
+                                   style="{% if tca.status == 1 or tca.status == 2 %}{% else %}display: none;{% endif %}"></div>
+                              <i class="fa-solid fa-check text-success" id="tca-accepted-{{ tca.id }}"
+                                 style="{% if tca.status == 3 %}{% else %}display: none;{% endif %}"></i>
+                              <i class="fa-solid fa-xmark text-danger" id="tca-failed-{{ tca.id }}"
+                                 style="{% if tca.status >= 4 and tca.status <= 14 %}{% else %}display: none;{% endif %}"></i>
+                            </div>
+                          {% endfor %}
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                {% endfor %}
+
               </div>
             </div>
-            <hr>
 
-            <!-- outcome -->
-            <h6>Outcome</h6>
-            <p id="m-outcome"></p>
           </div>
         </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-
       </div>
     </div>
   </div>
 
-
-
+  {% include 'attempts/snippets/accordion-item-template.html' %}
+  {% include 'attempts/snippets/test-case-details-modal.html' %}
 {% endblock %}
 
 {% block js %}
@@ -351,7 +338,7 @@
       const modalExpectedOutput = $("#m-expected-output");
       const modalOutcome = $("#m-outcome");
 
-      // error actions
+      // display error Toast and set status text
       const showError = (msg) => {
           mainLoading.hide();
           moreDetails.hide();
@@ -359,13 +346,13 @@
           runStatus.html(msg);
           Toastify({
               text: "An error has occurred, please refresh the page and try again.",
-              duration: 5000,
+              duration: -1,
               position: "center",
               style: {"background": "#ff6961"}
           }).showToast();
       };
 
-      // compile and run
+      // "compile and run" clicked
       const compileAndRun = () => {
           // disable buttons
           sampleBtn.prop("disabled", true);
@@ -374,7 +361,7 @@
           // hide more details link
           mainLoading.show();
           moreDetails.hide();
-          runStatus.html('Submitting...');
+          runStatus.html('Submitting');
 
           // prepare form data
           let formData = new FormData();
@@ -404,7 +391,6 @@
                   console.error('External API error!');
                   showError("External API Error &#x274C;");
               }, 1000);
-          }).always((res) => {
           });
       };
 
@@ -416,14 +402,17 @@
               data: {token, status_only: true},
           }).done((res) => {
               if (res.result === "success") {
-                  // update run status label
-                  runStatus.html(res.data.status);
-
                   if (res.data.status_id === 1 || res.data.status_id === 2) {  // not finished
+                      runStatus.html(res.data.status);
                       window.setTimeout(() => {
                           updateSampleStatus(token);
                       }, 1000);
                   } else { // finished
+                      if (res.data.status_id === 3)
+                          runStatus.html(res.data.status + " &#x2705;");
+                      else
+                          runStatus.html(res.data.status + " &#x274C;");
+
                       // enable buttons
                       sampleBtn.prop("disabled", false);
                       submitBtn.prop("disabled", false);
@@ -443,10 +432,10 @@
           });
       }
 
-      // more details clicked
-      $(".view-modal").click(function (e) {
-          // get the token of the clicked button
-          const token = $(this).data('token');
+      // "More Details" or "Test Case x" clicked (opens modal)
+      const viewModal = (btn) => {
+          // get token
+          const token = $(btn).data('token');
 
           // show m-loading, hide m-body
           modalBody.hide();
@@ -479,10 +468,10 @@
 
           // show modal
           $('#detailsModal').modal('show');
-      });
+      };
 
-      // submit button clicked
-      submitBtn.click(() => {
+      // submit code, create new submission
+      const submit = () => {
           // disable buttons
           sampleBtn.prop("disabled", true);
           submitBtn.prop("disabled", true);
@@ -490,7 +479,7 @@
           // hide more details link
           mainLoading.show();
           moreDetails.hide();
-          runStatus.html('Submitting...');
+          runStatus.html('Submitting');
 
           // prepare form data
           let formData = new FormData();
@@ -498,9 +487,133 @@
           formData.append("lang-id", langSelect.find("option:selected").data('judgeid'));
           formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
 
+          // ajax call
+          $.ajax({
+              type: 'POST',
+              url: "{% url 'code-question-submission' code_question_attempt_id=question_attempt.id %}",
+              data: formData,
+              processData: false,
+              contentType: false,
+          }).done((res) => {
+              if (res.result === "success") {
+                  console.log(res);
+                  setTimeout(() => {
+                      // update status
+                      runStatus.html('Processing');
 
-      })
+                      // add accordion
+                      const clonedAccordionItem = $("#accordion-item-template").clone();
+                      clonedAccordionItem.removeAttr('id style');
+                      clonedAccordionItem.html(
+                          $(clonedAccordionItem).html().replaceAll('__cqs_id__', res.cqs_id).replaceAll('__time_submitted__', res.time_submitted)
+                      );
 
+                      res.statuses.forEach((value, idx) => {
+                          const clonedTestCase = $("#test-case-template").clone();
+                          clonedTestCase.removeAttr('id style');
+                          clonedTestCase.html(
+                              $(clonedTestCase).html().replaceAll('__tca_id__', value[0]).replaceAll('__idx__', idx + 1).replaceAll('__token__', value[2])
+                          );
+                          console.log(clonedAccordionItem.find(`#submission-${res.cqs_id} > div > div`));
+                          clonedAccordionItem.find(`#submission-${res.cqs_id} > div > div`).append(clonedTestCase);
+                      });
+                      $("#submissions-accordion").prepend(clonedAccordionItem);
+                      $("#submission-" + res.cqs_id).collapse('show');
+                      // call updator function
+                      updateSubmissionStatus(res.cqs_id);
+                  }, 500);
+              } else {
+                  console.error("Internal API Error!");
+                  showError("Internal API Error &#x274C;");
+              }
+          }).fail((res) => {
 
+          })
+      };
+
+      // polls and updates the status of a submission and its testcases
+      const updateSubmissionStatus = (cqs_id) => {
+          // ajax request
+          $.ajax({
+              type: 'GET',
+              url: "{% url 'get-cq-submission-status' %}",
+              data: {cqs_id},
+          }).done((res) => {
+              if (res.result === "success") {
+                  // set submission status (passed/failed/processing)
+                  setSubmissionStatus(res.cqs_id, res.outcome);
+
+                  // set testcase statuses
+                  res.statuses.forEach((value) => {
+                      setTestCaseStatus(value[0], value[1]);
+                  });
+
+                  // if submission is still processing, poll again in 1s
+                  if (res.outcome === "Processing")
+                      window.setTimeout(() => {
+                          updateSubmissionStatus(cqs_id);
+                      }, 1000);
+              } else {
+                  console.error("Internal API Error!");
+                  showError("Internal API Error &#x274C;");
+              }
+          }).fail((res) => {
+              console.error("External API Error!");
+              showError("External API Error &#x274C;");
+          });
+      };
+
+      const setSubmissionStatus = (cqs_id, outcome) => {
+          const cqsStatus = $("#cqs-status-" + cqs_id);
+
+          cqsStatus.html(outcome);
+          cqsStatus.removeClass("bg-light-danger bg-light-success bg-light-warning");
+          if (outcome === "Processing") {
+              cqsStatus.addClass("bg-light-warning");
+              return;
+          } else if (outcome === "Passed")
+              cqsStatus.addClass("bg-light-success");
+          else if (outcome === "Failed")
+              cqsStatus.addClass("bg-light-danger");
+
+          // enable buttons
+          sampleBtn.prop('disabled', false);
+          submitBtn.prop('disabled', false);
+          runStatus.html('Ready');
+          mainLoading.hide();
+      };
+
+      const setTestCaseStatus = (tca_id, status_id) => {
+          const loading = $("#tca-loading-" + tca_id);
+          const failed = $("#tca-failed-" + tca_id);
+          const accepted = $("#tca-accepted-" + tca_id);
+
+          if (status_id === 1 || status_id === 2) { // loading
+              loading.show();
+              failed.hide();
+              accepted.hide();
+          } else if (status_id === 3) { // accepted
+              loading.hide();
+              failed.hide();
+              accepted.show();
+              $("#tca-" + tca_id).removeClass("disabled");
+          } else {  // failed
+              loading.hide();
+              failed.show();
+              accepted.hide();
+              $("#tca-" + tca_id).removeClass("disabled");
+          }
+      };
+
+      // handle ongoing submissions upon page load
+      {% for cqs in code_question_submissions %}
+          {% if cqs.outcome == "Processing" %}
+              updateSubmissionStatus({{cqs.id}});
+              // disable buttons and set status
+              sampleBtn.prop("disabled", true);
+              submitBtn.prop("disabled", true);
+              runStatus.html('Processing');
+          {% endif %}
+      {% endfor %}
   </script>
 {% endblock %}

@@ -1,5 +1,4 @@
 from django.db import models
-from django.utils import timezone
 
 
 class AssessmentAttempt(models.Model):
@@ -27,7 +26,17 @@ class CodeQuestionAttempt(models.Model):
 class CodeQuestionSubmission(models.Model):
     cq_attempt = models.ForeignKey("CodeQuestionAttempt", null=False, blank=False, on_delete=models.PROTECT)
     time_submitted = models.DateTimeField(auto_now_add=True)
-    finished = models.BooleanField(default=False)
+    passed = models.BooleanField(blank=True, null=True)
+    code = models.TextField()
+
+    @property
+    def outcome(self):
+        if self.passed is None:
+            return "Processing"
+        elif self.passed:
+            return "Passed"
+        elif not self.passed:
+            return "Failed"
 
 
 class TestCaseAttempt(models.Model):

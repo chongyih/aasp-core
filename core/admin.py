@@ -46,7 +46,7 @@ class CodeQuestionAttemptAdmin(admin.ModelAdmin):
 
 
 class CodeQuestionSubmissionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'cq_attempt', 'time_submitted', 'finished')
+    list_display = ('id', 'cq_attempt', 'time_submitted', 'passed')
 
 
 class TestCaseAttemptAdmin(admin.ModelAdmin):

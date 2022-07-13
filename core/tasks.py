@@ -2,8 +2,9 @@
 import requests
 from celery import shared_task
 from django.conf import settings
+from django.utils import timezone
 
-from core.models import TestCaseAttempt, CodeQuestionSubmission
+from core.models import TestCaseAttempt, CodeQuestionSubmission, AssessmentAttempt
 
 
 @shared_task
@@ -52,3 +53,12 @@ def update_cqa_finished_flag(cqs_id):
         cqs.save()
     else:
         update_cqa_finished_flag.delay(cqs_id)
+
+
+@shared_task
+def force_submit_assessment(assessment_attempt_id):
+    assessment_attempt = AssessmentAttempt.objects.get(id=assessment_attempt_id)
+    if assessment_attempt.auto_submit is None and assessment_attempt.time_submitted is None:
+        assessment_attempt.auto_submit = True
+        assessment_attempt.time_submitted = timezone.now()
+        assessment_attempt.save()

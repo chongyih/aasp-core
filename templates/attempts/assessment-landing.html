@@ -109,7 +109,7 @@
           {% csrf_token %}
           {% if incomplete_attempt %}
             <button type="submit" id="enter-btn" class="btn btn-lg btn-warning" href="#">Resume</button>
-          {% else %}
+          {% elif not no_more_attempts %}
             <button type="submit" id="enter-btn" class="btn btn-lg btn-success" href="#">Begin</button>
           {% endif %}
         </form>

@@ -53,6 +53,8 @@ urlpatterns = [
     path('assessment/landing/<int:assessment_id>/', attempts.assessment_landing, name='assessment-landing'),
     path('assessment/enter/<int:assessment_id>/', attempts.enter_assessment, name='enter-assessment'),
     path('attempt/<int:assessment_attempt_id>/question/<int:question_index>/', attempts.attempt_question, name='attempt-question'),
+    path('assessment/submit/<int:assessment_attempt_id>/', attempts.submit_assessment, name='submit-assessment'),
+
 
     # code question attempts
     path('api/submit-single-test-case/<int:test_case_id>/', attempts.submit_single_test_case, name='submit-single-test-case'),  # ajax

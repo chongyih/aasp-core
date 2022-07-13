@@ -147,7 +147,8 @@ class Migration(migrations.Migration):
             stdout='out1',
             time_limit=10,
             memory_limit=20480,
-            score=5
+            score=5,
+            hidden=False,
         )
 
         TestCase.objects.create(

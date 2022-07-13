@@ -1,4 +1,6 @@
 import time
+from datetime import timedelta
+
 import requests
 from django.conf import settings
 
@@ -12,7 +14,7 @@ from django.utils.timezone import make_aware
 
 from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet, CodeQuestionSubmission, \
     TestCaseAttempt
-from core.tasks import update_test_case_attempt_status, update_cqa_finished_flag
+from core.tasks import update_test_case_attempt_status, update_cqa_finished_flag, force_submit_assessment
 from core.views.utils import get_assessment_attempt_question
 
 
@@ -75,6 +77,7 @@ def enter_assessment(request, assessment_id):
         # get incomplete attempt, if it exists
         incomplete_attempt = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user, time_submitted=None).first()
         if incomplete_attempt:
+            print("incomplete attempt exist")
             return redirect('attempt-question', assessment_attempt_id=incomplete_attempt.id, question_index=0)
 
         # no incomplete attempt (create new one if permissible)
@@ -84,8 +87,8 @@ def enter_assessment(request, assessment_id):
             return redirect('assessment-landing', assessment_id=assessment.id)
         else:
             # generate new assessment_attempt
-            generate_assessment_attempt(request.user, assessment)
-            return redirect('attempt-question', assessment_attempt_id=assessment.id, question_index=0)
+            assessment_attempt = generate_assessment_attempt(request.user, assessment)
+            return redirect('attempt-question', assessment_attempt_id=assessment_attempt.id, question_index=0)
 
     raise Http404
 
@@ -104,6 +107,14 @@ def generate_assessment_attempt(user, assessment):
         code_questions = CodeQuestion.objects.filter(assessment=assessment).order_by('id')
         cq_attempts = [CodeQuestionAttempt(assessment_attempt=assessment_attempt, code_question=cq) for cq in code_questions]
         CodeQuestionAttempt.objects.bulk_create(cq_attempts)
+
+    # queue celery auto submit
+    duration = assessment_attempt.assessment.duration
+    if duration != 0:
+        auto_submission_time = timezone.now() + timedelta(minutes=duration)
+        force_submit_assessment.apply_async((assessment_attempt.id,), eta=auto_submission_time)
+
+    return assessment_attempt
 
 
 @login_required()
@@ -325,3 +336,24 @@ def get_cq_submission_status(request):
             "statuses": statuses
         }
         return JsonResponse(context)
+
+
+@login_required()
+def submit_assessment(request, assessment_attempt_id):
+    if request.method == "POST":
+        # check permissions
+        assessment_attempt = get_object_or_404(AssessmentAttempt, id=assessment_attempt_id)
+        if assessment_attempt.candidate != request.user:
+            messages.warning(request, "You do not have permissions to perform this action.")
+            return redirect('dashboard')
+
+        # set time_submitted
+        if assessment_attempt.time_submitted is None:
+            assessment_attempt.time_submitted = timezone.now()
+            assessment_attempt.auto_submit = False
+            assessment_attempt.save()
+            messages.success(request, "Assessment submitted successfully!")
+        else:
+            messages.warning(request, "Assessment was already submitted previously.")
+
+        return redirect('assessment-landing', assessment_id=assessment_attempt.assessment.id)

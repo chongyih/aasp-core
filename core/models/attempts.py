@@ -6,6 +6,7 @@ class AssessmentAttempt(models.Model):
     assessment = models.ForeignKey("Assessment", null=False, blank=False, on_delete=models.PROTECT)
     time_started = models.DateTimeField(auto_now_add=True)
     time_submitted = models.DateTimeField(blank=True, null=True)
+    auto_submit = models.BooleanField(blank=True, null=True)
     score = models.PositiveIntegerField(blank=True, null=True)
 
     def status(self):

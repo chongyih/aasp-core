@@ -28,6 +28,13 @@
           font-weight: normal;
           font-style: normal;
       }
+
+      /* for ace editor */
+      .readonly-highlight {
+          position: absolute;
+          background-color: red;
+          opacity: 0.1;
+      }
   </style>
   <link rel="stylesheet" href="{% static 'vendors/highlight.js/styles/night-owl.min.css' %}">
   <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
@@ -284,6 +291,8 @@
 
   <!-- Ace code editor config -->
   <script>
+      const Range = ace.require("ace/range").Range;
+
       // language and theme selections
       const langSelect = $("#lang-select");
       const themeSelect = $("#theme-select");
@@ -300,6 +309,7 @@
           wrap: true,
           tabSize: 4,
       });
+      editor.setOption("dragEnabled", false);
 
       // function that sets the language and code snippet
       const setLanguage = () => {
@@ -309,7 +319,7 @@
           editor.session.setValue(selected.data('code'));
           // set ace mode
           editor.session.setMode("ace/mode/" + selected.data('ace-mode'));
-      }
+      };
 
       // set language on first load
       setLanguage();
@@ -317,12 +327,72 @@
       // when language dropdown changed
       langSelect.change(function () {
           setLanguage();
-      })
+      });
 
       // when theme dropdown changed
       themeSelect.change(function () {
           editor.setTheme("ace/theme/" + $(this).val());
-      })
+      });
+
+
+      const arrowCommands = ["gotoleft", "gotoright", "golineup", "golinedown"];
+      let readonlyRanges = [];
+      let markers = [];
+
+      const updateReadonlyRanges = () => {
+          // clear previous ranges
+          readonlyRanges = [];
+
+          // clear previous markers
+          markers.forEach((marker) => {
+              editor.session.removeMarker(marker);
+          });
+
+          const content = editor.getValue().split("\n");
+          let starts = [], ends = [];
+          content.forEach((line, idx) => {
+              if (line.indexOf("// ro-start") !== -1)
+                  starts.push(idx);
+              else if (line.indexOf("// ro-end") !== -1)
+                  ends.push(idx + 1);
+          });
+
+          for (let i = 0; i < starts.length; i++) {
+              let r = new Range(starts[i], 0, ends[i], 0);
+              let marker = editor.session.addMarker(r, "readonly-highlight", "line");
+              readonlyRanges.push(r);
+              markers.push(marker);
+          }
+      };
+
+      // prevent action on read-only lines
+      editor.commands.on("exec", function (e) {
+          // ignore arrow keys commands
+          if (arrowCommands.includes(e.command.name))
+              return;
+
+          const pos = editor.selection.getCursor();
+          readonlyRanges.forEach((readonlyRange) => {
+              if (readonlyRange.inside(pos.row, pos.column) || // cursor inside range (exclusive of start and end)
+                  readonlyRange.isEnd(pos.row, pos.column) && e.command.name === "backspace" ||  // cursor is at the end ( prevent backspace only)
+                  readonlyRange.isStart(pos.row, pos.column) ||  // cursor is at the start of the range
+                  !editor.getSelection().isEmpty() && editor.getSelectionRange().intersects(readonlyRange))  // prevent selection containing readonly area but ends in editable area
+              {
+                  console.log("not allowed")
+                  e.preventDefault();
+                  e.stopPropagation();
+              }
+          });
+      });
+
+      editor.commands.on("afterExec", function (e) {
+          // ignore arrow keys commands
+          if (arrowCommands.includes(e.command.name))
+              return;
+          updateReadonlyRanges();
+      });
+
+      updateReadonlyRanges();
   </script>
 
   <!-- Code running and submission scripts -->

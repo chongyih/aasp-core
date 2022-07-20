@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser
+from django.contrib.sessions.models import Session
 from django.core.validators import MaxValueValidator
 from django.db import models
 
@@ -10,6 +11,9 @@ class User(AbstractUser):
     # override name fields to make them required
     first_name = models.CharField("first name", max_length=150, blank=False)
     last_name = models.CharField("last name", max_length=150, blank=False)
+
+    # add session field (used for enforcing single session)
+    session_key = models.CharField(max_length=32, null=True, blank=True)
 
     class Meta:
         permissions = (
@@ -30,6 +34,15 @@ class User(AbstractUser):
     @property
     def name(self):
         return f"{self.last_name} {self.first_name}"
+
+    def set_session_key(self, new_key):
+        # remove previous session key from the database
+        if self.session_key and not self.session_key == new_key:
+            Session.objects.get(session_key=self.session_key).delete()
+
+        # store the new session key
+        self.session_key = new_key
+        self.save()
 
 
 class Course(models.Model):

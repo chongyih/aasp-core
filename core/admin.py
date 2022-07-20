@@ -5,6 +5,10 @@ from core.models import User, Course, CourseGroup, QuestionBank, CodeQuestion, A
     AssessmentAttempt, CodeQuestionAttempt, CodeQuestionSubmission, TestCaseAttempt
 
 
+class CustomUserAdmin(UserAdmin):
+    list_display = ("username", "email", "first_name", "last_name", "is_staff", "session_key")
+
+
 class CourseAdmin(admin.ModelAdmin):
     list_display = ('id', 'code', 'name', 'year', 'semester', 'owner', 'active')
 
@@ -53,7 +57,7 @@ class TestCaseAttemptAdmin(admin.ModelAdmin):
     list_display = ('id', 'cq_submission', 'test_case', 'token', 'status')
 
 
-admin.site.register(User, UserAdmin)
+admin.site.register(User, CustomUserAdmin)
 admin.site.register(Course, CourseAdmin)
 admin.site.register(CourseGroup, CourseGroupAdmin)
 admin.site.register(QuestionBank, QuestionBankAdmin)

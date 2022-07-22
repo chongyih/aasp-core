@@ -10,11 +10,10 @@ from django.db import transaction
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.utils.timezone import make_aware
 
 from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet, CodeQuestionSubmission, \
     TestCaseAttempt
-from core.tasks import update_test_case_attempt_status, update_cqa_finished_flag, force_submit_assessment
+from core.tasks import update_test_case_attempt_status, update_cqs_passed_flag, force_submit_assessment, compute_assessment_attempt_score
 from core.views.utils import get_assessment_attempt_question
 
 
@@ -306,7 +305,6 @@ def code_question_submission(request, code_question_attempt_id):
         # queue celery tasks
         for tca in test_case_attempts:
             update_test_case_attempt_status.delay(tca.id, tca.token, 1)
-        update_cqa_finished_flag.delay(cqs.id)
 
         context = {
             "result": "success",
@@ -349,9 +347,10 @@ def submit_assessment(request, assessment_attempt_id):
 
         # set time_submitted
         if assessment_attempt.time_submitted is None:
-            assessment_attempt.time_submitted = timezone.now()
             assessment_attempt.auto_submit = False
+            assessment_attempt.time_submitted = timezone.now()
             assessment_attempt.save()
+            compute_assessment_attempt_score.delay(assessment_attempt.id)
             messages.success(request, "Assessment submitted successfully!")
         else:
             messages.warning(request, "Assessment was already submitted previously.")

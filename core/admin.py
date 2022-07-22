@@ -46,7 +46,7 @@ class AssessmentAttemptAdmin(admin.ModelAdmin):
 
 
 class CodeQuestionAttemptAdmin(admin.ModelAdmin):
-    list_display = ('id', 'assessment_attempt', 'code_question', 'answered')
+    list_display = ('id', 'assessment_attempt', 'code_question', 'attempted')
 
 
 class CodeQuestionSubmissionAdmin(admin.ModelAdmin):

@@ -1,10 +1,12 @@
 # celery tasks
+from datetime import timedelta
+
 import requests
 from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
 
-from core.models import TestCaseAttempt, CodeQuestionSubmission, AssessmentAttempt
+from core.models import TestCaseAttempt, CodeQuestionSubmission, AssessmentAttempt, TestCase, CodeQuestionAttempt
 
 
 @shared_task
@@ -24,9 +26,10 @@ def update_test_case_attempt_status(tca_id: int, token: str, last_status: int = 
             # if status_id is different from the previous run of this task, update db
             if status_id != last_status:
                 last_status = status_id
-                tca = TestCaseAttempt.objects.get(id=tca_id)
+                tca = TestCaseAttempt.objects.prefetch_related('cq_submission').get(id=tca_id)
                 tca.status = status_id
                 tca.save()
+                update_cqs_passed_flag.delay(tca.cq_submission.id)
 
             # if submission is still queued or processing, re-queue this task
             if status_id in [1, 2]:
@@ -36,29 +39,60 @@ def update_test_case_attempt_status(tca_id: int, token: str, last_status: int = 
 
 
 @shared_task
-def update_cqa_finished_flag(cqs_id):
+def update_cqs_passed_flag(cqs_id):
     """
     Checks if all test cases of a CodeQuestionSubmission has been processed by judge0.
-    If so, update the "finished" field of the CQS instance.
-    Else, re-queue this task to be checked again later.
+    Update the "passed" field of the CQS instance and initiates the computation of the submission score.
+    If it was already calculated previously, nothing will be done.
     """
-    # check if all test cases have are completed
+    # check if all test cases have been completed
     finished = not TestCaseAttempt.objects.filter(cq_submission_id=cqs_id, status__in=[1, 2]).exists()
 
-    # if finished, update db
+    # only continue if test cases are complete
     if finished:
-        passed = not TestCaseAttempt.objects.filter(cq_submission_id=cqs_id, status__range=(4, 14)).exists()
+        # get cqs object
         cqs = CodeQuestionSubmission.objects.get(id=cqs_id)
-        cqs.passed = passed
-        cqs.save()
-    else:
-        update_cqa_finished_flag.delay(cqs_id)
+
+        # only continue if it was not previously calculated
+        if cqs.passed is None:
+            # update the passed flag
+            passed = not TestCaseAttempt.objects.filter(cq_submission_id=cqs_id, status__range=(4, 14)).exists()
+            cqs.passed = passed
+            cqs.save()
 
 
 @shared_task
 def force_submit_assessment(assessment_attempt_id):
-    assessment_attempt = AssessmentAttempt.objects.get(id=assessment_attempt_id)
-    if assessment_attempt.auto_submit is None and assessment_attempt.time_submitted is None:
-        assessment_attempt.auto_submit = True
+    """
+    Server-side submission of an assessment.
+    This ensures that an AssessmentAttempt will be marked as submitted when the duration runs out, even if the user is not on the
+    assessment page.
+    If the AssessmentAttempt was already submitted previously (i.e. by the user), nothing will be done.
+    """
+    assessment_attempt = AssessmentAttempt.objects.get(id=assessment_attempt_id, time_submitted=None)
+    if assessment_attempt:
+        assessment_attempt.auto_submit = True  # set the auto_submit flag
         assessment_attempt.time_submitted = timezone.now()
         assessment_attempt.save()
+        # queue task to compute score for this AssessmentAttempt
+        compute_assessment_attempt_score.delay(assessment_attempt.id)
+
+
+@shared_task
+def compute_assessment_attempt_score(assessment_attempt_id):
+    """
+    This task is queued when an AssessmentAttempt has been submitted (both user-initiated and server-side)
+    This tasks calculates the total score of the AssessmentAttempt, and determines if it is the best attempt.
+    If the AssessmentAttempt contains a submission that is still being processed, the task will be delayed.
+    """
+    # get the instance
+    assessment_attempt = AssessmentAttempt.objects.get(id=assessment_attempt_id)
+
+    # if all test cases are complete, proceed to compute score
+    if not assessment_attempt.has_processing_submission():
+        assessment_attempt.compute_score()
+    # if still processing, queue it again with a 1s delay
+    else:
+        compute_assessment_attempt_score.apply_async((assessment_attempt_id,), eta=timezone.now() + timedelta(seconds=1))
+
+

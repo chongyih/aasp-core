@@ -1,4 +1,6 @@
+from django.apps import apps
 from django.db import models
+from django.db.models import Sum
 from django.utils import timezone
 
 
@@ -36,3 +38,9 @@ class Assessment(models.Model):
             return "Ended"
         else:
             return "Active"
+
+    @property
+    def total_score(self):
+        TestCase = apps.get_model(app_label="core", model_name="TestCase")
+        total_score = TestCase.objects.filter(code_question__assessment=self).aggregate(Sum('score')).get("score__sum", 0)
+        return total_score

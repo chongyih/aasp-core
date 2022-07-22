@@ -162,9 +162,16 @@ class Migration(migrations.Migration):
 
         CodeSnippet.objects.create(
             code_question=cq,
-            language=Language.objects.get(id=1),
-            code="Test code...",
-        )
+            language=Language.objects.get(id=3),
+            code="""# // ro-start
+def main():
+# // ro-end
+    # enter your solution here
+    
+    
+# // ro-start
+main()
+# // ro-end""")
 
         cq.tags.add(Tag.objects.get(id=1))
         cq.tags.add(Tag.objects.get(id=4))

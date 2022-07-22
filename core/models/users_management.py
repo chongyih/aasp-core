@@ -38,7 +38,10 @@ class User(AbstractUser):
     def set_session_key(self, new_key):
         # remove previous session key from the database
         if self.session_key and not self.session_key == new_key:
-            Session.objects.get(session_key=self.session_key).delete()
+            try:
+                Session.objects.get(session_key=self.session_key).delete()
+            except Session.DoesNotExist:
+                print("Old session key does not exist in Session table. Deletion skipped.")
 
         # store the new session key
         self.session_key = new_key

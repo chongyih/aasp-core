@@ -286,6 +286,7 @@
                           <td>{% if a.num_attempts %}{{ a.num_attempts }}{% else %}Unlimited{% endif %}</td>
                           <td>
                             <a class="btn btn-sm btn-secondary" href="{% url 'assessment-details' assessment_id=a.id %}">View</a>
+                            <a class="btn btn-sm btn-secondary" href="{% url 'assessment-report' assessment_id=a.id %}">Report</a>
                           </td>
                         </tr>
                       {% endfor %}

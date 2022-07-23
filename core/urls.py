@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import auth, user_management, dashboards, course_management, question_banks, code_questions, assessments, attempts
+from .views import auth, user_management, dashboards, course_management, question_banks, code_questions, assessments, attempts, reports
 
 urlpatterns = [
     # global auth
@@ -55,12 +55,13 @@ urlpatterns = [
     path('attempt/<int:assessment_attempt_id>/question/<int:question_index>/', attempts.attempt_question, name='attempt-question'),
     path('assessment/submit/<int:assessment_attempt_id>/', attempts.submit_assessment, name='submit-assessment'),
 
-
     # code question attempts
     path('api/submit-single-test-case/<int:test_case_id>/', attempts.submit_single_test_case, name='submit-single-test-case'),  # ajax
     path('api/get-tc-details/', attempts.get_tc_details, name='get-tc-details'),  # ajax
     path('api/code-question-submission/<int:code_question_attempt_id>/', attempts.code_question_submission, name='code-question-submission'),  # ajax
     path('api/get-cq-submission-status/', attempts.get_cq_submission_status, name='get-cq-submission-status'),  # ajax
 
-
+    # reports
+    path('assessment/report/<int:assessment_id>/', reports.assessment_report, name='assessment-report'),
+    path('api/get-candidate-attempts/<int:assessment_id>/', reports.get_candidate_attempts, name='get-candidate-attempts'),  # ajax
 ]

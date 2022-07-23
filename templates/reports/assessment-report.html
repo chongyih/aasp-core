@@ -1,0 +1,217 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}Report - {{ assessment.name }}{% endblock %}
+
+{% block styles %}
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css"/>
+{% endblock %}
+
+{% block content %}
+
+  <!-- Page Title -->
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-12 order-md-1 order-last">
+          <h5>Assessment Report</h5>
+          <h2>{{ assessment }}</h2>
+          <span class="badge bg-secondary">{{ assessment.status }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Candidate attempts -->
+  <div class="row">
+    <div class="card">
+      <div class="card-header">
+        <h4>Completed Attempts</h4>
+        <p>The best completed attempts of each candidate.</p>
+      </div>
+      <div class="card-body">
+        <table id="best-attempts-table" class="table display table-borderless" style="width:100%">
+          <thead>
+          <tr>
+            <th>#</th>
+            <th>Candidate</th>
+            <th>Submitted At</th>
+            <th>Score ({{ assessment.total_score }})</th>
+            <th>Duration</th>
+            <th>Total Attempts</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+          {% for ba in best_attempts %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ ba.candidate }}</td>
+              <td>{{ ba.time_submitted }}</td>
+              <td>{{ ba.score }}</td>
+              <td>{{ ba.duration }}</td>
+              <td>{{ ba.total_attempts }}</td>
+              <td>
+                <button type="button" class="btn btn-sm btn-success" data-candidate-id="{{ ba.candidate.id }}"
+                        data-candidate-username="{{ ba.candidate.username }}" onclick="viewAttemptsModal(this);"
+                        data-bs-toggle="modal" data-bs-target="#attemptsModal">
+                  View
+                </button>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ongoing and ungraded attempts -->
+  <div class="row">
+    <div class="card">
+      <div class="card-header">
+        <h4>Ongoing & Processing Attempts</h4>
+        <p>Assessment attempts that have yet to be submitted, or are still being processed by our grading backend.</p>
+      </div>
+      <div class="card-body">
+        <table id="ongoing-processing-table" class="table display table-borderless" style="width:100%">
+          <thead>
+          <tr>
+            <th>Candidate</th>
+            <th>Status</th>
+            <th>Started At</th>
+            <th>Submitted At</th>
+            <th>Duration</th>
+          </tr>
+          </thead>
+          <tbody>
+          {% for ba in ongoing_ungraded_attempts %}
+            <tr>
+              <td>{{ ba.candidate }}</td>
+              <td><span class="badge bg-secondary">{{ ba.status }}</span></td>
+              <td>{{ ba.time_started }}</td>
+              <td>{{ ba.time_submitted|default_if_none:"-" }}</td>
+              <td>{{ ba.duration|default_if_none:"-" }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- All attempts modal -->
+  <div class="modal fade" id="attemptsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Assessment attempts by <span id="modal-username">-</span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+
+          <!-- modal loading -->
+          <div id="m-loading">
+            <div class="p-3 d-flex justify-content-center">
+              <div class='spinner-border spinner-border-sm me-1'></div>
+              Loading ...
+            </div>
+          </div>
+
+          <!-- modal body -->
+          <div id="m-body" style="display:none;">
+            <table class="table display table-borderless" id="modal-table">
+              <thead>
+              <tr>
+                <th>#</th>
+                <th>Time Started</th>
+                <th>Time Submitted</th>
+                <th>Score</th>
+                <th>Best</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+              <tbody>
+
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+  <!-- momentjs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+  <!-- datatable -->
+  <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+
+  <!-- script for loading attempts modal -->
+  <script>
+      $('#best-attempts-table').DataTable();
+      $('#ongoing-processing-table').DataTable();
+      let modalTable = $("#modal-table").DataTable({searching: false, paging: false, info: false});
+
+      const modalLoading = $("#m-loading");
+      const modalBody = $("#m-body");
+      const modalUsername = $("#modal-username");
+      const viewAttemptsModal = (btn) => {
+          // get candidate id
+          const candidate_id = $(btn).data('candidate-id');
+          const candidate_username = $(btn).data('candidate-username');
+
+          modalUsername.text(candidate_username);
+
+          // show m-loading, hide m-body
+          modalBody.hide();
+          modalLoading.show();
+
+          // ajax request
+          $.ajax({
+              type: 'GET',
+              url: "{% url 'get-candidate-attempts' assessment_id=assessment.id %}",
+              data: {candidate_id},
+          }).done((res) => {
+              if (res.result === "success") {
+                  // update datatable rows
+                  console.log(res.assessment_attempts);
+
+                  const tableData = [];
+                  res.assessment_attempts.forEach((item, idx) => {
+                      tableData.push([
+                          idx + 1,
+                          moment(item.time_started).format("DD/MM/YYYY[<br>]H:mm A"),
+                          moment(item.time_submitted).format("DD/MM/YYYY[<br>]h:mm A"),
+                          item.score,
+                          item.best_attempt === true ? '<span class="badge bg-success">Best Score</span>' : '',
+                          '<a class="text-success" target="_blank" href="#"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>'
+                      ]);
+                  });
+
+                  modalTable.clear();
+                  modalTable.rows.add(tableData);
+                  modalTable.draw();
+
+                  setTimeout(() => {
+                      modalLoading.hide();
+                      modalBody.show();
+                  }, 500);
+              } else {
+                  console.error("Internal Error!")
+              }
+          }).fail((res) => {
+              console.error("External API Error!");
+          });
+
+          // show modal
+          $('#attemptsModal').modal('show');
+      }
+  </script>
+{% endblock %}

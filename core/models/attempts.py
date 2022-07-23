@@ -63,7 +63,7 @@ class AssessmentAttempt(models.Model):
     @property
     def duration(self):
         if self.time_submitted is None:
-            return -1
+            return None
         seconds = (self.time_submitted - self.time_started).total_seconds()
 
         if seconds < 60:

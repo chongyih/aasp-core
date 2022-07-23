@@ -5,6 +5,7 @@
 
 {% block styles %}
   <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css"/>
+  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
 {% endblock %}
 
 {% block content %}
@@ -148,10 +149,9 @@
 
 {% block js %}
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
-  <!-- momentjs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-  <!-- datatable -->
   <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+  <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
 
   <!-- script for loading attempts modal -->
   <script>
@@ -205,9 +205,21 @@
                   }, 500);
               } else {
                   console.error("Internal Error!")
+                  Toastify({
+                      text: "An error has occurred, please refresh the page and try again.",
+                      duration: -1,
+                      position: "center",
+                      style: {"background": "#ff6961"}
+                  }).showToast();
               }
           }).fail((res) => {
               console.error("External API Error!");
+              Toastify({
+                  text: "An error has occurred, please refresh the page and try again.",
+                  duration: -1,
+                  position: "center",
+                  style: {"background": "#ff6961"}
+              }).showToast();
           });
 
           // show modal

@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet, CodeQuestionSubmission, \
-    TestCaseAttempt
+    TestCaseAttempt, Language
 from core.tasks import update_test_case_attempt_status, update_cqs_passed_flag, force_submit_assessment, compute_assessment_attempt_score
 from core.views.utils import get_assessment_attempt_question
 
@@ -272,9 +272,10 @@ def code_question_submission(request, code_question_attempt_id):
 
         # generate params for judge0 call
         code = request.POST.get('code')
+        language_id = request.POST.get('lang-id')
         submissions = [{
             "source_code": code,
-            "language_id": request.POST.get('lang-id'),
+            "language_id": language_id,
             "stdin": test_case.stdin,
             "expected_output": test_case.stdout,
             "cpu_time_limit": test_case.time_limit,
@@ -295,7 +296,7 @@ def code_question_submission(request, code_question_attempt_id):
 
         with transaction.atomic():
             # create CodeQuestionSubmission
-            cqs = CodeQuestionSubmission.objects.create(cq_attempt=cqa, code=code)
+            cqs = CodeQuestionSubmission.objects.create(cq_attempt=cqa, code=code, language=Language.objects.get(judge_language_id=language_id))
 
             # create TestCaseAttempts
             test_case_attempts = TestCaseAttempt.objects.bulk_create([

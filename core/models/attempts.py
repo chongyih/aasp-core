@@ -92,6 +92,7 @@ class CodeQuestionSubmission(models.Model):
     cq_attempt = models.ForeignKey("CodeQuestionAttempt", null=False, blank=False, on_delete=models.PROTECT)
     time_submitted = models.DateTimeField(auto_now_add=True)
     passed = models.BooleanField(blank=True, null=True)
+    language = models.ForeignKey("Language", null=False, blank=False, on_delete=models.PROTECT)
     code = models.TextField()
 
     @property
@@ -102,6 +103,13 @@ class CodeQuestionSubmission(models.Model):
             return "Passed"
         elif not self.passed:
             return "Failed"
+
+    @property
+    def score(self):
+        TestCase = apps.get_model(app_label="core", model_name="TestCase")
+        cqs_score = TestCase.objects.filter(testcaseattempt__cq_submission=self, testcaseattempt__status=3).aggregate(Sum('score')).get("score__sum")
+        cqs_score = cqs_score if cqs_score else 0
+        return cqs_score
 
 
 class TestCaseAttempt(models.Model):

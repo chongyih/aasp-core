@@ -1,0 +1,149 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}Attempt Details{% endblock %}
+
+{% block styles %}
+{% endblock %}
+
+{% block content %}
+  <!-- Page Title -->
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-12 order-md-1 order-last">
+          <h5>Assessment Attempt Details</h5>
+          <h2>{{ assessment_attempt.candidate.username }}</h2>
+          <span class="badge bg-secondary">{{ assessment.status }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assessment Attempt information -->
+  <div class="row">
+    <!-- details -->
+    <div class="col-9">
+      <div class="card">
+        <div class="card-header">
+          <h4>Details</h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-4">
+              <h6>Candidate</h6>
+              <p>{{ assessment_attempt.candidate.username }}</p>
+            </div>
+            <div class="col-4">
+              <h6>Course</h6>
+              <p>{{ assessment_attempt.assessment.course }}</p>
+            </div>
+            <div class="col-4">
+              <h6>Assessment</h6>
+              <p>{{ assessment_attempt.assessment.name }}</p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-4">
+              <h6>Time Started</h6>
+              <p>{{ assessment_attempt.time_started }}</p>
+            </div>
+            <div class="col-4">
+              <h6>Time Submitted</h6>
+              <p>{{ assessment_attempt.time_submitted }}</p>
+            </div>
+            <div class="col-4">
+              <h6>Duration</h6>
+              <p>{{ assessment_attempt.duration }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- score -->
+    <div class="col-3">
+      <div class="card">
+        <div class="card-header">
+          <h4>Score</h4>
+        </div>
+        <div class="card-body">
+          <div class="h1">
+            {{ assessment_attempt.score }} / {{ assessment_attempt.assessment.total_score }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Code questions and list of submissions -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h4>Code Questions ({{ assessment_attempt.assessment.codequestion_set.count }})</h4>
+        </div>
+
+        <div class="card-body">
+          <div class="accordion" id="questionsAccordion">
+            {% for cqa in assessment_attempt.codequestionattempt_set.all %}
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button {% if forloop.counter != 1 %}collapsed{% endif %}" type="button" data-bs-toggle="collapse"
+                          data-bs-target="#collapse{{ forloop.counter }}">
+                    <strong>Question {{ forloop.counter }} - {{ cqa.code_question.name }}</strong>
+                  </button>
+                </h2>
+                <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.counter == 1 %}show{% endif %}"
+                     data-bs-parent="#questionsAccordion">
+                  <div class="accordion-body">
+
+                    <h6>Description</h6>
+                    <p>{{ cqa.code_question.description }}</p>
+
+                    <table class="table">
+                      <thead>
+                      <tr>
+                        <th>Submission #</th>
+                        <th>Score ({{ cqa.code_question.max_score }})</th>
+                        <th>Language</th>
+                        <th>Submitted on</th>
+                        <th>Details</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      {% if not cqa.attempted %}
+                        <tr>
+                          <td colspan="5" class="text-center">No submissions found for this question.</td>
+                        </tr>
+                      {% else %}
+                        {% for cqs in cqa.codequestionsubmission_set.all %}
+                          <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ cqs.score }}</td>
+                            <td>{{ cqs.language.name }}</td>
+                            <td>{{ cqs.time_submitted }}</td>
+                            <td><a href="#" target="_blank">Details <i class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a></td>
+                          </tr>
+                        {% endfor %}
+                      {% endif %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+{% endblock %}
+
+{% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+{% endblock %}

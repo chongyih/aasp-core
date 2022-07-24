@@ -10,11 +10,8 @@ from core.models import Assessment, AssessmentAttempt
 def assessment_report(request, assessment_id):
     assessment = get_object_or_404(Assessment, id=assessment_id)
 
-    best_attempts = AssessmentAttempt.objects.filter(assessment=assessment, best_attempt=True).order_by('-score')
+    best_attempts = AssessmentAttempt.objects.filter(assessment=assessment, best_attempt=True).order_by("-score")
     ongoing_ungraded_attempts = AssessmentAttempt.objects.filter(Q(assessment=assessment, time_submitted__isnull=True) | Q(assessment=assessment, time_submitted__isnull=False, score__isnull=True))
-
-    print("best_attempts:", best_attempts)
-    print("ongoing_ungraded_attempts:", ongoing_ungraded_attempts)
 
     context = {
         "assessment": assessment,
@@ -22,19 +19,20 @@ def assessment_report(request, assessment_id):
         "ongoing_ungraded_attempts": ongoing_ungraded_attempts,
     }
 
-    return render(request, 'reports/assessment-report.html', context)
+    return render(request, "reports/assessment-report.html", context)
 
 
 @login_required()
 def get_candidate_attempts(request, assessment_id):
     # get candidate_id
-    candidate_id = request.GET.get('candidate_id')
+    candidate_id = request.GET.get("candidate_id")
     if not candidate_id:
         return JsonResponse({"result": "error"}, status=200)
 
     # get assessment attempts
-    assessment_attempts = AssessmentAttempt.objects.filter(assessment__id=assessment_id, candidate__id=candidate_id)\
-        .values('id', 'time_started', 'time_submitted', 'auto_submit', 'score', 'best_attempt').order_by('id')
+    assessment_attempts = AssessmentAttempt.objects\
+        .filter(assessment__id=assessment_id, candidate__id=candidate_id, time_submitted__isnull=False)\
+        .values("id", "time_started", "time_submitted", "auto_submit", "score", "best_attempt").order_by("id")
 
     # prepare context
     context = {
@@ -42,3 +40,14 @@ def get_candidate_attempts(request, assessment_id):
         "assessment_attempts": list(assessment_attempts)
     }
     return JsonResponse(context, status=200)
+
+
+@login_required()
+def assessment_attempt_details(request):
+    assessment_attempt_id = request.GET.get("attempt_id")
+    assessment_attempt = get_object_or_404(AssessmentAttempt, id=assessment_attempt_id)
+
+    context = {
+        "assessment_attempt": assessment_attempt
+    }
+    return render(request, "reports/assessment-attempt-details.html", context)

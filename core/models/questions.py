@@ -21,7 +21,7 @@ class Tag(models.Model):
 
 class Language(models.Model):
     name = models.CharField(max_length=50, blank=False, null=False, unique=True)
-    judge_language_id = models.IntegerField(blank=False, null=False)
+    judge_language_id = models.IntegerField(blank=False, null=False, unique=True)
     ace_mode = models.CharField(max_length=50, blank=False, null=False)
     
     def clean(self):

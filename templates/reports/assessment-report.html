@@ -191,7 +191,7 @@
                           moment(item.time_submitted).format("DD/MM/YYYY[<br>]h:mm A"),
                           item.score,
                           item.best_attempt === true ? '<span class="badge bg-success">Best Score</span>' : '',
-                          '<a class="text-success" target="_blank" href="#"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>'
+                          `<a class="text-success" target="_blank" href="{% url 'assessment-attempt-details' %}?attempt_id=${item.id}"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>`
                       ]);
                   });
 

@@ -64,4 +64,6 @@ urlpatterns = [
     # reports
     path('assessment/report/<int:assessment_id>/', reports.assessment_report, name='assessment-report'),
     path('api/get-candidate-attempts/<int:assessment_id>/', reports.get_candidate_attempts, name='get-candidate-attempts'),  # ajax
+    path('assessment/attempt/details/', reports.assessment_attempt_details, name='assessment-attempt-details'),
+
 ]

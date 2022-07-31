@@ -18,9 +18,14 @@ def update_test_case_attempt_status(tca_id: int, token: str, last_status: int = 
     """
     try:
         # call judge0
-        url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id"
+        url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id,stdout,time,memory"
         res = requests.get(url)
-        status_id = res.json().get('status_id')
+        data = res.json()
+
+        status_id = data.get('status_id')
+        stdout = data.get('stdout')
+        time = data.get('time')
+        memory = data.get('memory')
 
         if status_id is not None:
             # if status_id is different from the previous run of this task, update db
@@ -28,6 +33,9 @@ def update_test_case_attempt_status(tca_id: int, token: str, last_status: int = 
                 last_status = status_id
                 tca = TestCaseAttempt.objects.prefetch_related('cq_submission').get(id=tca_id)
                 tca.status = status_id
+                tca.stdout = stdout
+                tca.time = time
+                tca.memory = memory
                 tca.save()
                 update_cqs_passed_flag.delay(tca.cq_submission.id)
 

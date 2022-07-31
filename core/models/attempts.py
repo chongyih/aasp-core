@@ -134,3 +134,6 @@ class TestCaseAttempt(models.Model):
     test_case = models.ForeignKey("TestCase", null=False, blank=False, on_delete=models.PROTECT)
     token = models.CharField(max_length=36, null=False, blank=False)
     status = models.IntegerField(choices=STATUSES, default=1)
+    stdout = models.TextField(blank=True, null=True)
+    time = models.FloatField(blank=True, null=True)
+    memory = models.FloatField(blank=True, null=True)

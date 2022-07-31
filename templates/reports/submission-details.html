@@ -1,0 +1,120 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}Submission Details{% endblock %}
+
+{% block styles %}
+{% endblock %}
+
+{% block content %}
+  <!-- Page Title -->
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-12 order-md-1 order-last">
+          <h2>Submission Details</h2>
+          <h5>Submission ID: {{ cqs.id }}</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CodeQuestionSubmission details -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h4>Details</h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-4">
+              <h6>Language</h6>
+              <p>{{ cqs.language.name }}</p>
+            </div>
+            <div class="col-4">
+              <h6>Submitted At</h6>
+              <p>{{ cqs.time_submitted }}</p>
+            </div>
+            <div class="col-4">
+              <h6>Score</h6>
+              <p>{{ cqs.score }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Table of test case attempts -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h4>Test Cases ({{ cqs.testcaseattempt_set.count }})</h4>
+        </div>
+
+        <div class="card-body">
+          <table class="table text-center">
+            <thead>
+            <tr>
+              <th>Visible to candidates</th>
+              <th>Result</th>
+              <th>Score</th>
+              <th>Status</th>
+              <th>Time (s)</th>
+              <th>Memory (kb)</th>
+              <th>Input</th>
+              <th>Output</th>
+              <th>Expected Output</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for tca in test_case_attempts %}
+              <tr>
+                <td>
+                  {% if tca.test_case.hidden %}
+                    <i class="fa-solid fa-eye-slash"></i>
+                  {% else %}
+                    <i class="fa-solid fa-eye"></i>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if tca.status == 3 %}
+                    <i class="fa-solid fa-circle-check text-success"></i>
+                  {% else %}
+                    <i class="fa-solid fa-circle-xmark text-danger"></i>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if tca.status == 3 %}
+                    {{ tca.test_case.score }}
+                  {% else %}
+                    0
+                  {% endif %}
+                </td>
+                <td>{{ tca.get_status_display }}</td>
+                <td>{{ tca.time }}</td>
+                <td>{{ tca.memory }}</td>
+                <td><a class="link" href="{% url 'export-test-case-stdin' test_case_id=tca.test_case.id %}" target="_blank"><i
+                        class="fa-solid fa-file-arrow-down"></i></a></td>
+                <td><a class="link" href="{% url 'export-test-case-attempt-stdout' tca_id=tca.id %}" target="_blank"><i
+                        class="fa-solid fa-file-arrow-down"></i></a></td>
+                <td><a class="link" href="{% url 'export-test-case-stdout' test_case_id=tca.test_case.id %}" target="_blank"><i
+                        class="fa-solid fa-file-arrow-down"></i></a></td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+{% endblock %}
+
+{% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+{% endblock %}

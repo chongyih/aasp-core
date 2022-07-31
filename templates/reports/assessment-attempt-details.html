@@ -14,7 +14,6 @@
         <div class="col-12 col-md-12 order-md-1 order-last">
           <h5>Assessment Attempt Details</h5>
           <h2>{{ assessment_attempt.candidate.username }}</h2>
-          <span class="badge bg-secondary">{{ assessment.status }}</span>
         </div>
       </div>
     </div>
@@ -123,7 +122,7 @@
                             <td>{{ cqs.score }}</td>
                             <td>{{ cqs.language.name }}</td>
                             <td>{{ cqs.time_submitted }}</td>
-                            <td><a href="#" target="_blank">Details <i class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a></td>
+                            <td><a href="{% url 'submission-details' cqs_id=cqs.id %}" target="_blank">Details <i class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a></td>
                           </tr>
                         {% endfor %}
                       {% endif %}

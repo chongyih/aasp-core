@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group
+from django.db import transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
@@ -119,7 +120,8 @@ def enrol_students_bulk(request):
             created_users = User.objects.bulk_create(user_objects, ignore_conflicts=False)
 
             # add to student role group
-            Group.objects.get(name="student").user_set.add(*created_users)
+            created_user_objects = User.objects.filter(username__in=[x.username for x in created_users])
+            Group.objects.get(name="student").user_set.add(*created_user_objects)
 
             for k, v in course_groups.items():
                 course_group, _ = CourseGroup.objects.get_or_create(course=course, name=k)

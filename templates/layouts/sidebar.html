@@ -14,60 +14,82 @@
   </div>
   <div class="sidebar-menu">
     <ul class="menu">
-
       {# dynamic options based on user group #}
-      <li class="sidebar-title">Dashboard</li>
-
-      {# educator dashboard #}
-      {% if request.user.is_superuser or request.user|has_group:'educator' %}
+      {% if request.user|has_group:"educator" %}
+        {# EDUCATOR #}
         <li class="sidebar-item {% if 'dashboard/educators' in request.path %} active {% endif %}">
-          <a href="{% url 'dashboard-educators' %}" class='sidebar-link'><i class="fa-solid fa-house"></i><span>Educator</span></a>
+          <a href="{% url 'dashboard-educators' %}" class='sidebar-link'>
+            <i class="fa-solid fa-house"></i><span>Educator</span>
+          </a>
         </li>
-      {% endif %}
-      {# lab assistant dashboard #}
-      {% if request.user.is_superuser or request.user|has_group:'lab_assistant' %}
-        <li class="sidebar-item {% if 'dashboard/labassistants' in request.path %} active {% endif %}">
-          <a href="{% url 'dashboard-lab-assistants' %}" class='sidebar-link'><i class="fa-solid fa-house"></i><span>Lab Assistant</span></a>
-        </li>
-      {% endif %}
-      {# student dashboard #}
-      {% if request.user.is_superuser or request.user|has_group:'student' %}
-        <li class="sidebar-item {% if 'dashboard/students' in request.path %} active {% endif %}">
-          <a href="{% url 'dashboard-students' %}" class='sidebar-link'><i class="fa-solid fa-house"></i><span>Student</span></a>
-        </li>
-      {% endif %}
 
-
-      {# user management options #}
-      {% if request.user.is_superuser or request.user|has_group:'lab_assistant' or request.user|has_group:'educator' %}
+        {# User Management: Enrol Students #}
         <li class="sidebar-title">User Management</li>
 
-        {# courses #}
-        <li class="sidebar-item {% if request.path == '/courses/' %} active {% endif %}">
-          <a href="{% url 'view-courses' %}" class='sidebar-link'><i class="fa-solid fa-user-group"></i><span>Courses</span></a>
-        </li>
-
-        {# enrol students #}
         <li class="sidebar-item {% if request.path == '/enrol-students/' %} active {% endif %}">
-          <a href="{% url 'enrol-students' %}" class='sidebar-link'><i class="fa-solid fa-graduation-cap"></i><span>Enrol Students</span></a>
+          <a href="{% url 'enrol-students' %}" class='sidebar-link'><i class="fa-solid fa-graduation-cap">
+          </i><span>Enrol Students</span>
+          </a>
         </li>
 
-      {% endif %}
-
-      {# test management options #}
-      {% if request.user.is_superuser or request.user|has_group:'educator' %}
-        <li class="sidebar-title">Test Management</li>
+        {# Course Management: Courses, Question Banks#}
+        <li class="sidebar-title">Course Management</li>
+        <li class="sidebar-item {% if request.path == '/courses/' %} active {% endif %}">
+          <a href="{% url 'view-courses' %}" class='sidebar-link'>
+            <i class="fa-solid fa-user-group"></i><span>Courses</span>
+          </a>
+        </li>
 
         <li class="sidebar-item {% if request.path == '/qb/' %} active {% endif %}">
-          <a href="{% url 'view-question-banks' %}" class='sidebar-link'><i class="fa-solid fa-folder"></i><span>Question Banks</span></a>
+          <a href="{% url 'view-question-banks' %}" class='sidebar-link'>
+            <i class="fa-solid fa-folder"></i><span>Question Banks</span>
+          </a>
         </li>
 
+      {% elif request.user|has_group:"student" %}
+        {# STUDENT #}
+        <li class="sidebar-item {% if 'dashboard/students' in request.path %} active {% endif %}">
+          <a href="{% url 'dashboard-students' %}" class='sidebar-link'>
+            <i class="fa-solid fa-house"></i><span>Student</span>
+          </a>
+        </li>
+
+        {# Assessments #}
+        <li class="sidebar-item {% if 'students/assessments' in request.path %} active {% endif %}">
+          <a href="#" class='sidebar-link'>
+            <i class="fa-solid fa-book"></i><span>Assessments</span>
+          </a>
+        </li>
+      {% elif request.user|has_group:"lab_assistant" %}
+        {# LAB ASSISTANT #}
+        <li class="sidebar-item {% if 'dashboard/labassistants' in request.path %} active {% endif %}">
+          <a href="{% url 'dashboard-lab-assistants' %}" class='sidebar-link'>
+            <i class="fa-solid fa-house"></i><span>Lab Assistant</span>
+          </a>
+        </li>
+
+        {# User Management: Enrol Students #}
+        <li class="sidebar-title">User Management</li>
+
+        <li class="sidebar-item {% if request.path == '/courses/' %} active {% endif %}">
+          <a href="{% url 'view-courses' %}" class='sidebar-link'>
+            <i class="fa-solid fa-user-group"></i><span>Courses</span>
+          </a>
+        </li>
+
+        <li class="sidebar-item {% if request.path == '/enrol-students/' %} active {% endif %}">
+          <a href="{% url 'enrol-students' %}" class='sidebar-link'><i class="fa-solid fa-graduation-cap">
+          </i><span>Enrol Students</span>
+          </a>
+        </li>
       {% endif %}
 
-      {# global options across all user groups #}
-      <li class="sidebar-title">Account</li>
+      {# Log out link #}
+      <hr>
       <li class="sidebar-item">
-        <a href="{% url 'logout' %}" class='sidebar-link'><i class="fa-solid fa-right-from-bracket"></i><span>Log Out</span></a>
+        <a href="{% url 'logout' %}" class='sidebar-link'>
+          <i class="fa-solid fa-right-from-bracket"></i><span>Log Out</span>
+        </a>
       </li>
 
     </ul>

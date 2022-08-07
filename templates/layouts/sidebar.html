@@ -15,7 +15,7 @@
   <div class="sidebar-menu">
     <ul class="menu">
       {# dynamic options based on user group #}
-      {% if request.user|has_group:"educator" %}
+      {% if request.user|has_group:"educator" or request.user.is_superuser %}
         {# EDUCATOR #}
         <li class="sidebar-item {% if 'dashboard/educators' in request.path %} active {% endif %}">
           <a href="{% url 'dashboard-educators' %}" class='sidebar-link'>

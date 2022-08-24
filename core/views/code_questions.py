@@ -78,7 +78,7 @@ def update_code_question(request, code_question_id):
     code_question = get_object_or_404(CodeQuestion, id=code_question_id)
 
     # check permissions
-    if check_permissions_code_question(code_question, request.user) == 0:
+    if check_permissions_code_question(code_question, request.user) != 2:
         if code_question.question_bank:
             messages.warning(request, "You do not have permissions for this question bank.")
             return redirect('view-question-banks')
@@ -136,7 +136,7 @@ def update_test_cases(request, code_question_id):
     code_question = get_object_or_404(CodeQuestion, id=code_question_id)
 
     # check permissions
-    if not check_permissions_code_question(code_question, request.user):
+    if check_permissions_code_question(code_question, request.user) != 2:
         messages.warning(request, "You do not have permissions to perform that action.")
         return redirect('dashboard')
 
@@ -177,7 +177,7 @@ def update_languages(request, code_question_id):
     code_question = get_object_or_404(CodeQuestion, id=code_question_id)
 
     # check permissions
-    if not check_permissions_code_question(code_question, request.user):
+    if check_permissions_code_question(code_question, request.user) != 2:
         messages.warning(request, "You do not have permissions to perform that action.")
         return redirect('dashboard')
 

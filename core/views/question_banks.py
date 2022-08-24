@@ -177,7 +177,7 @@ def delete_code_question(request):
         code_question = CodeQuestion.objects.filter(id=code_question_id).first()
 
         # check permissions
-        if not check_permissions_code_question(code_question, request.user):
+        if check_permissions_code_question(code_question, request.user) != 2:
             return JsonResponse(error_context, status=200)
 
         # delete code question

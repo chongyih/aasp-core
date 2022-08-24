@@ -67,7 +67,8 @@ def submission_details(request, cqs_id):
 
 
 @login_required()
-def export_test_case_stdin(request, test_case_id):
+def export_test_case_stdin(request):
+    test_case_id = request.GET.get('test_case_id')
     test_case = get_object_or_404(TestCase, id=test_case_id)
     content = test_case.stdin
     filename = f"tc_{test_case.id}_stdin.txt"
@@ -79,7 +80,8 @@ def export_test_case_stdin(request, test_case_id):
 
 
 @login_required()
-def export_test_case_stdout(request, test_case_id):
+def export_test_case_stdout(request):
+    test_case_id = request.GET.get('test_case_id')
     test_case = get_object_or_404(TestCase, id=test_case_id)
     content = test_case.stdout
     filename = f"tc_{test_case.id}_stdout.txt"

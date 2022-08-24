@@ -6,6 +6,7 @@
 {% block styles %}
   <link rel="stylesheet" href="{% static 'vendors/choices.js/choices.min.css' %}"/>
   <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
+  <link rel="stylesheet" href="{% static 'vendors/highlight.js/styles/intellij-light.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -22,11 +23,11 @@
     </div>
 
     {% if not assessment.published %}
-    <div class="alert alert-secondary">
-      <h4 class="alert-heading">Unpublished</h4>
-      <p>This assessment is unpublished and not visible to candidates.</p>
-    </div>
-  {% endif %}
+      <div class="alert alert-secondary">
+        <h4 class="alert-heading">Unpublished</h4>
+        <p>This assessment is unpublished and not visible to candidates.</p>
+      </div>
+    {% endif %}
 
     <!-- Assessment information row -->
     <div class="row">
@@ -143,7 +144,10 @@
                       {% endif %}
                     </td>
                     <td>
-                      <a href="#" class="btn btn-sm btn-success">View</a>
+                      <button type="button" id="more-details" class="btn btn-sm btn-primary view-modal" data-cq-id="{{ q.id }}"
+                              onclick="viewModal(this)">
+                        View
+                      </button>
                       <div class="btn-group">
                         <div class="dropdown">
                           <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true"
@@ -266,7 +270,12 @@
         </div>
       </div>
     </div>
+
+
   </div>
+
+  {% include 'code_questions/snippets/view-modal.html' %}
+
 {% endblock %}
 
 {% block js %}
@@ -330,12 +339,14 @@
                       }
                   } else {
                       codeQuestionTableBody.html("<tr><td colspan='4' class='text-center p-5'>Something went wrong with your request! &#x1F622;</td></tr>");
+                      console.error("Result returned not successful.");
                   }
               }, 300);
           }).fail((res) => {
               // hide loading
               codeQuestionLoading(false);
               codeQuestionTableBody.html("<tr><td colspan='4' class='text-center p-5'>Something went wrong with your request! &#x1F622;</td></tr>");
+              console.error("Failed to contact API.");
           })
       }
 
@@ -395,6 +406,7 @@
                   } else {
                       addCqResult.html("Something went wrong with your request! &#x1F622;")
                       addCqResult.addClass("text-danger");
+                      console.error("Result returned not successful.");
                   }
                   // reset button state
                   $(btn).prop("disabled", false);
@@ -407,6 +419,7 @@
               // reset button state
               $(btn).prop("disabled", false);
               $(btn).html("Add");
+              console.error("Failed to contact API.");
           });
       };
 
@@ -423,5 +436,7 @@
           }
       });
   </script>
+
+  {% include 'code_questions/snippets/view-modal-script.html' %}
 
 {% endblock %}

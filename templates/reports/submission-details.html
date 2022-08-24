@@ -97,11 +97,11 @@
                 <td>{{ tca.get_status_display }}</td>
                 <td>{{ tca.time }}</td>
                 <td>{{ tca.memory }}</td>
-                <td><a class="link" href="{% url 'export-test-case-stdin' test_case_id=tca.test_case.id %}" target="_blank"><i
+                <td><a class="link" href="{% url 'export-test-case-stdin' %}?test_case_id={{ tca.test_case.id }}" target="_blank"><i
                         class="fa-solid fa-file-arrow-down"></i></a></td>
                 <td><a class="link" href="{% url 'export-test-case-attempt-stdout' tca_id=tca.id %}" target="_blank"><i
                         class="fa-solid fa-file-arrow-down"></i></a></td>
-                <td><a class="link" href="{% url 'export-test-case-stdout' test_case_id=tca.test_case.id %}" target="_blank"><i
+                <td><a class="link" href="{% url 'export-test-case-stdout' %}?test_case_id={{ tca.test_case.id }}" target="_blank"><i
                         class="fa-solid fa-file-arrow-down"></i></a></td>
               </tr>
             {% endfor %}

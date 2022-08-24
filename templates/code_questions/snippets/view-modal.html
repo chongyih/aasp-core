@@ -1,0 +1,59 @@
+<!-- Code Question Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Code Question Details</h5>
+        <button type="button" class="close" data-bs-dismiss="modal">
+          <span>&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- modal loading -->
+        <div id="m-loading">
+          <div class="p-3 d-flex justify-content-center">
+            <div class='spinner-border spinner-border-sm me-1'></div>
+            Loading ...
+          </div>
+        </div>
+
+        <!-- modal body details -->
+        <div id="m-body" style="display:none;">
+          <!-- description -->
+          <h6>Description</h6>
+          <div id="cq-description">-</div>
+          <hr>
+
+          <!-- test cases -->
+          <h6>Test Cases</h6>
+          <table class="table">
+            <thead>
+            <tr>
+              <th>#</th>
+              <th>Score</th>
+              <th>Input</th>
+              <th>Output</th>
+              <th>Time Limit (s)</th>
+              <th>Memory Limit (kb)</th>
+            </tr>
+            </thead>
+            <tbody id="cq-test-cases">
+            </tbody>
+          </table>
+
+          <hr>
+
+          <!-- languages -->
+          <h6>Languages</h6>
+          <div id="cq-languages"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>

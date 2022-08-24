@@ -76,6 +76,9 @@ class CodeQuestion(models.Model):
             total = 0
         return total
 
+    def languages(self):
+        return Language.objects.filter(codesnippet__code_question=self)
+
 
 class CodeSnippet(models.Model):
     class Meta:

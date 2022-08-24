@@ -2,12 +2,13 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.forms import inlineformset_factory
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from core.forms.question_banks import CodeQuestionForm
 from core.models import QuestionBank, Assessment, CodeQuestion
 from core.models.questions import TestCase, CodeSnippet, Language, Tag
+from core.serializers import CodeQuestionsSerializer
 from core.views.utils import check_permissions, check_permissions_code_question
 
 
@@ -210,3 +211,28 @@ def update_languages(request, code_question_id):
     }
 
     return render(request, 'code_questions/update-languages.html', context)
+
+
+def get_cq_details(request):
+    error_context = {"result": "error", }
+
+    if request.method == "GET":
+        # get cq_id from request
+        cq_id = request.GET.get("cq_id")
+
+        # get code question object
+        code_question = CodeQuestion.objects.filter(id=cq_id).first()
+
+        # code question not found
+        if not code_question:
+            return JsonResponse(error_context, status=200)
+
+        # mytodo: check permissions
+
+        # prepare context and serialize code question
+        context = {
+            "result": "success",
+            "code_question": CodeQuestionsSerializer(code_question, many=False).data
+        }
+
+        return JsonResponse(context, status=200)

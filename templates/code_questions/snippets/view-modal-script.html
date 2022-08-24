@@ -1,0 +1,63 @@
+{% load static %}
+<!-- View question script -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script type="text/javascript" src="{% static 'vendors/highlight.js/highlight.min.js' %}"></script>
+<script>
+    const modalLoading = $("#m-loading");
+    const modalBody = $("#m-body");
+
+    const cqDescription = $("#cq-description");
+    const cqTestCases = $("#cq-test-cases");
+    const cqLanguages = $("#cq-languages");
+
+    const viewModal = (btn) => {
+        // clear old data
+        cqTestCases.empty();
+        cqDescription.html("");
+        cqLanguages.html("");
+
+        // get code question id
+        const cq_id = $(btn).data('cq-id');
+
+        // show m-loading, hide m-body
+        modalBody.hide();
+        modalLoading.show();
+
+        // ajax request
+        $.ajax({
+            type: 'GET',
+            url: "{% url 'get-code-question-details' %}",
+            data: {cq_id},
+        }).done((res) => {
+            if (res.result === "success") {
+                let rows = "";
+                res.code_question.testcase_set.forEach((val, idx) => {
+                    rows += `<tr><td>${idx + 1}</td><td>${val.score}</td><td><a href="{% url 'export-test-case-stdin' %}?test_case_id=${val.id}">Input file</a></td><td><a href="{% url 'export-test-case-stdout' %}?test_case_id=${val.id}">Output file</a></td><td>${val.time_limit}</td><td>${val.memory_limit}</td></tr>`
+                })
+
+                let languages = "";
+                res.code_question.languages.forEach((val, idx) => {
+                    languages += `<span class="badge bg-light-secondary me-1">${val.name}</span>`
+                })
+
+                // set values
+                cqDescription.html(marked.parse(res.code_question.description));
+                cqTestCases.append(rows);
+                cqLanguages.html(languages);
+                hljs.highlightAll();
+
+                setTimeout(() => {
+                    modalLoading.hide();
+                    modalBody.show();
+                }, 500);
+            } else {
+                console.error("Internal Error!");
+            }
+        }).fail((res) => {
+            console.error("External API Error!");
+        });
+
+        // show modal
+        $('#detailsModal').modal('show');
+    };
+</script>

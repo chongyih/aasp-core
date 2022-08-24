@@ -155,16 +155,17 @@ def add_code_question_to_assessment(request):
         if check_permissions_assessment(assessment, request.user) == 0:
             return JsonResponse(error_context, status=200)
 
-        # get question
+        # get question (ensure only objects from question banks are allowed)
         code_question_id = request.POST.get('code_question_id')
-        code_question = CodeQuestion.objects.filter(id=code_question_id).first()
+        code_question = CodeQuestion.objects.filter(id=code_question_id, assessment__isnull=True,
+                                                    question_bank__isnull=False).first()
         if code_question is None:
             return JsonResponse(error_context, status=200)
 
         tags = code_question.tags.all()
 
-        # check permissions
-        if check_permissions_code_question(code_question, request.user) is False:
+        # check permissions (need at least Read permissions to clone)
+        if check_permissions_code_question(code_question, request.user) == 0:
             return JsonResponse(error_context, status=200)
 
         with transaction.atomic():

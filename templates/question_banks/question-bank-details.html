@@ -92,123 +92,113 @@
     <div class="row">
       <div class="col-12 m-2">
         <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Questions</h3>
+          </div>
+
           <div class="card-body">
-            <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
-              <li class="nav-item">
-                <a class="nav-link active" id="pill-code-questions-tab" data-bs-toggle="pill" href="#pill-code-questions" role="tab"
-                   aria-controls="pill-code-questions-tab"
-                   aria-selected="true">Code Questions</a>
-              </li>
-              <!--
-              <li class="nav-item">
-                <a class="nav-link" id="pill-visibility-tab" data-bs-toggle="pill" href="#pill-visibility" role="tab"
-                   aria-controls="pill-visibility-tab"
-                   aria-selected="false">Visibility</a>
-              </li>
-              -->
-            </ul>
-            <div class="tab-content mt-4" id="pills-tabContent">
+            <!-- Code question section -->
+            <!-- Add new code question button -->
+            {% if question_bank.owner == request.user %}
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>Code Questions</h5>
+                <a class="btn btn-sm btn-success float-end" href="{% url 'create-code-question' parent='qb' parent_id=question_bank.id %}">
+                  Create New
+                </a>
+              </div>
+            {% endif %}
 
-              <!-- First tab (code questions) -->
-              <div class="tab-pane fade show active" id="pill-code-questions" role="tabpanel" aria-labelledby="pill-code-questions-tab">
-
-                <!-- Add new code question button -->
-                {% if question_bank.owner == request.user %}
-                  <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4>Code Questions</h4>
-                    <a class="btn btn-success float-end" href="{% url 'create-code-question' parent='qb' parent_id=question_bank.id %}">New Code
-                      Question</a>
-                  </div>
-                {% endif %}
-
-                <!-- Code questions table -->
-                <div class="">
-                  <table class="table-responsive table table-hover mb-0">
-                    <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Test Cases</th>
-                      <th>Max Score</th>
-                      <th>Languages</th>
-                      <th>Tags</th>
-                      <th>Actions
-                        <div class="spinner-border spinner-border-sm" id="actions-loading" style="display:none"></div>
-                      </th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% if question_bank.codequestion_set.count == 0 %}
-                      <tr>
-                        <td colspan="5" class="text-center">No code questions found</td>
-                      </tr>
-                    {% else %}
-                      {% for q in question_bank.codequestion_set.all %}
-                        <tr>
-                          <td>{{ q.name }}</td>
-                          <td>{{ q.testcase_set.count }}</td>
-                          <td>{{ q.max_score }}</td>
-                          <td>
-                            {% for lang in q.languages|slice:":2" %}
-                              <span class="badge bg-light-secondary">{{ lang.name }}</span>
-                            {% endfor %}
-                            {% if q.languages.count > 2 %}
-                              <span class="badge bg-light-secondary">+{{ q.languages.count|add:"-2" }} more</span>
-                            {% endif %}
-                          </td>
-                          <td>
-                            {% if q.tags.all.count == 0 %}
-                              -
-                            {% else %}
-                              {% for tag in q.tags.all %}
-                                <span class="badge bg-light-secondary">{{ tag.name }}</span>
-                              {% endfor %}
-                            {% endif %}
-                          </td>
-                          <td>
-                            <button type="button" id="more-details" class="btn btn-sm btn-primary view-modal" data-cq-id="{{ q.id }}"
-                                    onclick="viewModal(this)">
-                              View
+            <!-- Code questions table -->
+            <table class="table-responsive table table-hover mb-0">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Test Cases</th>
+                <th>Max Score</th>
+                <th>Languages</th>
+                <th>Tags</th>
+                <th>Actions
+                  <div class="spinner-border spinner-border-sm" id="actions-loading" style="display:none"></div>
+                </th>
+              </tr>
+              </thead>
+              <tbody>
+              {% if question_bank.codequestion_set.count == 0 %}
+                <tr>
+                  <td colspan="5" class="text-center">No code questions found</td>
+                </tr>
+              {% else %}
+                {% for q in question_bank.codequestion_set.all %}
+                  <tr>
+                    <td>{{ q.name }}</td>
+                    <td>
+                      {% if q.testcase_set.count == 0 %}
+                        <span class="badge bg-light-danger">No test cases set</span>
+                      {% else %}
+                        {{ q.testcase_set.count }}
+                      {% endif %}
+                    </td>
+                    <td>{{ q.max_score }}</td>
+                    <td>
+                      {% if q.languages.count == 0 %}
+                        <span class="badge bg-light-danger">No languages set</span>
+                      {% else %}
+                        {% for lang in q.languages|slice:":2" %}
+                          <span class="badge bg-light-secondary">{{ lang.name }}</span>
+                        {% endfor %}
+                        {% if q.languages.count > 2 %}
+                          <span class="badge bg-light-secondary">+{{ q.languages.count|add:"-2" }} more</span>
+                        {% endif %}
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if q.tags.all.count == 0 %}
+                        -
+                      {% else %}
+                        {% for tag in q.tags.all %}
+                          <span class="badge bg-light-secondary">{{ tag.name }}</span>
+                        {% endfor %}
+                      {% endif %}
+                    </td>
+                    <td>
+                      <button type="button" id="more-details" class="btn btn-sm btn-primary view-modal" data-cq-id="{{ q.id }}"
+                              onclick="viewModal(this)">
+                        View
+                      </button>
+                      {% if question_bank.owner == request.user %}
+                        <div class="btn-group">
+                          <div class="dropdown">
+                            <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+                                    aria-haspopup="true"
+                                    aria-expanded="false">Edit
                             </button>
-                            {% if question_bank.owner == request.user %}
-                              <div class="btn-group">
-                                <div class="dropdown">
-                                  <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown"
-                                          aria-haspopup="true"
-                                          aria-expanded="false">Edit
-                                  </button>
-                                  <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{% url 'update-code-question' code_question_id=q.id %}">Description</a>
-                                    <a class="dropdown-item" href="{% url 'update-test-cases' code_question_id=q.id %}?next={{ request.path }}">Test
-                                      Cases</a>
-                                    <a class="dropdown-item"
-                                       href="{% url 'update-languages' code_question_id=q.id %}?next={{ request.path }}">Languages</a>
-                                  </div>
-                                </div>
-                              </div>
-                              <button data-code_question_id="{{ q.id }}" type="button" class="btn btn-sm btn-danger"
-                                      onclick="deleteCodeQuestion(this);">Delete
-                              </button>
-                            {% endif %}
-                          </td>
-                        </tr>
-                      {% endfor %}
-                    {% endif %}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                            <div class="dropdown-menu">
+                              <a class="dropdown-item" href="{% url 'update-code-question' code_question_id=q.id %}">Description</a>
+                              <a class="dropdown-item" href="{% url 'update-test-cases' code_question_id=q.id %}?next={{ request.path }}">
+                                Test Cases
+                              </a>
+                              <a class="dropdown-item"
+                                 href="{% url 'update-languages' code_question_id=q.id %}?next={{ request.path }}">Languages</a>
+                            </div>
+                          </div>
+                        </div>
+                        <button data-code_question_id="{{ q.id }}" type="button" class="btn btn-sm btn-danger"
+                                onclick="deleteCodeQuestion(this);">Delete
+                        </button>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% endif %}
+              </tbody>
+            </table>
 
-              <!-- Second tab (visibility) -->
-              <div class="tab-pane fade" id="pill-visibility" role="tabpanel" aria-labelledby="pill-visibility-tab">
-                <h3>Coming soon!</h3>
-              </div>
-
-            </div>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Modal: View code questions -->
     {% include 'code_questions/snippets/view-modal.html' %}
 
   </div>

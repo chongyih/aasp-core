@@ -115,8 +115,9 @@
               <thead>
               <tr>
                 <th>Name</th>
-                <th>No. of Test Cases</th>
+                <th>Test Cases</th>
                 <th>Max Score</th>
+                <th>Languages</th>
                 <th>Tags</th>
                 <th>Actions
                   <div class="spinner-border spinner-border-sm" id="actions-loading" style="display:none"></div>
@@ -134,6 +135,14 @@
                     <td>{{ q.name }}</td>
                     <td>{{ q.testcase_set.count }}</td>
                     <td>{{ q.max_score }}</td>
+                    <td>
+                      {% for lang in q.languages|slice:":2" %}
+                        <span class="badge bg-light-secondary">{{ lang.name }}</span>
+                      {% endfor %}
+                      {% if q.languages.count > 2 %}
+                        <span class="badge bg-light-secondary">+{{ q.languages.count|add:"-2" }} more</span>
+                      {% endif %}
+                    </td>
                     <td>
                       {% if q.tags.all.count == 0 %}
                         -

@@ -25,7 +25,12 @@
     {% if not assessment.published %}
       <div class="alert alert-secondary">
         <h4 class="alert-heading">Unpublished</h4>
-        <p>This assessment is unpublished and not visible to candidates.</p>
+        <p>This assessment is unpublished and not visible to candidates.
+          <button type="button" class="btn btn-sm btn-success float-end" data-bs-toggle="modal" data-bs-target="#publishModal">
+            Publish
+          </button>
+        </p>
+
       </div>
     {% endif %}
 
@@ -35,7 +40,6 @@
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h4 class="card-title ">Assessment Information</h4>
-            {# mytodo: edit details button (anyone who can view this page, can also edit) #}
             <a class="btn btn-sm btn-danger" href="{% url 'update-assessment' assessment_id=assessment.id %}?next={{ request.path }}">Edit Details</a>
           </div>
 
@@ -104,8 +108,8 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h5>Code Questions</h5>
               <div>
-                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#code-questions-modal">Add from Question
-                  Bank
+                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#code-questions-modal">
+                  Add from Question Bank
                 </button>
                 <a href="{% url 'create-code-question' parent='as' parent_id=assessment.id %}" class="btn btn-sm btn-secondary">Create New</a>
               </div>
@@ -133,14 +137,24 @@
                 {% for q in assessment.codequestion_set.all %}
                   <tr>
                     <td>{{ q.name }}</td>
-                    <td>{{ q.testcase_set.count }}</td>
+                    <td>
+                      {% if q.testcase_set.count == 0 %}
+                        <span class="badge bg-light-danger">No test cases set</span>
+                      {% else %}
+                        {{ q.testcase_set.count }}
+                      {% endif %}
+                    </td>
                     <td>{{ q.max_score }}</td>
                     <td>
-                      {% for lang in q.languages|slice:":2" %}
-                        <span class="badge bg-light-secondary">{{ lang.name }}</span>
-                      {% endfor %}
-                      {% if q.languages.count > 2 %}
-                        <span class="badge bg-light-secondary">+{{ q.languages.count|add:"-2" }} more</span>
+                      {% if q.languages.count == 0 %}
+                        <span class="badge bg-light-danger">No languages set</span>
+                      {% else %}
+                        {% for lang in q.languages|slice:":2" %}
+                          <span class="badge bg-light-secondary">{{ lang.name }}</span>
+                        {% endfor %}
+                        {% if q.languages.count > 2 %}
+                          <span class="badge bg-light-secondary">+{{ q.languages.count|add:"-2" }} more</span>
+                        {% endif %}
                       {% endif %}
                     </td>
                     <td>
@@ -164,16 +178,20 @@
                           </button>
                           <div class="dropdown-menu">
                             <a class="dropdown-item" href="{% url 'update-code-question' code_question_id=q.id %}">Description</a>
-                            <a class="dropdown-item" href="{% url 'update-test-cases' code_question_id=q.id %}?next={{ request.path }}">Test
-                              Cases</a>
-                            <a class="dropdown-item"
-                               href="{% url 'update-languages' code_question_id=q.id %}?next={{ request.path }}">Languages</a>
+                            {% if not assessment.published %}
+                              <a class="dropdown-item" href="{% url 'update-test-cases' code_question_id=q.id %}?next={{ request.path }}">Test
+                                Cases</a>
+                              <a class="dropdown-item"
+                                 href="{% url 'update-languages' code_question_id=q.id %}?next={{ request.path }}">Languages</a>
+                            {% endif %}
                           </div>
                         </div>
                       </div>
-                      <button data-code_question_id="{{ q.id }}" type="button" class="btn btn-sm btn-danger"
-                              onclick="deleteCodeQuestion(this);">Delete
-                      </button>
+                      {% if not assessment.published %}
+                        <button data-code_question_id="{{ q.id }}" type="button" class="btn btn-sm btn-danger"
+                                onclick="deleteCodeQuestion(this);">Delete
+                        </button>
+                      {% endif %}
                     </td>
                   </tr>
                 {% endfor %}
@@ -181,6 +199,35 @@
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Publish assessment -->
+  <div class="modal fade" id="publishModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Publish Assessment</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>
+            Are you sure?
+            <br><br>
+            You <b>cannot modify test cases and languages</b> once the assessment is published.
+            <br><br>
+            <i class="fa-solid fa-circle-info"></i> This enforces the consistency of the assessment for candidates who have yet to make an attempt.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <form action="{% url 'publish-assessment' assessment_id=assessment.id %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">Publish</button>
+          </form>
+
         </div>
       </div>
     </div>
@@ -283,6 +330,7 @@
 
   </div>
 
+  <!-- Modal: View code questions -->
   {% include 'code_questions/snippets/view-modal.html' %}
 
 {% endblock %}
@@ -290,8 +338,7 @@
 {% block js %}
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
   <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
-  <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
-
+  <script src="{% static 'vendors/toastify/toastify.js' %}"></script>
   <!-- global variables -->
   <script>
       let refreshNeeded = false;
@@ -445,6 +492,9 @@
           }
       });
   </script>
+
+  <!-- Delete question script -->
+  {% include 'code_questions/snippets/delete-code-question-script.html' %}
 
   {% include 'code_questions/snippets/view-modal-script.html' %}
 

@@ -180,6 +180,10 @@ def delete_code_question(request):
         if check_permissions_code_question(code_question, request.user) != 2:
             return JsonResponse(error_context, status=200)
 
+        # if it belongs to an assessment, disallow if assessment has already been published
+        if code_question.assessment and code_question.assessment.published:
+            return JsonResponse(error_context, status=200)
+
         # delete code question
         code_question.delete()
 

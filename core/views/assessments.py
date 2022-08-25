@@ -194,3 +194,30 @@ def add_code_question_to_assessment(request):
                 code_question.tags.add(t.id)
 
         return JsonResponse({"result": "success"}, status=200)
+
+
+def publish_assessment(request, assessment_id):
+    if request.method == "POST":
+        # get assessment object
+        assessment = get_object_or_404(Assessment, id=assessment_id)
+
+        # mytodo: check permissions for this assessment
+
+        if not assessment.published:
+            # check if all questions are valid
+            publishable, msg = assessment.can_be_published()
+            if not publishable:
+                messages.warning(request, msg)
+                return redirect("assessment-details", assessment_id=assessment_id)
+
+            # publish assessment
+            assessment.published = True
+            assessment.save()
+
+            messages.success(request, "The assessment has been published!")
+            return redirect("assessment-details", assessment_id=assessment_id)
+        else:
+            messages.warning(request, "The assessment was already published!")
+            return redirect("assessment-details", assessment_id=assessment_id)
+
+

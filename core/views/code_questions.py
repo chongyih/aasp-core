@@ -141,6 +141,11 @@ def update_test_cases(request, code_question_id):
         messages.warning(request, "You do not have permissions to perform that action.")
         return redirect('dashboard')
 
+    # if belongs to a published assessment, disallow
+    if code_question.assessment and code_question.assessment.published:
+        messages.warning(request, "Test cases from a published assessment cannot be modified!")
+        return redirect('assessment-details', assessment_id=code_question.assessment.id)
+
     # prepare formset
     if code_question.testcase_set.count() == 0:
         TestCaseFormset = inlineformset_factory(CodeQuestion, TestCase, extra=3,
@@ -181,6 +186,11 @@ def update_languages(request, code_question_id):
     if check_permissions_code_question(code_question, request.user) != 2:
         messages.warning(request, "You do not have permissions to perform that action.")
         return redirect('dashboard')
+
+    # if belongs to a published assessment, disallow
+    if code_question.assessment and code_question.assessment.published:
+        messages.warning(request, "Languages from a published assessment cannot be modified!")
+        return redirect('assessment-details', assessment_id=code_question.assessment.id)
 
     # prepare formset
     CodeSnippetFormset = inlineformset_factory(CodeQuestion, CodeSnippet, extra=0, fields=['language', 'code'])

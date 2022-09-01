@@ -3,6 +3,8 @@ version: "3.7"
 services:
   aasp_db:
     image: postgres:latest
+    ports:
+      - "5432:5432"
     volumes:
       - aasp_postgres_data:/var/lib/postgresql/data/
     environment:
@@ -12,13 +14,18 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
     restart: unless-stopped
 
   celery_worker:
     build:
       context: .
       dockerfile: ./compose/celery_worker/Dockerfile
-    network_mode: host
+    environment:
+      - CELERY_BROKER_URL=amqp://rabbitmq:5672
+      - JUDGE0_URL=http://judge0_server:2358
     volumes:
       - .:/app
     restart: unless-stopped
@@ -29,6 +36,8 @@ services:
     image: judge0/judge0:latest
     volumes:
       - ./compose/judge0/judge0.conf:/judge0.conf:ro
+    ports:
+      - "2358:2358"
     privileged: true
     restart: unless-stopped
     depends_on:

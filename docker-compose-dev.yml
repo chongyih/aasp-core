@@ -24,6 +24,7 @@ services:
       context: .
       dockerfile: ./compose/celery_worker/Dockerfile
     environment:
+      - AASP_POSTGRES_HOST=aasp_db
       - CELERY_BROKER_URL=amqp://rabbitmq:5672
       - JUDGE0_URL=http://judge0_server:2358
     volumes:

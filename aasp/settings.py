@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# load .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,14 +24,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-v3(-e9s&i4%5(a7pqjdh)uk*br2b^rm!k+vpm7iz+v2if_l#qa'
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY is missing!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = str(os.getenv('DEBUG')) == '1'
+DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-if not DEBUG:
-    ALLOWED_HOSTS += [os.environ.get('ALLOWED_HOST')]
+ALLOWED_HOSTS = ['0.0.0.0']
 
 # Application definition
 INSTALLED_APPS = [
@@ -79,9 +83,13 @@ WSGI_APPLICATION = 'aasp.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get("POSTGRES_DB"),
+        'USER': os.environ.get("POSTGRES_USER"),
+        'PASSWORD': os.environ.get("POSTGRES_PASSWORD"),
+        'HOST': os.environ.get("POSTGRES_HOST"),
+        'PORT': os.environ.get("POSTGRES_PORT"),
+    },
 }
 
 # Password validation
@@ -149,12 +157,17 @@ SHOW_COLLAPSED = True
 DEFAULT_STUDENT_PASSWORD = "password123"
 
 # celery settings
-CELERY_BROKER_URL = "amqp://127.0.0.1:5672/"
-CELERY_DEFAULT_RATE_LIMIT = "300/m"
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL")
 
 # judge0 settings
-JUDGE0_URL = "http://localhost:2358"
+JUDGE0_URL = os.environ.get("JUDGE0_URL")
 
 FORMAT_MODULE_PATH = [
     'aasp.formats',
 ]
+
+# if DJANGO_DEVELOPMENT, override above settings with development settings
+if os.environ.get('DJANGO_DEVELOPMENT') == "1":
+    from aasp.settings_dev import *
+
+    print("Found DJANGO_DEVELOPMENT=1, loaded settings_dev.")

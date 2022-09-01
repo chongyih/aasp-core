@@ -19,7 +19,7 @@ services:
     depends_on:
       - rabbitmq
 
-  server:
+  judge0_server:
     image: judge0/judge0:latest
     volumes:
       - ./compose/judge0/judge0.conf:/judge0.conf:ro
@@ -31,7 +31,7 @@ services:
       - db
       - redis
 
-  worker:
+  judge0_worker:
     image: judge0/judge0:latest
     command: ["./scripts/workers"]
     volumes:
@@ -42,14 +42,14 @@ services:
       - db
       - redis
 
-  db:
+  judge0_db:
     image: postgres:13.0
     env_file: ./compose/judge0/judge0.conf
     volumes:
       - postgres-data:/var/lib/postgresql/data/
     restart: unless-stopped
 
-  redis:
+  judge0_redis:
     image: redis:6.0
     command: [
       "bash", "-c",

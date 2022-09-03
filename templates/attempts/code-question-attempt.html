@@ -145,7 +145,7 @@
 
             <div class="row">
               <!-- Language selection -->
-              <div class="col-8">
+              <div class="col-6">
                 <label for="lang-select">Language</label>
                 <select class="form-select" id="lang-select">
                   {% for cs in code_snippets %}
@@ -163,6 +163,12 @@
                   <option value="one_dark">Dark (One Dark)</option>
                 </select>
               </div>
+
+              <div class="col-2">
+                <label></label><br>
+                <button class="btn btn-warning btn-block" type="button" onclick="resetCode()">Reset</button>
+              </div>
+
             </div>
 
             <!-- Ace Code Editor -->
@@ -298,24 +304,6 @@
       });
       editor.setOption("dragEnabled", false);
 
-      // function that sets the language and code snippet
-      const setLanguage = () => {
-          // get the selected option
-          const selected = langSelect.find("option:selected");
-          // set the code snippet
-          editor.session.setValue(selected.data('code'));
-          // set ace mode
-          editor.session.setMode("ace/mode/" + selected.data('ace-mode'));
-      };
-
-      // set language on first load
-      setLanguage();
-
-      // when language dropdown changed
-      langSelect.change(function () {
-          setLanguage();
-      });
-
       // when theme dropdown changed
       themeSelect.change(function () {
           editor.setTheme("ace/theme/" + $(this).val());
@@ -352,6 +340,26 @@
           }
       };
 
+            // function that sets the language and code snippet
+      const setLanguage = () => {
+          // get the selected option
+          const selected = langSelect.find("option:selected");
+          // set the code snippet
+          editor.session.setValue(selected.data('code'));
+          // set ace mode
+          editor.session.setMode("ace/mode/" + selected.data('ace-mode'));
+
+          updateReadonlyRanges();
+      };
+
+      // set language on first load
+      setLanguage();
+
+      // when language dropdown changed
+      langSelect.change(function () {
+          setLanguage();
+      });
+
       // prevent action on read-only lines
       editor.commands.on("exec", function (e) {
           // ignore arrow keys commands
@@ -380,6 +388,12 @@
       });
 
       updateReadonlyRanges();
+
+      const resetCode = () => {
+          if (confirm("Are you sure you wish to reset?")) {
+              setLanguage();
+          }
+      }
   </script>
 
   <!-- Code running and submission scripts -->

@@ -121,12 +121,12 @@ def get_assessment_attempt_question(assessment_attempt, question_index=None):
     Else, return the entire list.
     """
     questions = []
-    cq_attempts = CodeQuestionAttempt.objects.filter(assessment_attempt=assessment_attempt).order_by('id').prefetch_related('code_question')
-    questions.extend(list(cq_attempts))
+    cq_attempts = list(CodeQuestionAttempt.objects.filter(assessment_attempt=assessment_attempt).order_by('id').prefetch_related('code_question'))
+    statuses = [cqa.attempted for cqa in cq_attempts]
 
     if question_index is None:  # return all questions
-        return len(questions), questions
-    elif question_index > len(questions) - 1:  # return None
-        return 0, None
+        return statuses, cq_attempts
+    elif question_index > len(cq_attempts) - 1:  # return None
+        return [], None
     else:  # return specific question
-        return len(questions), questions[question_index]
+        return statuses, cq_attempts[question_index]

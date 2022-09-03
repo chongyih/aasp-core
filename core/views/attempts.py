@@ -122,16 +122,18 @@ def attempt_question(request, assessment_attempt_id, question_index):
     assessment_attempt = get_object_or_404(AssessmentAttempt, id=assessment_attempt_id)
 
     # get question
-    question_count, question_attempt = get_assessment_attempt_question(assessment_attempt_id, question_index)
+    question_statuses, question_attempt = get_assessment_attempt_question(assessment_attempt_id, question_index)
+
+    # if no question exist at the index, raise 404
+    if not question_attempt:
+        raise Http404
 
     # context
     context = {
+        'question_index': question_index,
         'assessment_attempt': assessment_attempt,
         'question_attempt': question_attempt,
-        'question_index': question_index,
-        'prev_index': question_index - 1 if question_index - 1 >= 0 else -1,
-        'next_index': question_index + 1 if question_index + 1 < question_count else -1,
-        'question_counts': range(question_count),
+        'question_statuses': question_statuses,
     }
 
     # render different template depending on question type (currently only CodeQuestion)

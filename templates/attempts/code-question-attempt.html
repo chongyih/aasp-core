@@ -66,41 +66,24 @@
       <div class="card">
         <div class="card-body">
           <div class="row">
+
             <!-- Question number buttons -->
             <div class="col-9">
-              {% for i in question_counts %}
-                {% if i == question_index %}
+              {% for status in question_statuses %}
+                {% if status == True %}
                   <a class="btn btn-sm btn-success"
-                     href="{% url 'attempt-question' assessment_attempt_id=assessment_attempt.id question_index=i %}">
-                    {{ i|add:"1" }} (Current)
+                     href="{% url 'attempt-question' assessment_attempt_id=assessment_attempt.id question_index=forloop.counter0 %}">
+                    {{ forloop.counter }} {% if forloop.counter0 == question_index|add:"0" %} (current) {% endif %}
                   </a>
                 {% else %}
                   <a class="btn btn-sm btn-secondary"
-                     href="{% url 'attempt-question' assessment_attempt_id=assessment_attempt.id question_index=i %}">
-                    {{ i|add:"1" }}
+                     href="{% url 'attempt-question' assessment_attempt_id=assessment_attempt.id question_index=forloop.counter0 %}">
+                    {{ forloop.counter }} {% if forloop.counter0 == question_index|add:"0" %} (current) {% endif %}
                   </a>
                 {% endif %}
               {% endfor %}
             </div>
 
-            <!-- Previous and next buttons -->
-            <div class="col-3 d-flex justify-content-end">
-              <!-- Previous -->
-              {% if prev_index != -1 %}
-                <a class="btn btn-sm btn-primary me-2"
-                   href="{% url 'attempt-question' assessment_attempt_id=assessment_attempt.id question_index=prev_index %}">Previous</a>
-              {% else %}
-                <a class="btn btn-sm btn-primary disabled me-2" href="#">Previous</a>
-              {% endif %}
-
-              <!-- Next -->
-              {% if next_index != -1 %}
-                <a class="btn btn-sm btn-primary"
-                   href="{% url 'attempt-question' assessment_attempt_id=assessment_attempt.id question_index=next_index %}">Next</a>
-              {% else %}
-                <a class="btn btn-sm btn-primary disabled" href="#">Next</a>
-              {% endif %}
-            </div>
           </div>
         </div>
       </div>
@@ -266,6 +249,7 @@
 
 {% block js %}
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js"></script>
   <script src="{% static 'vendors/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
   <script type="text/javascript" src="{% static 'vendors/highlight.js/highlight.min.js' %}"></script>
@@ -287,6 +271,9 @@
 
       // hljs
       hljs.highlightAll();
+
+      // marked
+      $("#question-desc").html(marked.parse("{{ code_question.description }}"));
   </script>
 
   <!-- Ace code editor config -->

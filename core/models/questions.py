@@ -31,6 +31,9 @@ class Language(models.Model):
     def __str__(self):
         return self.name
 
+    def default_template(self):
+        return self.codetemplate_set.first()
+
 
 class QuestionBank(models.Model):
     class Meta:

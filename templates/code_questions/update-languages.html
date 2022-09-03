@@ -55,7 +55,7 @@
                 {% for lang in languages %}
                   <div class="checkbox col-4">
                     <input type="checkbox" id="lang-{{ lang.id }}" data-lang-id="{{ lang.id }}" data-lang-name="{{ lang.name }}"
-                           class="form-check-input language-checkbox"
+                           class="form-check-input language-checkbox" data-lang-template="{{ lang.default_template.code }}"
                            {% if lang.id in existing_languages %}checked data-existing="true"
                            {% else %}
                            data-existing="false"
@@ -122,8 +122,9 @@
           const existing = checkbox.data("existing");
           const langId = checkbox.data("lang-id");
           const langName = checkbox.data("lang-name");
+          const langTemplate = checkbox.data("lang-template");
 
-          // function to update all prefixes (internal test cases only as sample test case is always 0)
+          // function to update all prefixes
           const updatePrefixes = () => {
               const regex = RegExp(`cs-(\\d)-`, 'g');
 
@@ -158,6 +159,7 @@
                   cloned.attr("id", `code-snippet-row-${langId}`);
                   cloned.find(".lang-label").first().html(langName);
                   cloned.find(".lang-id").first().val(langId);
+                  cloned.find("textarea").first().text(langTemplate);
 
                   // update prefix
                   $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));

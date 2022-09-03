@@ -97,10 +97,9 @@ class Migration(migrations.Migration):
         python3 = Language.objects.create(name='Python 3.8.1', judge_language_id=71, ace_mode='python')
 
         # create code templates
-        ct1 = CodeTemplate(language=c, name="Default", code="#include <stdio.h>\n#include<stdlib.h>\n")
-        ct2 = CodeTemplate(language=java, name="Default",
-                           code="public class Main {\npublic static void main(String [] args) {\nSystem.out.println(\"Hello world!\");}\n}\n")
-        ct3 = CodeTemplate(language=python3, name="Default", code="#include <stdio.h>\n#include<stdlib.h>\n")
+        ct1 = CodeTemplate(language=c, name="Default", code="// ro-start\n#include <stdio.h>\n#include <stdlib.h>\n\nint main(){\n// ro-end\n	// enter your solution here...\n\n\n// ro-start\n	return 0;\n}\n// ro-end\n")
+        ct2 = CodeTemplate(language=java, name="Default", code="// ro-start\npublic class Main {\n    public static void main(String [] args) {\n// ro-end\n        // enter your solution here...\n\n// ro-start\n    }\n}\n// ro-end\n")
+        ct3 = CodeTemplate(language=python3, name="Default", code='# // ro-start\ndef main():\n# // ro-end\n	# enter your solution here...\n\n\n# // ro-start\nif __name__ == "__main__":\n	main()\n# // ro-end\n')
 
         CodeTemplate.objects.bulk_create([ct1, ct2, ct3])
 

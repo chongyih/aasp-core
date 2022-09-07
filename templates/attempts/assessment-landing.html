@@ -106,7 +106,7 @@
               {% for attempt in assessment_attempts %}
                 <tr>
                   <td>{{ attempt.time_started }}</td>
-                  <td>{{ attempt.time_submitted }}</td>
+                  <td>{{ attempt.time_submitted|default_if_none:"-" }}</td>
                   <td>
                     {% if attempt.status == "Finished" %}
                       <span class="badge bg-light-success">{{ attempt.status }}</span>

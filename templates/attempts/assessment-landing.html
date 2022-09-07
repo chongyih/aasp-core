@@ -114,7 +114,13 @@
                       <span class="badge bg-light-secondary">{{ attempt.status }}</span>
                     {% endif %}
                   </td>
-                  <td>{{ attempt.score|default_if_none:"-" }}</td>
+                  <td>
+                    {% if assessment.show_grade %}
+                      {{ attempt.score|default_if_none:"-" }}
+                    {% else %}
+                      <span class="badge bg-light-danger">Hidden</span>
+                    {% endif %}
+                  </td>
                 </tr>
               {% endfor %}
             {% endif %}

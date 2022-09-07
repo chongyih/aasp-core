@@ -32,15 +32,19 @@ def assessment_landing(request, assessment_id):
         return redirect('dashboard')
 
     # check for incomplete attempts
-    incomplete_attempt = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user, time_submitted=None).exists()
+    incomplete_attempt: bool = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user, time_submitted=None).exists()
 
     # check if there are any attempts remaining
-    attempt_count = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user).count()
-    no_more_attempts = False if assessment.num_attempts == 0 else attempt_count >= assessment.num_attempts
+    attempt_count: int = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user).count()
+    no_more_attempts: bool = False if assessment.num_attempts == 0 else attempt_count >= assessment.num_attempts
+
+    # get all existing assessment attempts
+    assessment_attempts = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user)
 
     # context
     context = {
         'assessment': assessment,
+        'assessment_attempts': assessment_attempts,
         'attempt_count': attempt_count,
         'incomplete_attempt': incomplete_attempt,
         'no_more_attempts': no_more_attempts,

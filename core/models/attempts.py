@@ -17,6 +17,11 @@ class AssessmentAttempt(models.Model):
             return "Ongoing"
         elif self.score is None:
             return "Processing"
+        else:
+            assert self.time_started is not None
+            assert self.time_submitted is not None
+            assert self.score is not None
+            return "Finished"
 
     def compute_score(self):
         TestCase = apps.get_model(app_label="core", model_name="TestCase")

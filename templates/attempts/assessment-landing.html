@@ -81,6 +81,47 @@
           </div>
         </div>
       </div>
+
+      <!-- Attempts History -->
+      <div class="card">
+        <div class="card-header">
+          <h5>Attempts History</h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-responsive-lg">
+            <thead>
+            <tr>
+              <th>Time started</th>
+              <th>Time submitted</th>
+              <th>Status</th>
+              <th>Score ({{ assessment.total_score }})</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% if assessment_attempts.count == 0 %}
+              <tr>
+                <td class="text-center" colspan="4">No attempts found!</td>
+              </tr>
+            {% else %}
+              {% for attempt in assessment_attempts %}
+                <tr>
+                  <td>{{ attempt.time_started }}</td>
+                  <td>{{ attempt.time_submitted }}</td>
+                  <td>
+                    {% if attempt.status == "Finished" %}
+                      <span class="badge bg-light-success">{{ attempt.status }}</span>
+                    {% else %}
+                      <span class="badge bg-light-secondary">{{ attempt.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ attempt.score|default_if_none:"-" }}</td>
+                </tr>
+              {% endfor %}
+            {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- Instructions card -->

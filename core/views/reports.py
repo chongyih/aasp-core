@@ -120,7 +120,7 @@ def export_assessment_results(request, assessment_id):
         return redirect('dashboard')
 
     # get all attempts by score
-    all_attempts = AssessmentAttempt.objects.filter(assessment__id=assessment_id).prefetch_related("candidate")
+    all_attempts = AssessmentAttempt.objects.filter(assessment__id=assessment_id, time_submitted__isnull=False).prefetch_related("candidate")
 
     # create the HttpResponse object with the appropriate CSV header.
     filename = slugify(f"{assessment.course.code}_{assessment.name}_{timezone.now().strftime('%Y%m%d-%H%M')}")

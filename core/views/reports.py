@@ -1,9 +1,15 @@
+import csv
+
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponse, FileResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import timezone
+from django.utils.text import slugify
 
 from core.models import Assessment, AssessmentAttempt, CodeQuestionSubmission, TestCaseAttempt, TestCase
+from core.views.utils import check_permissions_assessment
 
 
 @login_required()
@@ -100,5 +106,39 @@ def export_test_case_attempt_stdout(request, tca_id):
 
     response = HttpResponse(content, content_type='text/plain')
     response['Content-Disposition'] = f'attachment; filename={filename}'
+
+    return response
+
+
+def export_assessment_results(request, assessment_id):
+    # check that assessment exist
+    assessment = get_object_or_404(Assessment.objects.select_related("course"), id=assessment_id)
+
+    # check permissions
+    if check_permissions_assessment(assessment, request.user) == 0:
+        messages.warning(request, "You do not have permissions to this assessment.")
+        return redirect('dashboard')
+
+    # get all attempts by score
+    all_attempts = AssessmentAttempt.objects.filter(assessment__id=assessment_id).prefetch_related("candidate")
+
+    # create the HttpResponse object with the appropriate CSV header.
+    filename = slugify(f"{assessment.course.code}_{assessment.name}_{timezone.now().strftime('%Y%m%d-%H%M')}")
+    response = HttpResponse(
+        content_type='text/csv',
+        headers={'Content-Disposition': f'attachment; filename="{filename}.csv"'},
+    )
+
+    # columns: username, time_started, time_submitted, auto_submit, score
+    writer = csv.writer(response)
+    writer.writerow(["username", "score", "best_attempt", "time_started", "time_submitted", "auto_submit"])
+
+    for attempt in all_attempts:
+        writer.writerow([attempt.candidate.username,
+                         attempt.score,
+                         'Y' if attempt.best_attempt else 'N',
+                         attempt.time_started,
+                         attempt.time_submitted,
+                         'Y' if attempt.auto_submit else 'N'])
 
     return response

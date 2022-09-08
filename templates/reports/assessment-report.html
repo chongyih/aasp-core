@@ -26,9 +26,19 @@
   <!-- Candidate attempts -->
   <div class="row">
     <div class="card">
-      <div class="card-header">
-        <h4>Completed Attempts</h4>
-        <p>The best completed attempts of each candidate.</p>
+      <div class="card-header d-flex align-content-between">
+        <div class="col-11">
+          <h4>Completed Attempts</h4>
+          <p>The best completed attempts of each candidate.</p>
+        </div>
+
+        <!-- Export button -->
+        <div class="col-1">
+          <a class="btn btn-warning float-end" href="{% url 'export-assessment-results' assessment_id=assessment.id %}">
+            <i class="fa-solid fa-file-csv"></i> CSV
+          </a>
+        </div>
+
       </div>
       <div class="card-body">
         <table id="best-attempts-table" class="table display table-borderless" style="width:100%">

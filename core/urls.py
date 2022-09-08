@@ -68,6 +68,7 @@ urlpatterns = [
     path('api/get-candidate-attempts/<int:assessment_id>/', reports.get_candidate_attempts, name='get-candidate-attempts'),  # ajax
     path('assessment/attempt/details/', reports.assessment_attempt_details, name='assessment-attempt-details'),
     path('assessment/submission/details/<int:cqs_id>/', reports.submission_details, name='submission-details'),
+    path('assessment/export-assessment-results/<int:assessment_id>/', reports.export_assessment_results, name='export-assessment-results'),
 
     # exporting stdin, stdout
     path('export/testcase/stdin/', reports.export_test_case_stdin, name="export-test-case-stdin"),  # stdin

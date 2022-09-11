@@ -45,24 +45,23 @@
             <!-- Tab contents -->
             <form method="POST">
               {% csrf_token %}
-
-              <div class="pt-3">
+              <div>
                 <!-- mytodo: do errors for specific fields -->
                 {% for error in testcase_formset.errors %}
                   {{ error }}
                   <div class="alert alert-danger">Please fill up all fields!</div>
                 {% endfor %}
 
-                <h4>Test Cases</h4>
+                <h4 class="pb-2">Test Cases</h4>
                 <!-- test cases & code snippet management forms -->
                 {{ testcase_formset.management_form }}
 
                 <!-- Sample Test case -->
-                <h6>Sample Test Case</h6>
+                <h5>Sample Test Case</h5>
                 {% include 'code_questions/snippets/test-case-row.html' with sample=True prefix="0" form=testcase_formset.0 %}
 
                 <!-- this div holds all internal test case rows -->
-                <h6>Internal Test Cases</h6>
+                <h5>Internal Test Cases</h5>
                 <div id="test-cases-container" class="mt-4">
                   {% for f in testcase_formset|slice:"1:" %}
                     {% include 'code_questions/snippets/test-case-row.html' with prefix=forloop.counter form=f %}
@@ -152,6 +151,40 @@
           }
       }
 
+  </script>
+
+  <!-- Load from file -->
+  <script>
+      const loadFromFile = (elem) => {
+          // get the corresponding text area
+          const textArea = $(elem).siblings("textarea").first();
+
+          // create input element in DOM
+          let input = document.createElement('input');
+          input.type = 'file';
+          input.accept = '.txt';
+
+          // define onchange event
+          input.onchange = e => {
+              // get the selected file
+              let file = e.target.files[0];
+
+              // setting up the reader
+              let reader = new FileReader();
+              reader.readAsText(file, 'UTF-8');
+
+              // set text area value
+              reader.onload = readerEvent => {
+                  textArea.val(readerEvent.target.result);
+              }
+          }
+
+          // trigger the file picker
+          input.click();
+
+          // clean up
+          input.remove()
+      }
   </script>
 
 {% endblock %}

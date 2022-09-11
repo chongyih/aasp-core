@@ -31,7 +31,8 @@
       <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdin">Input</label>
       <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdin"
                 id="id_tc-{{ prefix|default:"__prefix__" }}-stdin" rows="4"
-                class="form-control">{{ form.stdin.value|default:"" }}</textarea>
+                class="form-control font-monospace">{{ form.stdin.value|default:"" }}</textarea>
+      <button type="button" class="btn btn-link float-end" onclick="loadFromFile(this)">Load from file</button>
     </div>
   </div>
 
@@ -41,7 +42,8 @@
       <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdout">Output</label>
       <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdout"
                 id="id_tc-{{ prefix|default:"__prefix__" }}-stdout" rows="4"
-                class="form-control">{{ form.stdout.value|default:"" }}</textarea>
+                class="form-control font-monospace">{{ form.stdout.value|default:"" }}</textarea>
+      <button type="button" class="btn btn-link float-end" onclick="loadFromFile(this)">Load from file</button>
     </div>
   </div>
 

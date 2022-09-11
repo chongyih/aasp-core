@@ -35,6 +35,8 @@ urlpatterns = [
     path('qb/details/<int:question_bank_id>/', question_banks.question_bank_details, name='question-bank-details'),
     path('api/update-qb-shared-with/', question_banks.update_qb_shared_with, name='update-qb-shared-with'),  # ajax
     path('api/delete-code-question/', question_banks.delete_code_question, name='delete-code-question'),  # ajax
+    path('qb/export/<question_bank_id>/', question_banks.export_question_bank, name='export-question-bank'),
+    path('qb/import/', question_banks.import_question_bank, name='import-question-bank'),
 
     # code questions
     path('code-question/create/<str:parent>/<int:parent_id>/', code_questions.create_code_question, name='create-code-question'),  # step 1

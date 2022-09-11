@@ -11,7 +11,7 @@
     <div class="page-title">
       <div class="row">
         <div class="col-12 col-md-6 order-md-1 order-last">
-          <h2>Question Banks &#x2754</h2>
+          <h2>Question Banks</h2>
           <p class="text-subtitle text-muted">View or manage your question banks here!</p>
         </div>
       </div>
@@ -23,7 +23,11 @@
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h4 class="card-title ">Your question banks</h4>
-            <a class="btn btn-sm btn-danger" href="{% url 'create-question-bank' %}">Add Question Bank</a>
+            <div>
+              <a class="btn btn-sm btn-danger" href="{% url 'import-question-bank' %}">Import</a>
+              <a class="btn btn-sm btn-danger" href="{% url 'create-question-bank' %}">Create New</a>
+            </div>
+
           </div>
           <div class="card-body">
             <p class="card-text">Question banks owned by you.
@@ -100,7 +104,7 @@
                   {% for qb in shared_qbs %}
                     <tr>
                       <td>{{ qb.name }}</td>
-                      <td>{{ qb.description|truncatechars:70}}</td>
+                      <td>{{ qb.description|truncatechars:70 }}</td>
                       <td>{{ qb.owner.username }}</td>
                       <td>
                         {% if qb.private %}
@@ -154,7 +158,7 @@
                   {% for qb in public_qbs %}
                     <tr>
                       <td>{{ qb.name }}</td>
-                      <td>{{ qb.description|truncatechars:70}}</td>
+                      <td>{{ qb.description|truncatechars:70 }}</td>
                       <td>{{ qb.owner.username }}</td>
                       <td>
                         <a class="btn btn-secondary" href="{% url 'question-bank-details' question_bank_id=qb.id %}">View</a>

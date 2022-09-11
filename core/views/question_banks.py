@@ -3,9 +3,13 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.text import slugify
+from rest_framework.exceptions import ParseError
+from rest_framework.parsers import JSONParser
 
-from core.forms.question_banks import QuestionBankForm
+from core.forms.question_banks import QuestionBankForm, ImportQuestionBankForm
 from core.models import QuestionBank, User, CodeQuestion
+from core.serializers import QuestionBankSerializer
 from core.views.utils import check_permissions_qb, check_permissions_code_question
 
 
@@ -188,3 +192,55 @@ def delete_code_question(request):
         code_question.delete()
 
         return JsonResponse({"result": "success"}, status=200)
+
+@login_required()
+def export_question_bank(request, question_bank_id):
+    # mytodo: check permissions
+
+    question_bank = get_object_or_404(QuestionBank, id=question_bank_id)
+    serialized = QuestionBankSerializer(question_bank)
+    response = JsonResponse(serialized.data)
+    response['Content-Disposition'] = f'attachment; filename={slugify(question_bank.name)}.json'
+    return response
+
+
+@login_required()
+def import_question_bank(request):
+    form = ImportQuestionBankForm()
+
+    if request.method == "POST":
+        form = ImportQuestionBankForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            # retrieve the file
+            file = request.FILES['file']
+
+            # process the file
+            try:
+                # parse file as json
+                data = JSONParser().parse(file)
+
+                # pass it into serializer
+                serializer = QuestionBankSerializer(data=data)
+
+                # validate
+                if serializer.is_valid():
+                    # save to database, set the current user as the owner
+                    question_bank = serializer.save(owner=User.objects.get(username=request.user))
+
+                    # redirect to the created question bank
+                    messages.success(request, "Question Bank imported successfully!")
+                    return redirect('question-bank-details', question_bank_id=question_bank.id)
+                else:
+                    messages.warning(request, "Import failed, invalid json file.")
+
+            except ParseError:
+                messages.warning(request, "Import failed, source file was not in a valid json format.")
+            except Exception as e:
+                messages.warning(request, "Import failed, something went wrong.")
+
+    context = {
+        'form': form
+    }
+
+    return render(request, 'question_banks/import-question-bank.html', context)

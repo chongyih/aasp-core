@@ -1,0 +1,70 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}Import Question Bank{% endblock %}
+
+{% block styles %}
+{% endblock %}
+
+{% block content %}
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-6 order-md-1 order-last">
+          <h2>Import Question Bank</h2>
+          <p class="text-subtitle text-muted">Import a question bank from a json-formatted file.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-5 m-2">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title ">Upload</h4>
+          </div>
+          <div class="card-body">
+            <form class="form" method="post" enctype="multipart/form-data">
+              {% csrf_token %}
+              <div class="form-body">
+                {# non-field errors #}
+                {% for error in form.non_field_errors %}
+                  <div class="alert alert-danger py-2">{{ error }}</div>
+                {% endfor %}
+
+                <!-- File picker input -->
+                <div class="row">
+                  <div class="col-12">
+                    <label for="id_file"><b>Source File</b></label>
+                    <input class="form-control" name="file" type="file" id="id_file" accept="application/JSON" required>
+                    {# errors #}
+                    {% if form.file.errors %}
+                      <p class="text-danger">
+                        {% for e in form.file.errors %}
+                          {{ e }}<br>
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Cancel and Upload buttons -->
+                <div class="row pt-3">
+                  <div class="col-12 d-flex justify-content-end">
+                    <a class="btn btn-light-secondary me-1 mb-1" href="{% url 'view-question-banks' %}">Cancel</a>
+                    <button type="submit" class="btn btn-primary me-1 mb-1">Upload</button>
+                  </div>
+                </div>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+{% endblock %}
+
+{% block js %}
+{% endblock %}

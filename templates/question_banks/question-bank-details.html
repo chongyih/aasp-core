@@ -71,7 +71,7 @@
         <div class="card">
           <div class="card-content">
             <div class="card-body">
-              <h4 class="card-title">Shared with</h4>
+              <h4 class="card-title">Sharing & Exporting</h4>
               <p class="card-text">
                 These users can view and use questions from this question bank.
               </p>
@@ -82,6 +82,11 @@
                         {% if question_bank.owner != request.user %} disabled {% endif %}>
                 </select>
               </form>
+              <hr>
+              <a class="text-warning" href="{% url 'export-question-bank' question_bank_id=question_bank.id %}">
+                <i class="fa-solid fa-download pe-1"></i>
+                Export question bank (json)
+              </a>
             </div>
           </div>
         </div>

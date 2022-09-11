@@ -84,6 +84,7 @@ def update_question_bank(request, question_bank_id):
                 return redirect('view-question-banks')
 
     context = {
+        'question_bank': question_bank,
         'form': form,
     }
 
@@ -193,6 +194,7 @@ def delete_code_question(request):
 
         return JsonResponse({"result": "success"}, status=200)
 
+
 @login_required()
 def export_question_bank(request, question_bank_id):
     # mytodo: check permissions
@@ -244,3 +246,18 @@ def import_question_bank(request):
     }
 
     return render(request, 'question_banks/import-question-bank.html', context)
+
+
+def delete_question_bank(request, question_bank_id):
+    if request.method == "POST":
+        # get question bank
+        question_bank = get_object_or_404(QuestionBank, id=question_bank_id)
+
+        # check permissions (only owner can delete)
+        if check_permissions_qb(question_bank, request.user) != 2:
+            messages.warning(request, "You do not have permissions to delete the question bank.")
+        else:
+            question_bank.delete()
+            messages.success(request, "Question bank successfully deleted!")
+
+        return redirect('view-question-banks')

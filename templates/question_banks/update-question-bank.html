@@ -18,6 +18,7 @@
     </div>
 
     <div class="row">
+      <!-- Update form -->
       <div class="col-5 m-2">
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
@@ -30,7 +31,7 @@
 
                 {# non-field errors #}
                 {% for error in form.non_field_errors %}
-                  <div class="alert alert-danger py-2">Non-field error!</div>
+                  <div class="alert alert-danger py-2">{{ error }}</div>
                 {% endfor %}
 
                 <!-- Question bank name input -->
@@ -112,9 +113,38 @@
         </div>
       </div>
 
+      <!-- Delete form-->
+      <div class="col-4 m-2">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-title">Delete Question Bank</h4>
+          </div>
+          <div class="card-body">
+            <form method="POST" action="{% url 'delete-question-bank' question_bank_id=question_bank.id %}">
+              {% csrf_token %}
+              <!-- delete confirmation -->
+              <label for="id_confirmation">Please type <b>{{ request.user.username.lower }}/{{ question_bank.name|slugify }}</b> to confirm.</label>
+              <input class="form-control" id="id_confirmation" type="text" oninput="checkConfirmation(this);">
+
+              <!-- delete button -->
+              <button class="btn btn-danger mt-3 float-end" id="deleteBtn" type="submit" disabled>Delete</button>
+            </form>
+
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 {% endblock %}
 
 {% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+
+  <script>
+      const confirmation = "{{ request.user.username.lower }}/{{ question_bank.name|slugify }}";
+      const checkConfirmation = (confirmationTxt) => {
+          $("#deleteBtn").prop('disabled', confirmation !== confirmationTxt.value);
+      }
+  </script>
 {% endblock %}

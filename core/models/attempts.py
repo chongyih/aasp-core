@@ -82,7 +82,7 @@ class AssessmentAttempt(models.Model):
 
 
 class CodeQuestionAttempt(models.Model):
-    assessment_attempt = models.ForeignKey("AssessmentAttempt", null=False, blank=False, on_delete=models.PROTECT)
+    assessment_attempt = models.ForeignKey("AssessmentAttempt", null=False, blank=False, on_delete=models.CASCADE)
     code_question = models.ForeignKey("CodeQuestion", null=False, blank=False, on_delete=models.PROTECT)
 
     @property
@@ -94,7 +94,7 @@ class CodeQuestionAttempt(models.Model):
 
 
 class CodeQuestionSubmission(models.Model):
-    cq_attempt = models.ForeignKey("CodeQuestionAttempt", null=False, blank=False, on_delete=models.PROTECT)
+    cq_attempt = models.ForeignKey("CodeQuestionAttempt", null=False, blank=False, on_delete=models.CASCADE)
     time_submitted = models.DateTimeField(auto_now_add=True)
     passed = models.BooleanField(blank=True, null=True)
     language = models.ForeignKey("Language", null=False, blank=False, on_delete=models.PROTECT)
@@ -135,7 +135,7 @@ class TestCaseAttempt(models.Model):
         (14, "Exec Format Error"),
     ]
 
-    cq_submission = models.ForeignKey("CodeQuestionSubmission", null=False, blank=False, on_delete=models.PROTECT)
+    cq_submission = models.ForeignKey("CodeQuestionSubmission", null=False, blank=False, on_delete=models.CASCADE)
     test_case = models.ForeignKey("TestCase", null=False, blank=False, on_delete=models.PROTECT)
     token = models.CharField(max_length=36, null=False, blank=False)
     status = models.IntegerField(choices=STATUSES, default=1)

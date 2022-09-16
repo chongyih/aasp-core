@@ -44,6 +44,12 @@
 
             <!-- Tab contents -->
             <div class="pt-3">
+              {# Attempts deletion warning #}
+              {% if code_question.assessment and code_question.assessment.published == False and code_question.assessment.assessmentattempt_set.count != 0 %}
+                <div class="alert alert-warning">
+                  <p class="text-danger fw-bold">Warning! Updating languages will delete all existing assessment attempts!</p>
+                </div>
+              {% endif %}
 
               <h4>Allowed Languages</h4>
               <p>

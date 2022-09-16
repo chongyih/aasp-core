@@ -21,6 +21,13 @@
     </div>
   </div>
 
+  {% if assessment.published == False %}
+    <div class="alert alert-warning">
+      <h4 class="alert-heading text-danger">Preview</h4>
+      <p class="text-danger fw-bold">This assessment is not published, you are previewing this assessment.</p>
+    </div>
+  {% endif %}
+
   {% if assessment.status == "Upcoming" %}
     <!-- No more attempt alert -->
     <div class="alert alert-secondary">
@@ -150,8 +157,9 @@
     <div class="col-12  d-flex justify-content-end align-items-center">
       <a class="btn btn-lg btn-outline-secondary me-2" href="{% url 'dashboard' %}">Back to Home</a>
 
-      {# only show button if the assessment is still active #}
-      {% if assessment.status == "Active" %}
+      {# unpublished: show buttons, for educators access #}
+      {# published: only show button if the assessment is still active #}
+      {% if assessment.published == False or assessment.published and assessment.status == "Active" %}
         <form id="enter-form" method="POST" action="{% url 'enter-assessment' assessment_id=assessment.id %}">
           {% csrf_token %}
           {% if incomplete_attempt %}

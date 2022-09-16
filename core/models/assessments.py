@@ -39,18 +39,23 @@ class Assessment(models.Model):
         else:
             return "Active"
 
-    def can_be_published(self):
+    def is_valid(self):
+        """
+        Returns if an assessment is valid or not.
+        - (True, ""), if assessment contains questions and questions are complete.
+        - (False, <error_message>), if otherwise.
+        """
         CodeQuestion = apps.get_model(app_label="core", model_name="CodeQuestion")
         code_questions = CodeQuestion.objects.filter(assessment=self)
 
         # ensure assessment has at least one question
         if not code_questions:
-            return False, "⚠ Not published! There are no questions in the assessment."
+            return False, "There are no questions in the assessment."
 
         # ensure all code questions has at least one test case and one code snippet (language)
         for cq in code_questions:
             if cq.testcase_set.count() == 0 or cq.codesnippet_set.count() == 0:
-                return False, "⚠️ Not published! One or more code questions are incomplete."
+                return False, "One or more code questions are incomplete."
 
         return True, ""
 

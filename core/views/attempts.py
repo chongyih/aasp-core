@@ -14,7 +14,7 @@ from django.utils import timezone
 from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet, CodeQuestionSubmission, \
     TestCaseAttempt, Language
 from core.tasks import update_test_case_attempt_status, update_cqs_passed_flag, force_submit_assessment, compute_assessment_attempt_score
-from core.views.utils import get_assessment_attempt_question
+from core.views.utils import get_assessment_attempt_question, check_permissions
 
 
 @login_required()
@@ -26,10 +26,24 @@ def assessment_landing(request, assessment_id):
     # get assessment object
     assessment = get_object_or_404(Assessment, id=assessment_id)
 
-    # check if user is enrolled into the course
-    if not assessment.course.coursegroup_set.filter(students=request.user).exists():
-        messages.warning(request, "You do not have permissions to view this assessment.")
-        return redirect('dashboard')
+    if not assessment.published:  # not published: preview-only for educators
+        # must be course owner or maintainer
+        if check_permissions(assessment.course, request.user) == 0:
+            messages.warning(request, "You do not have permissions to view this assessment.")
+            return redirect('dashboard')
+
+        # check if assessment is valid for previewing
+        valid, msg = assessment.is_valid()
+
+        if not valid:
+            messages.warning(request, f"Assessment is incomplete! {msg}")
+            return redirect("assessment-details", assessment_id=assessment_id)
+
+    else:  # published: only for students
+        # check if user is enrolled into the course (students)
+        if not assessment.course.coursegroup_set.filter(students=request.user).exists():
+            messages.warning(request, "You do not have permissions to view this assessment.")
+            return redirect('dashboard')
 
     # check for incomplete attempts
     incomplete_attempt: bool = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user, time_submitted=None).exists()
@@ -67,15 +81,20 @@ def enter_assessment(request, assessment_id):
         # get assessment object
         assessment = get_object_or_404(Assessment, id=assessment_id)
 
-        # check if user is enrolled into the course
-        if not assessment.course.coursegroup_set.filter(students=request.user).exists():
-            messages.warning(request, "You do not have permissions to view this assessment.")
-            return redirect('dashboard')
+        if not assessment.published:  # not published: preview-only for educators
+            if check_permissions(assessment.course, request.user) == 0:
+                messages.warning(request, "You do not have permissions to view this assessment.")
+                return redirect('dashboard')
+        else:  # published: only for students
+            # check if user is enrolled into the course (students)
+            if not assessment.course.coursegroup_set.filter(students=request.user).exists():
+                messages.warning(request, "You do not have permissions to view this assessment.")
+                return redirect('dashboard')
 
-        # check if assessment is active
-        if assessment.status != "Active":
-            messages.warning(request, "You may not enter this assessment.")
-            return redirect('assessment-landing', assessment_id=assessment.id)
+            # check if assessment is active (only needed for students)
+            if assessment.status != "Active":
+                messages.warning(request, "You may not enter this assessment.")
+                return redirect('assessment-landing', assessment_id=assessment.id)
 
         # get incomplete attempt, if it exists
         incomplete_attempt = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user, time_submitted=None).first()

@@ -24,6 +24,13 @@
     <!-- Tab group row -->
     <div class="row">
       <div class="col-10 m-2">
+        {# Attempts deletion warning #}
+        {% if code_question.assessment and code_question.assessment.published == False %}
+          <div class="alert alert-warning">
+            <p class="text-danger fw-bold">Warning! Updating test cases will delete all existing assessment attempts!</p>
+          </div>
+        {% endif %}
+
         <div class="card">
           <div class="card-body">
 

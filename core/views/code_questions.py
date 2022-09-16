@@ -161,6 +161,9 @@ def update_test_cases(request, code_question_id):
     if request.method == "POST":
         testcase_formset = TestCaseFormset(request.POST, instance=code_question, prefix='tc')
         if testcase_formset.is_valid():
+            # remove past attempts
+            assessment_attempts = code_question.assessment.assessmentattempt_set.all().delete()
+
             testcase_formset.save()
             messages.success(request, "Test cases updated!")
 
@@ -200,6 +203,9 @@ def update_languages(request, code_question_id):
     if request.method == "POST":
         code_snippet_formset = CodeSnippetFormset(request.POST, instance=code_question, prefix='cs')
         if code_snippet_formset.is_valid():
+            # remove past attempts
+            assessment_attempts = code_question.assessment.assessmentattempt_set.all().delete()
+
             code_snippet_formset.save()
             messages.success(request, "Code Snippets saved!")
 

@@ -205,9 +205,9 @@ def publish_assessment(request, assessment_id):
 
         if not assessment.published:
             # check if all questions are valid
-            publishable, msg = assessment.can_be_published()
+            publishable, msg = assessment.is_valid()
             if not publishable:
-                messages.warning(request, msg)
+                messages.warning(request, f"Not published! {msg}")
                 return redirect("assessment-details", assessment_id=assessment_id)
 
             # publish assessment
@@ -219,5 +219,3 @@ def publish_assessment(request, assessment_id):
         else:
             messages.warning(request, "The assessment was already published!")
             return redirect("assessment-details", assessment_id=assessment_id)
-
-

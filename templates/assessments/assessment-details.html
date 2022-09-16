@@ -25,11 +25,15 @@
     {% if not assessment.published %}
       <div class="alert alert-secondary">
         <h4 class="alert-heading">Unpublished</h4>
-        <p>This assessment is unpublished and not visible to candidates.
-          <button type="button" class="btn btn-sm btn-success float-end" data-bs-toggle="modal" data-bs-target="#publishModal">
-            Publish
-          </button>
-        </p>
+        <div class="d-flex justify-content-between">
+          <p>This assessment is unpublished and not visible to candidates.</p>
+          <div>
+            <a class="btn btn-sm btn-warning" href="{% url 'assessment-landing' assessment_id=assessment.id %}">Preview</a>
+            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#publishModal">
+              Publish
+            </button>
+          </div>
+        </div>
 
       </div>
     {% endif %}
@@ -216,7 +220,7 @@
           <p>
             Are you sure?
             <br><br>
-            You <b>cannot modify test cases and languages</b> once the assessment is published.
+            You <b>cannot modify test cases and languages</b> once the assessment is published. All preview attempts will also be deleted.
             <br><br>
             <i class="fa-solid fa-circle-info"></i> This enforces the consistency of the assessment for candidates who have yet to make an attempt.
           </p>

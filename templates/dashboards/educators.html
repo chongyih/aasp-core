@@ -10,274 +10,151 @@
 
 {% block content %}
   <div class="page-heading">
-    <h3>Educator Dashboard</h3>
+    <h1>👋 Hi {{ request.user.username|lower }}, welcome back!</h1>
   </div>
   <div class="page-content">
     <section class="row">
+      <!-- left column (main column) -->
       <div class="col-12 col-lg-9">
         <div class="row">
-          <div class="col-6 col-lg-3 col-md-6">
+          <div class="col-3">
             <div class="card">
-              <div class="card-body px-3 py-4-5">
-                <div class="row">
-                  <div class="col-md-4">
-                    <div class="stats-icon purple">
-                      <i class="iconly-boldShow"></i>
-                    </div>
-                  </div>
-                  <div class="col-md-8">
-                    <h6 class="text-muted font-semibold">Profile Views</h6>
-                    <h6 class="font-extrabold mb-0">112.000</h6>
-                  </div>
-                </div>
+              <div class="card-body">
+                <h6>Active Courses</h6>
+                <h1>{{ courses.count }}</h1>
               </div>
             </div>
           </div>
-          <div class="col-6 col-lg-3 col-md-6">
+          <div class="col-3">
             <div class="card">
-              <div class="card-body px-3 py-4-5">
-                <div class="row">
-                  <div class="col-md-4">
-                    <div class="stats-icon blue">
-                      <i class="iconly-boldProfile"></i>
-                    </div>
-                  </div>
-                  <div class="col-md-8">
-                    <h6 class="text-muted font-semibold">Followers</h6>
-                    <h6 class="font-extrabold mb-0">183.000</h6>
-                  </div>
-                </div>
+              <div class="card-body">
+                <h6>Upcoming Assessments</h6>
+                <h1>5</h1>
               </div>
             </div>
           </div>
-          <div class="col-6 col-lg-3 col-md-6">
+          <div class="col-3">
             <div class="card">
-              <div class="card-body px-3 py-4-5">
-                <div class="row">
-                  <div class="col-md-4">
-                    <div class="stats-icon green">
-                      <i class="iconly-boldAdd-User"></i>
-                    </div>
-                  </div>
-                  <div class="col-md-8">
-                    <h6 class="text-muted font-semibold">Following</h6>
-                    <h6 class="font-extrabold mb-0">80.000</h6>
-                  </div>
-                </div>
+              <div class="card-body">
+                <h6>Ongoing Assessments</h6>
+                <h1>2</h1>
               </div>
             </div>
           </div>
-          <div class="col-6 col-lg-3 col-md-6">
-            <div class="card">
-              <div class="card-body px-3 py-4-5">
-                <div class="row">
-                  <div class="col-md-4">
-                    <div class="stats-icon red">
-                      <i class="iconly-boldBookmark"></i>
-                    </div>
-                  </div>
-                  <div class="col-md-8">
-                    <h6 class="text-muted font-semibold">Saved Post</h6>
-                    <h6 class="font-extrabold mb-0">112</h6>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+
+
         </div>
         <div class="row">
           <div class="col-12">
             <div class="card">
               <div class="card-header">
-                <h4>Profile Visit</h4>
-              </div>
-              <div class="card-body">
-                <div id="chart-profile-visit"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-12 col-xl-4">
-            <div class="card">
-              <div class="card-header">
-                <h4>Profile Visit</h4>
+                <h3>Overview</h3>
               </div>
               <div class="card-body">
                 <div class="row">
-                  <div class="col-6">
-                    <div class="d-flex align-items-center">
-                      <svg class="bi text-primary" width="32" height="32" fill="blue"
-                           style="width:10px">
-                        <use href="{% static 'vendors/bootstrap-icons/bootstrap-icons.svg#circle-fill' %}"></use>
-                      </svg>
-                      <h5 class="mb-0 ms-3">Europe</h5>
-                    </div>
-                  </div>
-                  <div class="col-6">
-                    <h5 class="mb-0">862</h5>
-                  </div>
-                  <div class="col-12">
-                    <div id="chart-europe"></div>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col-6">
-                    <div class="d-flex align-items-center">
-                      <svg class="bi text-success" width="32" height="32" fill="blue"
-                           style="width:10px">
-                        <use href="{% static 'vendors/bootstrap-icons/bootstrap-icons.svg#circle-fill' %}"></use>
-                      </svg>
-                      <h5 class="mb-0 ms-3">America</h5>
-                    </div>
-                  </div>
-                  <div class="col-6">
-                    <h5 class="mb-0">375</h5>
-                  </div>
-                  <div class="col-12">
-                    <div id="chart-america"></div>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col-6">
-                    <div class="d-flex align-items-center">
-                      <svg class="bi text-danger" width="32" height="32" fill="blue"
-                           style="width:10px">
-                        <use href="{% static 'vendors/bootstrap-icons/bootstrap-icons.svg#circle-fill' %}"></use>
-                      </svg>
-                      <h5 class="mb-0 ms-3">Indonesia</h5>
-                    </div>
-                  </div>
-                  <div class="col-6">
-                    <h5 class="mb-0">1025</h5>
-                  </div>
-                  <div class="col-12">
-                    <div id="chart-indonesia"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-12 col-xl-8">
-            <div class="card">
-              <div class="card-header">
-                <h4>Latest Comments</h4>
-              </div>
-              <div class="card-body">
-                <div class="table-responsive">
-                  <table class="table table-hover table-lg">
-                    <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Comment</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                      <td class="col-3">
-                        <div class="d-flex align-items-center">
-                          <div class="avatar avatar-md">
-                            <img src="{% static 'images/faces/5.jpg' %}">
+                  <h4>Your active courses</h4>
+
+                  {% if courses.count == 0 %}
+                    <p class="fw-bold text-muted">
+                      You have no courses yet!
+                    </p>
+                  {% else %}
+                    <div class="accordion mt-2" id="coursesAccordion">
+                      {% for course in courses %}
+                        <div class="accordion-item">
+                          <h2 class="accordion-header">
+                            <button class="accordion-button {% if forloop.counter != 1 %}collapsed{% endif %}" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapse{{ forloop.counter }}">
+                              <strong>{{ course }}</strong>
+                            </button>
+                          </h2>
+                          <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.counter == 1 %}show{% endif %}"
+                               data-bs-parent="#coursesAccordion">
+                            <div class="accordion-body">
+                              <div class="row">
+                                <div class="col-9">
+                                  <h5>Active assessments</h5>
+                                  <table class="table table-responsive">
+                                    <thead>
+                                    <tr>
+                                      <th>Name</th>
+                                      <th>Date Start</th>
+                                      <th>Date End</th>
+                                      <th>Duration</th>
+                                      <th>Attempts Allowed</th>
+                                      <th>Actions</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% if course.assessment_set.all.count == 0 %}
+                                      <tr>
+                                        <td colspan="6" class="text-center">No assessments found!</td>
+                                      </tr>
+                                    {% else %}
+                                      {% for a in course.assessment_set.all %}
+                                        <tr>
+                                          <td>{{ a.name }}</td>
+                                          <td>{{ a.time_start|default_if_none:"-" }}</td>
+                                          <td>{{ a.time_end|default_if_none:"-" }}</td>
+                                          <td>{% if a.duration %}{{ a.duration }} minutes{% else %}Unlimited{% endif %}</td>
+                                          <td>{% if a.num_attempts %}{{ a.num_attempts }}{% else %}Unlimited{% endif %}</td>
+                                          <td>
+                                            <a class="btn btn-sm btn-secondary" href="{% url 'assessment-details' assessment_id=a.id %}">View</a>
+                                            <a class="btn btn-sm btn-secondary" href="{% url 'assessment-report' assessment_id=a.id %}">Report</a>
+                                          </td>
+                                        </tr>
+                                      {% endfor %}
+                                    {% endif %}
+                                    </tbody>
+                                  </table>
+                                </div>
+
+                                <div class="col-3 border-start">
+                                  <h5>Links</h5>
+                                  <a href="{% url 'course-details' course_id=course.id %}" class="fw-bold">Go to course page</a><br>
+                                  <a href="{% url 'course-details' course_id=course.id %}#pills-assessments" class="fw-bold">View all assessments</a>
+                                </div>
+
+                              </div>
+                            </div>
+
                           </div>
-                          <p class="font-bold ms-3 mb-0">Si Cantik</p>
                         </div>
-                      </td>
-                      <td class="col-auto">
-                        <p class=" mb-0">Congratulations on your graduation!</p>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td class="col-3">
-                        <div class="d-flex align-items-center">
-                          <div class="avatar avatar-md">
-                            <img src="{% static 'images/faces/2.jpg' %}">
-                          </div>
-                          <p class="font-bold ms-3 mb-0">Si Ganteng</p>
-                        </div>
-                      </td>
-                      <td class="col-auto">
-                        <p class=" mb-0">Wow amazing design! Can you make another tutorial for
-                          this design?</p>
-                      </td>
-                    </tr>
-                    </tbody>
-                  </table>
+
+                      {% endfor %}
+                    </div>
+                  {% endif %}
                 </div>
               </div>
             </div>
           </div>
         </div>
+
       </div>
+
+      <!-- right column -->
       <div class="col-12 col-lg-3">
         <div class="card">
-          <div class="card-body py-4 px-5">
-            <div class="d-flex align-items-center">
-              <div class="avatar avatar-xl">
-                <img src="{% static 'images/faces/1.jpg' %}" alt="Face 1">
-              </div>
-              <div class="ms-3 name">
-                <h5 class="font-bold">{{ user.username }}</h5>
-                {% if request.user.is_superuser %}
-                  <span class="badge bg-light-danger">ADMIN</span>
-                {% elif request.user|has_group:'student' %}
-                  <span class="badge bg-light-success">STUDENT</span>
-                {% elif request.user|has_group:'educator' %}
-                  <span class="badge bg-light-warning">EDUCATOR</span>
-                {% elif request.user|has_group:'lab_assistant' %}
-                  <span class="badge bg-light-info">LAB ASSISTANT</span>
-                {% endif %}
-
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <h4>Recent Messages</h4>
-          </div>
-          <div class="card-content pb-4">
-            <div class="recent-message d-flex px-4 py-3">
-              <div class="avatar avatar-lg">
-                <img src="{% static 'images/faces/4.jpg' %}">
-              </div>
-              <div class="name ms-4">
-                <h5 class="mb-1">Hank Schrader</h5>
-                <h6 class="text-muted mb-0">@johnducky</h6>
-              </div>
-            </div>
-            <div class="recent-message d-flex px-4 py-3">
-              <div class="avatar avatar-lg">
-                <img src="{% static 'images/faces/5.jpg' %}">
-              </div>
-              <div class="name ms-4">
-                <h5 class="mb-1">Dean Winchester</h5>
-                <h6 class="text-muted mb-0">@imdean</h6>
-              </div>
-            </div>
-            <div class="recent-message d-flex px-4 py-3">
-              <div class="avatar avatar-lg">
-                <img src="{% static 'images/faces/1.jpg' %}">
-              </div>
-              <div class="name ms-4">
-                <h5 class="mb-1">John Dodol</h5>
-                <h6 class="text-muted mb-0">@dodoljohn</h6>
-              </div>
-            </div>
-            <div class="px-4">
-              <button class='btn btn-block btn-xl btn-light-primary font-bold mt-3'>Start
-                Conversation
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <h4>Visitors Profile</h4>
-          </div>
           <div class="card-body">
-            <div id="chart-visitors-profile"></div>
+            <div class="d-flex align-items-center">
+              <div class="ms-3">
+                <h5 class="font-bold">Logged in as</h5>
+                <h6>@{{ request.user.username }}
+                  {% if request.user.is_superuser %}
+                    <span class="badge bg-light-danger">ADMIN</span>
+                  {% elif request.user|has_group:'student' %}
+                    <span class="badge bg-light-success">STUDENT</span>
+                  {% elif request.user|has_group:'educator' %}
+                    <span class="badge bg-light-warning">EDUCATOR</span>
+                  {% elif request.user|has_group:'lab_assistant' %}
+                    <span class="badge bg-light-info">LAB ASSISTANT</span>
+                  {% endif %}</h6>
+                <p class="text-muted mb-0">Last login: {{ request.user.last_login }}</p>
+              </div>
+            </div>
           </div>
         </div>
+
       </div>
     </section>
   </div>

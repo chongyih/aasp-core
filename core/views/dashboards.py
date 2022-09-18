@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Q
 from django.shortcuts import render, redirect
 
 from core.models import Course, CourseGroup, Assessment
@@ -35,7 +36,11 @@ def dashboard_students(request):
 @user_passes_test(is_educator, login_url='dashboard')
 def dashboard_educators(request):
     user = request.user
-    context = {}
+    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user))
+    courses = courses.filter(active=True)
+    context = {
+        'courses': courses,
+    }
     return render(request, 'dashboards/educators.html', context)
 
 

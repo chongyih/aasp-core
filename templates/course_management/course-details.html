@@ -96,7 +96,7 @@
           <div class="card-body">
             <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
               <li class="nav-item">
-                <a class="nav-link active" id="pills-students-tab" data-bs-toggle="pill" href="#pills-students" role="tab"
+                <a class="nav-link" id="pills-students-tab" data-bs-toggle="pill" href="#pills-students" role="tab"
                    aria-controls="pills-students"
                    aria-selected="true">Students</a>
               </li>
@@ -109,7 +109,7 @@
             <div class="tab-content mt-4" id="pills-tabContent">
 
               <!-- First tab (Students) -->
-              <div class="tab-pane fade show active" id="pills-students" role="tabpanel" aria-labelledby="pills-students-tab">
+              <div class="tab-pane fade" id="pills-students" role="tabpanel" aria-labelledby="pills-students-tab">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <h5>Enrolled Students</h5>
                   <a class="btn btn-sm btn-success" href="{% url 'enrol-students' %}" target="_blank">Enrol Students</a>
@@ -310,6 +310,27 @@
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
   <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
   <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
+
+  <!-- Activate tab script -->
+  <script>
+      $(document).ready(function () {
+          // Obtain hash value from the url
+          const hash = window.location.hash;
+
+          // Try to find a nav-link with the hash
+          let hashNavLink = $('.nav-link[href="' + hash + '"]');
+          let hashNavTab = $(hash);
+
+          // If there is no link with the hash, take default link
+          if (hashNavLink.length === 0) {
+              hashNavLink = $('.nav-link[href="#pills-students"]');
+              hashNavTab = $('#pills-students');
+          }
+
+          hashNavLink.addClass('active');
+          hashNavTab.addClass('show active')
+      });
+  </script>
 
   <!-- Remove students script -->
   <script>

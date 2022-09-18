@@ -210,6 +210,9 @@ def publish_assessment(request, assessment_id):
                 messages.warning(request, f"Not published! {msg}")
                 return redirect("assessment-details", assessment_id=assessment_id)
 
+            # delete attempts
+            assessment_attempts = assessment.assessmentattempt_set.all().delete()
+
             # publish assessment
             assessment.published = True
             assessment.save()

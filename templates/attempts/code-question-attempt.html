@@ -279,7 +279,7 @@
       hljs.highlightAll();
 
       // marked
-      $("#question-desc").html(marked.parse("{{ code_question.description }}"));
+      $("#question-desc").html(marked.parse("{{ code_question.description|escapejs }}"));
   </script>
 
   <!-- Ace code editor config -->

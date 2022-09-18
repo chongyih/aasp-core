@@ -4,6 +4,7 @@
 {% block title %}Submission Details{% endblock %}
 
 {% block styles %}
+  <link rel="stylesheet" href="{% static 'vendors/highlight.js/styles/intellij-light.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -110,11 +111,30 @@
         </div>
       </div>
     </div>
+  </div>
 
+  <!-- Submitted code section -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h4>Submitted Solution</h4>
+        </div>
+
+        <div class="card-body">
+          <pre><code>{{ cqs.code }}</code></pre>
+        </div>
+      </div>
+    </div>
   </div>
 
 {% endblock %}
 
 {% block js %}
+  <script type="text/javascript" src="{% static 'vendors/highlight.js/highlight.min.js' %}"></script>
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+
+  <script>
+      hljs.highlightAll();
+  </script>
 {% endblock %}

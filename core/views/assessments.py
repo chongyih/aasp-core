@@ -1,8 +1,10 @@
+import random
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from core.filters import CodeQuestionFilter
@@ -36,7 +38,12 @@ def create_assessment(request):
                 messages.success(request, "You do not have permissions for this course.")
                 return redirect('view-courses')
 
-            assessment = form.save()
+            assessment = form.save(commit=False)
+            if form.cleaned_data['require_pin'] is False:  # remove pin
+                assessment.pin = None
+            else:
+                assessment.pin = random.randint(100_000, 999_999)  # generate random 6-digit pin
+            assessment.save()
 
             # redirect
             messages.success(request, "The assessment has been successfully created! ✅")
@@ -77,7 +84,13 @@ def update_assessment(request, assessment_id):
                 messages.success(request, "You do not have permissions for this course.")
                 return redirect('view-courses')
 
-            assessment = form.save()
+            # update pin
+            assessment = form.save(commit=False)
+            if form.cleaned_data['require_pin'] is False:  # remove pin
+                assessment.pin = None
+            elif form.cleaned_data['require_pin'] is True and assessment.pin is None:  # only generate new pin if just switched
+                assessment.pin = random.randint(100_000, 999_999)  # generate random 6-digit pin
+            assessment.save()
 
             # redirect
             messages.success(request, "The assessment has been successfully updated! ✅")

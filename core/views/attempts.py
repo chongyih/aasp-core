@@ -80,6 +80,7 @@ def enter_assessment(request, assessment_id):
     if request.method == "POST":
         # get assessment object
         assessment = get_object_or_404(Assessment, id=assessment_id)
+        pin = request.POST.get('pin')
 
         if not assessment.published:  # not published: preview-only for educators
             if check_permissions(assessment.course, request.user) == 0:
@@ -108,6 +109,11 @@ def enter_assessment(request, assessment_id):
             messages.warning(request, "You may not enter this assessment.")
             return redirect('assessment-landing', assessment_id=assessment.id)
         else:
+            # check pin, if needed
+            if assessment.pin is not None and str(assessment.pin) != pin:
+                messages.warning(request, "Incorrect PIN supplied, unable to start a new attempt.")
+                return redirect('assessment-landing', assessment_id=assessment.id)
+
             # generate new assessment_attempt
             assessment_attempt = generate_assessment_attempt(request.user, assessment)
             return redirect('attempt-question', assessment_attempt_id=assessment_attempt.id, question_index=0)

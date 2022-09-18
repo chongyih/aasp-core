@@ -53,13 +53,17 @@
                 <h6>Course</h6>
                 <p>{{ assessment.course }}</p>
               </div>
-              <div class="col-4">
+              <div class="col-3">
                 <h6>Assessment Name</h6>
                 <p>{{ assessment.name }}</p>
               </div>
-              <div class="col-4">
+              <div class="col-3">
                 <h6>Attempts Allowed</h6>
                 <p>{{ assessment.num_attempts|default:"Unlimited" }}</p>
+              </div>
+              <div class="col-2">
+                <h6>Access PIN</h6>
+                <span class="badge rounded-pill bg-light-secondary fs-6 font-monospace">{{ assessment.pin|default_if_none:"No PIN" }}</span>
               </div>
             </div>
             <div class="row">

@@ -15,6 +15,7 @@ class Assessment(models.Model):
     deleted = models.BooleanField(default=False)
     show_grade = models.BooleanField(default=False)
     published = models.BooleanField(default=False)
+    pin = models.PositiveIntegerField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.name}"

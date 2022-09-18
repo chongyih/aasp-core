@@ -186,6 +186,13 @@
                            {% if form.show_grade.value %}checked{% endif %}>
                     <label for="id_show_grade">Show Grade</label>
                   </div>
+
+                  <!-- Require PIN checkbox -->
+                  <div class="checkbox">
+                    <input type="checkbox" id="id_require_pin" name="require_pin" class="form-check-input me-2"
+                           {% if form.require_pin.value %}checked{% endif %}>
+                    <label for="id_require_pin">Require PIN</label>
+                  </div>
                 </div>
 
                 <!-- Submit and Reset buttons -->

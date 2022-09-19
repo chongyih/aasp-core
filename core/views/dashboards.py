@@ -24,9 +24,14 @@ def dashboard(request):
 @login_required
 @user_passes_test(is_student, login_url='dashboard')
 def dashboard_students(request):
+    # courses count
+    courses_count = Course.objects.filter(coursegroup__students=request.user).count()
+
     # retrieve all assessments for this user
-    assessments = Assessment.objects.filter(course__coursegroup__students=request.user, published=True)
+    assessments = Assessment.objects.filter(course__coursegroup__students=request.user, published=True, deleted=False)
+
     context = {
+        'courses_count': courses_count,
         'assessments': assessments
     }
     return render(request, 'dashboards/students.html', context)
@@ -39,7 +44,7 @@ def dashboard_educators(request):
     courses = Course.objects.filter(
         Q(owner=request.user) |
         Q(maintainers=request.user)
-    ).filter(active=True)
+    ).filter(active=True).distinct()
 
     # context
     context = {

@@ -42,24 +42,22 @@
             </div>
           </div>
 
-
         </div>
         <div class="row">
           <div class="col-12">
             <div class="card">
-              <div class="card-header">
-                <h3>Overview</h3>
+              <div class="card-header pb-0">
+                <h3>Your courses</h3>
+                <p class="text-muted">Only active courses are shown here.</p>
               </div>
               <div class="card-body">
                 <div class="row">
-                  <h4>Your active courses</h4>
-
                   {% if courses.count == 0 %}
                     <p class="fw-bold text-muted">
                       You have no courses yet!
                     </p>
                   {% else %}
-                    <div class="accordion mt-2" id="coursesAccordion">
+                    <div class="accordion" id="coursesAccordion">
                       {% for course in courses %}
                         <div class="accordion-item">
                           <h2 class="accordion-header">
@@ -81,8 +79,6 @@
                                       <th>Status</th>
                                       <th>Date Start</th>
                                       <th>Date End</th>
-                                      <th>Duration</th>
-                                      <th>Attempts Allowed</th>
                                       <th>Actions</th>
                                     </tr>
                                     </thead>
@@ -104,8 +100,6 @@
                                           </td>
                                           <td>{{ a.time_start|default_if_none:"-" }}</td>
                                           <td>{{ a.time_end|default_if_none:"-" }}</td>
-                                          <td>{% if a.duration %}{{ a.duration }} minutes{% else %}Unlimited{% endif %}</td>
-                                          <td>{% if a.num_attempts %}{{ a.num_attempts }}{% else %}Unlimited{% endif %}</td>
                                           <td>
                                             <a class="btn btn-sm btn-secondary" href="{% url 'assessment-details' assessment_id=a.id %}">View</a>
                                             <a class="btn btn-sm btn-secondary" href="{% url 'assessment-report' assessment_id=a.id %}">Report</a>

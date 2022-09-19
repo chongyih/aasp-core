@@ -19,27 +19,27 @@
         {# EDUCATOR #}
         <li class="sidebar-item {% if 'dashboard/educators' in request.path %} active {% endif %}">
           <a href="{% url 'dashboard-educators' %}" class='sidebar-link'>
-            <i class="fa-solid fa-house"></i><span>Educator</span>
+            <i class="fa-solid fa-house"></i><span>Home</span>
           </a>
         </li>
 
-        {# User Management: Enrol Students #}
-        <li class="sidebar-title">User Management</li>
+        <hr>
 
-        <li class="sidebar-item {% if request.path == '/enrol-students/' %} active {% endif %}">
-          <a href="{% url 'enrol-students' %}" class='sidebar-link'><i class="fa-solid fa-graduation-cap">
-          </i><span>Enrol Students</span>
-          </a>
-        </li>
-
-        {# Course Management: Courses, Question Banks#}
-        <li class="sidebar-title">Course Management</li>
+        {# Courses #}
         <li class="sidebar-item {% if request.path == '/courses/' %} active {% endif %}">
           <a href="{% url 'view-courses' %}" class='sidebar-link'>
             <i class="fa-solid fa-user-group"></i><span>Courses</span>
           </a>
         </li>
 
+        {# User Management: Enrol Students #}
+        <li class="sidebar-item {% if request.path == '/enrol-students/' %} active {% endif %}">
+          <a href="{% url 'enrol-students' %}" class='sidebar-link'><i class="fa-solid fa-graduation-cap">
+          </i><span>Enrol Students</span>
+          </a>
+        </li>
+
+        {# Question Banks #}
         <li class="sidebar-item {% if request.path == '/qb/' %} active {% endif %}">
           <a href="{% url 'view-question-banks' %}" class='sidebar-link'>
             <i class="fa-solid fa-folder"></i><span>Question Banks</span>

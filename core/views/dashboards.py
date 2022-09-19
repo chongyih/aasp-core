@@ -35,9 +35,13 @@ def dashboard_students(request):
 @login_required
 @user_passes_test(is_educator, login_url='dashboard')
 def dashboard_educators(request):
-    user = request.user
-    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user))
-    courses = courses.filter(active=True)
+    # get active courses
+    courses = Course.objects.filter(
+        Q(owner=request.user) |
+        Q(maintainers=request.user)
+    ).filter(active=True)
+
+    # context
     context = {
         'courses': courses,
     }

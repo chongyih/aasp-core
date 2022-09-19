@@ -18,7 +18,12 @@ def view_courses(request):
     # retrieve courses for this user
     courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct().prefetch_related('owner', 'maintainers')
 
+    active_courses = courses.filter(active=True)
+    inactive_courses = courses.filter(active=False)
+
     context = {
+        "active_courses": active_courses,
+        "inactive_course": inactive_courses,
         "courses": courses
     }
     return render(request, 'course_management/courses.html', context)

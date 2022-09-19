@@ -2,6 +2,10 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.sessions.models import Session
 from django.core.validators import MaxValueValidator
 from django.db import models
+from django.db.models import Q
+from django.utils import timezone
+
+from core.models import Assessment
 
 
 class User(AbstractUser):
@@ -85,6 +89,14 @@ class Course(models.Model):
     def students_count(self):
         return User.objects.filter(enrolled_groups__course=self).count()
 
+    def active_upcoming_assessments(self):
+        return self.assessment_set.filter(
+            published=True, deleted=False
+        ).filter(
+            Q(time_start__isnull=True, time_end__isnull=True) |  # unlimited
+            Q(time_start__isnull=False, time_start__gt=timezone.now()) |   # upcoming
+            Q(time_start__isnull=False, time_end__isnull=False, time_start__lte=timezone.now(), time_end__gt=timezone.now())  # active
+        )
 
 class CourseGroup(models.Model):
     name = models.CharField(max_length=20, blank=False, null=False)

@@ -25,20 +25,19 @@ class Assessment(models.Model):
         """
         Unpublished, Deleted, Active, Upcoming, Ended
         """
-        if not self.published:
+        if self.published is False:
             return "Unpublished"
-        elif self.deleted:
+        if self.deleted:
             return "Deleted"
-        elif not self.time_start and not self.time_end:  # unlimited
+        if self.time_start is None and self.time_end is None:  # unlimited duration (no time_start and no time_end)
             return "Active"
-        elif self.time_start and timezone.now() < self.time_start:  # not started yet
+        if self.time_start and timezone.now() < self.time_start:  # upcoming (it is before time_start)
             return "Upcoming"
-        elif self.time_start and self.time_end and self.time_start <= timezone.now() <= self.time_end:
+        if (self.time_start and self.time_end) and self.time_start <= timezone.now() <= self.time_end:  # active (it is between start and end)
             return "Active"
-        elif self.time_end and timezone.now() > self.time_end:
+        if self.time_end and timezone.now() > self.time_end:  # ended (it is past time_end)
             return "Ended"
-        else:
-            return "Active"
+        raise Exception("Unknown course status!")
 
     def is_valid(self):
         """

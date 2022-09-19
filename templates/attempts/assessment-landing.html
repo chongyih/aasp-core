@@ -15,7 +15,11 @@
         <div class="col-12 col-md-12 order-md-1 order-last">
           <h5>Assessment</h5>
           <h2>{{ assessment }}</h2>
-          <span class="badge bg-secondary">{{ assessment.status }}</span>
+          {% if assessment.status == "Active" %}
+            <span class="badge bg-success">{{ assessment.status }}</span>
+          {% else %}
+            <span class="badge bg-secondary">{{ assessment.status }}</span>
+          {% endif %}
         </div>
       </div>
     </div>

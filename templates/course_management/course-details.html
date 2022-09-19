@@ -264,6 +264,7 @@
                     <thead>
                     <tr>
                       <th>Name</th>
+                      <th>Status</th>
                       <th>Date Start</th>
                       <th>Date End</th>
                       <th>Duration</th>
@@ -280,6 +281,13 @@
                       {% for a in course.assessment_set.all %}
                         <tr>
                           <td>{{ a.name }}</td>
+                          <td>
+                            {% if a.status == "Active" %}
+                              <span class="badge bg-success">{{ a.status }}</span>
+                            {% else %}
+                              <span class="badge bg-secondary">{{ a.status }}</span>
+                            {% endif %}
+                          </td>
                           <td>{{ a.time_start|default_if_none:"-" }}</td>
                           <td>{{ a.time_end|default_if_none:"-" }}</td>
                           <td>{% if a.duration %}{{ a.duration }} minutes{% else %}Unlimited{% endif %}</td>

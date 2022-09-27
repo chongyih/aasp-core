@@ -98,6 +98,7 @@ class Course(models.Model):
             Q(time_start__isnull=False, time_end__isnull=False, time_start__lte=timezone.now(), time_end__gt=timezone.now())  # active
         ).distinct()
 
+
 class CourseGroup(models.Model):
     name = models.CharField(max_length=20, blank=False, null=False)
     course = models.ForeignKey(Course, blank=False, null=False, on_delete=models.RESTRICT)

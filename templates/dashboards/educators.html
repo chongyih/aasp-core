@@ -63,7 +63,7 @@
                           <h2 class="accordion-header">
                             <button class="accordion-button {% if forloop.counter != 1 %}collapsed{% endif %}" type="button" data-bs-toggle="collapse"
                                     data-bs-target="#collapse{{ forloop.counter }}">
-                              <strong>{{ course }}</strong>
+                              <strong>{{ course.code }} {{ course.name }}</strong>
                             </button>
                           </h2>
                           <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.counter == 1 %}show{% endif %}"
@@ -163,6 +163,5 @@
 {% endblock %}
 
 {% block js %}
-  <script src="{% static 'vendors/apexcharts/apexcharts.js' %}"></script>
   <script src="{% static 'js/pages/dashboard.js' %}"></script>
 {% endblock %}

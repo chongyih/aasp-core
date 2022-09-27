@@ -208,6 +208,29 @@
         </div>
       </div>
 
+      {% if assessment.deleted == False %}
+        <!-- Delete form-->
+        <div class="col-4 m-2">
+          <div class="card">
+            <div class="card-header">
+              <h4 class="card-title">Delete Assessment</h4>
+            </div>
+            <div class="card-body">
+              <form method="POST" action="{% url 'delete-assessment' assessment_id=assessment.id %}">
+                {% csrf_token %}
+                <!-- delete confirmation -->
+                <label for="id_confirmation">Please type <b>{{ request.user.username.lower }}/{{ assessment.name|slugify }}</b> to confirm.</label>
+                <input class="form-control" id="id_confirmation" type="text" oninput="checkConfirmation(this);">
+
+                <!-- delete button -->
+                <button class="btn btn-danger mt-3 float-end" id="deleteBtn" type="submit" disabled>Delete</button>
+              </form>
+
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
     </div>
   </div>
 {% endblock %}
@@ -282,4 +305,14 @@
           picker2.clear();
       };
   </script>
+
+  {% if assessment.deleted == False %}
+    <script>
+        const confirmation = "{{ request.user.username.lower }}/{{ assessment.name|slugify }}";
+        const checkConfirmation = (confirmationTxt) => {
+            $("#deleteBtn").prop('disabled', confirmation !== confirmationTxt.value);
+        }
+    </script>
+  {% endif %}
+
 {% endblock %}

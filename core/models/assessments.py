@@ -25,10 +25,10 @@ class Assessment(models.Model):
         """
         Unpublished, Deleted, Active, Upcoming, Ended
         """
-        if self.published is False:
-            return "Unpublished"
         if self.deleted:
             return "Deleted"
+        if self.published is False:
+            return "Unpublished"
         if self.time_start is None and self.time_end is None:  # unlimited duration (no time_start and no time_end)
             return "Active"
         if self.time_start and timezone.now() < self.time_start:  # upcoming (it is before time_start)

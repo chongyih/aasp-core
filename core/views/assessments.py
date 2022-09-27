@@ -98,6 +98,7 @@ def update_assessment(request, assessment_id):
 
     context = {
         'form': form,
+        'assessment': assessment,
     }
     return render(request, 'assessments/update-assessment.html', context)
 
@@ -235,3 +236,43 @@ def publish_assessment(request, assessment_id):
         else:
             messages.warning(request, "The assessment was already published!")
             return redirect("assessment-details", assessment_id=assessment_id)
+
+
+@login_required()
+def delete_assessment(request, assessment_id):
+    if request.method == "POST":
+        # get assessment
+        assessment = get_object_or_404(Assessment, id=assessment_id)
+
+        # check permissions (only course owner/maintainer can delete)
+        if check_permissions_assessment(assessment, request.user) == 0:
+            messages.warning(request, "You do not have permissions to delete the assessment.")
+            return redirect('dashboard')
+        else:
+            if assessment.deleted:
+                messages.warning(request, "Assessment was already deleted!")
+            else:
+                assessment.deleted = True
+                assessment.save()
+                messages.success(request, "Assessment successfully deleted!")
+            return redirect('assessment-details', assessment_id=assessment_id)
+
+
+@login_required()
+def undo_delete_assessment(request, assessment_id):
+    if request.method == "POST":
+        # get assessment
+        assessment = get_object_or_404(Assessment, id=assessment_id)
+
+        # check permissions (only course owner/maintainer can delete)
+        if check_permissions_assessment(assessment, request.user) == 0:
+            messages.warning(request, "You do not have permissions to modify the assessment.")
+            return redirect('dashboard')
+        else:
+            if assessment.deleted is False:
+                messages.warning(request, "Assessment was not deleted, no undo needed!")
+            else:
+                assessment.deleted = False
+                assessment.save()
+                messages.success(request, "Undo delete successful!")
+            return redirect('assessment-details', assessment_id=assessment_id)

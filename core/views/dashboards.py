@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q
 from django.shortcuts import render, redirect
+from django.utils import timezone
 
 from core.models import Course, CourseGroup, Assessment
 from core.views.utils import is_student, is_educator, is_lab_assistant
@@ -25,14 +26,26 @@ def dashboard(request):
 @user_passes_test(is_student, login_url='dashboard')
 def dashboard_students(request):
     # courses count
-    courses_count = Course.objects.filter(coursegroup__students=request.user).count()
+    courses_count = Course.objects.filter(coursegroup__students=request.user, active=True).count()
 
     # retrieve all assessments for this user
     assessments = Assessment.objects.filter(course__coursegroup__students=request.user, published=True, deleted=False)
 
+    # active
+    active_assessments = [a for a in assessments if a.status == "Active"]
+
+    # upcoming
+    upcoming_assessments = [a for a in assessments if a.status == "Upcoming"]
+
+    # past
+    past_assessments = [a for a in assessments if a.status == "Ended"]
+
     context = {
         'courses_count': courses_count,
-        'assessments': assessments
+        'assessments': assessments,
+        'active_assessments': active_assessments,
+        'upcoming_assessments': upcoming_assessments,
+        'past_assessments': past_assessments,
     }
     return render(request, 'dashboards/students.html', context)
 

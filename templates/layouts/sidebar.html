@@ -50,16 +50,10 @@
         {# STUDENT #}
         <li class="sidebar-item {% if 'dashboard/students' in request.path %} active {% endif %}">
           <a href="{% url 'dashboard-students' %}" class='sidebar-link'>
-            <i class="fa-solid fa-house"></i><span>Student</span>
+            <i class="fa-solid fa-house"></i><span>Home</span>
           </a>
         </li>
 
-        {# Assessments #}
-        <li class="sidebar-item {% if 'students/assessments' in request.path %} active {% endif %}">
-          <a href="#" class='sidebar-link'>
-            <i class="fa-solid fa-book"></i><span>Assessments</span>
-          </a>
-        </li>
       {% elif request.user|has_group:"lab_assistant" %}
         {# LAB ASSISTANT #}
         <li class="sidebar-item {% if 'dashboard/labassistants' in request.path %} active {% endif %}">

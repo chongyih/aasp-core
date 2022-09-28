@@ -25,19 +25,33 @@
               </div>
             </div>
           </div>
+
+          <!-- active assessments -->
+          <div class="col-3">
+            <div class="card">
+              <div class="card-body">
+                <h6>Active Assessments</h6>
+                <h1>{{ active_count }}</h1>
+              </div>
+            </div>
+          </div>
+
+          <!-- upcoming assessments -->
           <div class="col-3">
             <div class="card">
               <div class="card-body">
                 <h6>Upcoming Assessments</h6>
-                <h1>5</h1>
+                <h1>{{ upcoming_count }}</h1>
               </div>
             </div>
           </div>
+
+          <!-- past assessments -->
           <div class="col-3">
             <div class="card">
               <div class="card-body">
-                <h6>Ongoing Assessments</h6>
-                <h1>2</h1>
+                <h6>Past Assessments</h6>
+                <h1>{{ past_count }}</h1>
               </div>
             </div>
           </div>

@@ -74,12 +74,12 @@ def check_permissions_qb(question_bank, user):
     """
     Returns the permission level of a user for this question bank.
     0 - no permissions
-    1 - owner shared with this user (viewing rights)
+    1 - owner shared with this user (viewing rights) or public
     2 - owner
     """
     if question_bank.owner == user:
         return 2
-    if user in question_bank.shared_with.all():
+    if user in question_bank.shared_with.all() or question_bank.private is False:
         return 1
     return 0
 

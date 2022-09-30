@@ -88,5 +88,33 @@ def dashboard_educators(request):
 @login_required
 @user_passes_test(is_lab_assistant, login_url='dashboard')
 def dashboard_lab_assistants(request):
-    context = {}
+    # get active courses
+    courses = Course.objects.filter(
+        Q(owner=request.user) |
+        Q(maintainers=request.user)
+    ).filter(active=True).distinct()
+
+    # retrieve all assessments for this user
+    assessments = Assessment.objects.filter(course__in=courses, published=True, deleted=False)
+
+    active_count = 0
+    upcoming_count = 0
+    past_count = 0
+
+    for a in assessments:
+        status = a.status
+        if status == "Active":
+            active_count += 1
+        elif status == "Upcoming":
+            upcoming_count += 1
+        elif status == "Ended":
+            past_count += 1
+
+    # context
+    context = {
+        'courses': courses,
+        'active_count': active_count,
+        'upcoming_count': upcoming_count,
+        'past_count': past_count,
+    }
     return render(request, 'dashboards/lab_assistants.html', context)

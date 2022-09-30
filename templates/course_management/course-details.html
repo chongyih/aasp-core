@@ -204,6 +204,7 @@
                             {% endfor %}
                           </td>
                           <td>
+                            <button class="btn btn-sm btn-warning" onclick="resetPassword({{ student.id }}, this)">Reset Password</button>
                             <button class="btn btn-sm btn-danger" onclick="removeStudent({{ student.id }}, this)">Remove</button>
                           </td>
                         </tr>
@@ -410,6 +411,75 @@
               $(clickedBtn).html('<i class="fa-solid fa-xmark"></i>');
               $(clickedBtn).removeClass('btn-success');
               $(clickedBtn).addClass('btn-danger');
+
+          }).always((res) => {
+          });
+      }
+  </script>
+
+  <!-- reset password script -->
+  <script>
+      function resetPassword(student_id, clickedBtn) {
+          // prepare form data
+          let formData = new FormData();
+          formData.append("student_id", student_id);
+          formData.append("course_id", "{{ course.id }}");
+          formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+          if (confirm("Are you sure you wish to reset the password?\nThis action cannot be reversed.") === true) {
+              console.log("Reset password confirmed.");
+          } else {
+              return false;
+          }
+
+          // disable button
+          $(clickedBtn).prop('disabled', true);
+          $(clickedBtn).html('<div class="spinner-border spinner-border-sm">');
+
+          // ajax request
+          $.ajax({
+              type: 'POST',
+              url: "{% url 'reset-student-password' %}",
+              data: formData,
+              processData: false,
+              contentType: false,
+          }).done((res) => {
+              setTimeout(() => {
+                  if (res.result === "success") {
+                      Toastify({
+                          text: res.msg,
+                          duration: 2000,
+                          position: "center",
+                          style: {"background": "#77DD77"}
+                      }).showToast();
+
+                      // show check mark in button
+                      $(clickedBtn).html('<i class="fa-solid fa-check"></i>');
+                  } else {
+                      Toastify({
+                          text: res.msg,
+                          duration: -1,
+                          position: "center",
+                          style: {"background": "#ff6961"}
+                      }).showToast();
+
+                      // re-enable button
+                      $(clickedBtn).prop('disabled', false);
+                      $(clickedBtn).html('Reset Password');
+                  }
+              }, 300);
+          }).fail((res) => {
+              Toastify({
+                  text: "An error has occurred. Please refresh the page.",
+                  duration: 5000,
+                  position: "center",
+                  style: {"background": "#ff6961"}
+              }).showToast();
+
+              // reset the button
+              $(clickedBtn).html('<i class="fa-solid fa-xmark"></i>');
+              $(clickedBtn).removeClass('btn-success');
+              $(clickedBtn).addClass('btn-warning');
 
           }).always((res) => {
           });

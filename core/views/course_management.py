@@ -1,7 +1,9 @@
 from datetime import datetime
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import make_password
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Q
 from django.http import HttpResponseRedirect, JsonResponse
@@ -327,3 +329,48 @@ def update_course_maintainer(request):
 
         # return success
         return JsonResponse({"result": "success"}, status=200)
+
+
+@login_required()
+def reset_student_password(request):
+    if request.method == "POST":
+        course_id = request.POST.get("course_id")
+        student_id = request.POST.get("student_id")
+
+        # get course
+        course = Course.objects.filter(id=course_id).first()
+
+        if not course:
+            context = {
+                "result": "error",
+                "msg": "The course does not exist."
+            }
+            return JsonResponse(context, status=200)
+
+        # check if user has permissions for this course
+        if check_permissions(course, request.user) == 0:
+            context = {
+                "result": "error",
+                "msg": "You do not have permissions for this course."
+            }
+            return JsonResponse(context, status=200)
+
+        # check if student is even in the course
+        if not CourseGroup.objects.filter(course=course, students=student_id).exists():
+            context = {
+                "result": "error",
+                "msg": "Student does not exist in the course."
+            }
+            return JsonResponse(context, status=200)
+
+        # get student and reset password
+        student = User.objects.filter(id=student_id).first()
+        student.password = make_password(settings.DEFAULT_STUDENT_PASSWORD)
+        student.save()
+
+        context = {
+            "result": "success",
+            "msg": f"Password successfully reset for {student.username}."
+        }
+
+        return JsonResponse(context, status=200)

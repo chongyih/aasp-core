@@ -88,6 +88,5 @@ def dashboard_educators(request):
 @login_required
 @user_passes_test(is_lab_assistant, login_url='dashboard')
 def dashboard_lab_assistants(request):
-    user = request.user
     context = {}
     return render(request, 'dashboards/lab_assistants.html', context)

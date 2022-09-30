@@ -3,7 +3,7 @@ from core.models import CodeQuestionAttempt
 
 
 def is_student(user):
-    return user.is_superuser or user.groups.filter(name='student').exists()
+    return user.groups.filter(name='student').exists()
 
 
 def is_educator(user):
@@ -11,7 +11,7 @@ def is_educator(user):
 
 
 def is_lab_assistant(user):
-    return user.is_superuser or user.groups.filter(name='lab_assistant').exists()
+    return user.groups.filter(name='lab_assistant').exists()
 
 
 def clean_csv(rows):

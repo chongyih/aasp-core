@@ -1,0 +1,21 @@
+{% load utils %}
+<div class="card">
+  <div class="card-body">
+    <div class="d-flex align-items-center">
+      <div class="ms-3">
+        <h5 class="font-bold">Logged in as</h5>
+        <h6>@{{ request.user.username }}
+          {% if request.user.is_superuser %}
+            <span class="badge bg-light-danger">ADMIN</span>
+          {% elif request.user|has_group:'student' %}
+            <span class="badge bg-light-success">STUDENT</span>
+          {% elif request.user|has_group:'educator' %}
+            <span class="badge bg-light-warning">EDUCATOR</span>
+          {% elif request.user|has_group:'lab_assistant' %}
+            <span class="badge bg-light-info">LAB ASSISTANT</span>
+          {% endif %}</h6>
+        <p class="text-muted mb-0">Last login: {{ request.user.last_login }}</p>
+      </div>
+    </div>
+  </div>
+</div>

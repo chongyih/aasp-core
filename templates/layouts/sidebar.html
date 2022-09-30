@@ -58,19 +58,20 @@
         {# LAB ASSISTANT #}
         <li class="sidebar-item {% if 'dashboard/labassistants' in request.path %} active {% endif %}">
           <a href="{% url 'dashboard-lab-assistants' %}" class='sidebar-link'>
-            <i class="fa-solid fa-house"></i><span>Lab Assistant</span>
+            <i class="fa-solid fa-house"></i><span>Home</span>
           </a>
         </li>
 
-        {# User Management: Enrol Students #}
-        <li class="sidebar-title">User Management</li>
+        <hr>
 
+        {# Courses #}
         <li class="sidebar-item {% if request.path == '/courses/' %} active {% endif %}">
           <a href="{% url 'view-courses' %}" class='sidebar-link'>
             <i class="fa-solid fa-user-group"></i><span>Courses</span>
           </a>
         </li>
 
+        {# User Management: Enrol Students #}
         <li class="sidebar-item {% if request.path == '/enrol-students/' %} active {% endif %}">
           <a href="{% url 'enrol-students' %}" class='sidebar-link'><i class="fa-solid fa-graduation-cap">
           </i><span>Enrol Students</span>

@@ -60,7 +60,10 @@
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h4 class="card-title ">Assessment Information</h4>
-            <a class="btn btn-sm btn-danger" href="{% url 'update-assessment' assessment_id=assessment.id %}?next={{ request.path }}">Edit Details</a>
+            {% if request.user|has_group:'educator' %}
+              <a class="btn btn-sm btn-danger" href="{% url 'update-assessment' assessment_id=assessment.id %}?next={{ request.path }}">
+                Edit Details</a>
+            {% endif %}
           </div>
 
           <div class="card-body">
@@ -197,22 +200,24 @@
                               onclick="viewModal(this)">
                         View
                       </button>
-                      <div class="btn-group">
-                        <div class="dropdown">
-                          <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true"
-                                  aria-expanded="false">Edit
-                          </button>
-                          <div class="dropdown-menu">
-                            <a class="dropdown-item" href="{% url 'update-code-question' code_question_id=q.id %}">Description</a>
-                            {% if not assessment.published %}
-                              <a class="dropdown-item" href="{% url 'update-test-cases' code_question_id=q.id %}?next={{ request.path }}">Test
-                                Cases</a>
-                              <a class="dropdown-item"
-                                 href="{% url 'update-languages' code_question_id=q.id %}?next={{ request.path }}">Languages</a>
-                            {% endif %}
+                      {% if request.user|has_group:'educator' %}
+                        <div class="btn-group">
+                          <div class="dropdown">
+                            <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true"
+                                    aria-expanded="false">Edit
+                            </button>
+                            <div class="dropdown-menu">
+                              <a class="dropdown-item" href="{% url 'update-code-question' code_question_id=q.id %}">Description</a>
+                              {% if not assessment.published %}
+                                <a class="dropdown-item" href="{% url 'update-test-cases' code_question_id=q.id %}?next={{ request.path }}">Test
+                                  Cases</a>
+                                <a class="dropdown-item"
+                                   href="{% url 'update-languages' code_question_id=q.id %}?next={{ request.path }}">Languages</a>
+                              {% endif %}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      {% endif %}
                       {% if not assessment.published %}
                         <button data-code_question_id="{{ q.id }}" type="button" class="btn btn-sm btn-danger"
                                 onclick="deleteCodeQuestion(this);">Delete

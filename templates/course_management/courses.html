@@ -1,4 +1,5 @@
 {% extends 'layouts/master-nav.html' %}
+{% load utils %}
 {% load static %}
 
 {% block title %}Courses{% endblock %}
@@ -23,7 +24,9 @@
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h4 class="card-title ">Active courses</h4>
-            <a class="btn btn-sm btn-danger" href="{% url 'create-course' %}">Add Course</a>
+            {% if request.user|has_group:'educator' %}
+              <a class="btn btn-sm btn-danger" href="{% url 'create-course' %}">Add Course</a>
+            {% endif %}
           </div>
           <div class="card-body">
             <p class="card-text">Only courses where you are the owner or maintainer will appear here.

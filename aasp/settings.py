@@ -14,24 +14,25 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# load .env file
-load_dotenv()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# load .env file from ./config/.env
+dotenv_path = os.path.join(BASE_DIR, 'config', '.env')
+load_dotenv(dotenv_path)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = os.environ.get('SECRET_KEY')
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY is missing!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['0.0.0.0']
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -84,11 +85,11 @@ WSGI_APPLICATION = 'aasp.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get("AASP_POSTGRES_DB"),
-        'USER': os.environ.get("AASP_POSTGRES_USER"),
-        'PASSWORD': os.environ.get("AASP_POSTGRES_PASSWORD"),
-        'HOST': os.environ.get("AASP_POSTGRES_HOST"),
-        'PORT': os.environ.get("AASP_POSTGRES_PORT"),
+        'NAME': os.environ.get("POSTGRES_DB"),
+        'USER': os.environ.get("POSTGRES_USER"),
+        'PASSWORD': os.environ.get("POSTGRES_PASSWORD"),
+        'HOST': os.environ.get("POSTGRES_HOST"),
+        'PORT': os.environ.get("POSTGRES_PORT"),
     },
 }
 
@@ -124,10 +125,16 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
+# the actual url of static files
 STATIC_URL = 'static/'
+
+# places that django will look for static files
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
+
+# the place that django will copy static files to (will be served by nginx)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -166,8 +173,7 @@ FORMAT_MODULE_PATH = [
     'aasp.formats',
 ]
 
-# if DJANGO_DEVELOPMENT, override above settings with development settings
+# if DJANGO_DEVELOPMENT, override above settings with development-specific settings
 if os.environ.get('DJANGO_DEVELOPMENT') == "1":
     from aasp.settings_dev import *
-
     print("Found DJANGO_DEVELOPMENT=1, loaded settings_dev.")

@@ -3,14 +3,12 @@ version: "3.7"
 services:
   aasp_db:
     image: postgres:latest
+    env_file: ./config/.env
+    restart: unless-stopped
     ports:
       - "5432:5432"
     volumes:
       - aasp_postgres_data:/var/lib/postgresql/data/
-    environment:
-      - POSTGRES_USER=${AASP_POSTGRES_USER}
-      - POSTGRES_PASSWORD=${AASP_POSTGRES_PASSWORD}
-      - POSTGRES_DB=${AASP_POSTGRES_DB}
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -21,10 +19,10 @@ services:
 
   celery_worker:
     build:
-      context: .
-      dockerfile: ./compose/celery_worker/Dockerfile
+      dockerfile: ./config/aasp/Dockerfile
+    entrypoint: celery -A aasp worker --loglevel=INFO
     environment:
-      - AASP_POSTGRES_HOST=aasp_db
+      - POSTGRES_HOST=aasp_db
       - CELERY_BROKER_URL=amqp://rabbitmq:5672
       - JUDGE0_URL=http://judge0_server:2358
     volumes:
@@ -36,7 +34,7 @@ services:
   judge0_server:
     image: judge0/judge0:latest
     volumes:
-      - ./compose/judge0/judge0.conf:/judge0.conf:ro
+      - ./config/judge0/judge0.conf:/judge0.conf:ro
     ports:
       - "2358:2358"
     privileged: true
@@ -49,7 +47,7 @@ services:
     image: judge0/judge0:latest
     command: [ "./scripts/workers" ]
     volumes:
-      - ./compose/judge0/judge0.conf:/judge0.conf:ro
+      - ./config/judge0/judge0.conf:/judge0.conf:ro
     privileged: true
     restart: unless-stopped
     depends_on:
@@ -58,7 +56,7 @@ services:
 
   judge0_db:
     image: postgres:13.0
-    env_file: ./compose/judge0/judge0.conf
+    env_file: ./config/judge0/judge0.conf
     volumes:
       - postgres-data:/var/lib/postgresql/data/
     restart: unless-stopped
@@ -69,7 +67,7 @@ services:
       "bash", "-c",
       'docker-entrypoint.sh --appendonly yes --requirepass "$$REDIS_PASSWORD"'
     ]
-    env_file: ./compose/judge0/judge0.conf
+    env_file: ./config/judge0/judge0.conf
     volumes:
       - redis-data:/data
     restart: unless-stopped

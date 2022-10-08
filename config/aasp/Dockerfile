@@ -6,9 +6,6 @@ ENV PYTHONDONTWRITEBYTECODE 1
 RUN apt-get update
 RUN apt-get install -y build-essential
 
-COPY ./requirements.txt /requirements.txt
-RUN pip install -r /requirements.txt
-
 WORKDIR /app
-
-ENTRYPOINT python3 manage.py runserver 0.0.0.0:8000
+COPY requirements.txt /app/
+RUN pip install -r requirements.txt

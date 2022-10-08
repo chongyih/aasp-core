@@ -1,6 +1,9 @@
 .idea/
 .DS_STORE
 
+# Django static files
+/staticfiles
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

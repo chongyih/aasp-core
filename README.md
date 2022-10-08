@@ -66,13 +66,13 @@ This project is developed as part of my Final Year Project in Nanyang Technologi
 
 4. With docker-compose, create and start the containers:
    ```shell
-      docker-compose -f docker-compose.yml up -d
+   sudo docker-compose -f docker-compose.yml up -d
    ```
 
 5. Since this is the first launch, the database needs to be generated with Django, and pre-populated with required data.
    ```shell
-   # assuming 'aasp-aasp_web-1' is the name of the aasp_web container
-   docker exec -it aasp-aasp_web-1 python3 manage.py gendb
+   # assuming 'aasp_aasp_web_1' is the name of the aasp_web container
+   sudo docker exec -it aasp_aasp_web_1 python3 manage.py gendb
    ```
 
 6. The site should now be accessible at `http://<docker-host-ip>/`
@@ -84,7 +84,7 @@ Note: If changes were made to the database schema, make sure to commit the migra
 2. On the server, pull the new changes and recreate containers if necessary:
    ```shell
    git pull
-   docker-compose -f docker-compose.yml up -d
+   sudo docker-compose -f docker-compose.yml up -d
    ```
 
 ## Credits

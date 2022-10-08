@@ -3,6 +3,7 @@ version: "3.7"
 services:
   aasp_web:
     build:
+      context: .
       dockerfile: ./config/aasp/Dockerfile
     entrypoint: ./config/aasp/aasp_web_script.sh
     volumes:
@@ -34,6 +35,7 @@ services:
 
   celery_worker:
     build:
+      context: .
       dockerfile: ./config/aasp/Dockerfile
     entrypoint: celery -A aasp worker --loglevel=INFO
     volumes:

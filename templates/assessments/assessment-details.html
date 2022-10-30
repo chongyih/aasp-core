@@ -42,8 +42,10 @@
     {% if not assessment.published %}
       <div class="alert alert-secondary">
         <h4 class="alert-heading">Unpublished</h4>
-        <div class="d-flex justify-content-between">
-          <p>This assessment is unpublished and not visible to candidates.</p>
+        <div class="d-flex justify-content-between px-2">
+          <p>This assessment is unpublished and not visible to candidates.<br>
+            <span class="text-danger"><b>Note: </b>Existing preview attempts will be deleted when adding, updating or deleting questions.</span>
+          </p>
           <div>
             <a class="btn btn-sm btn-warning" href="{% url 'assessment-landing' assessment_id=assessment.id %}">Preview</a>
             <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#publishModal">

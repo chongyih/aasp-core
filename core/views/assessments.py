@@ -157,7 +157,7 @@ def get_code_questions(request):
 @login_required()
 def add_code_question_to_assessment(request):
     if request.method == "POST":
-        # default error response
+        # generic error response
         error_context = {"result": "error", }
 
         # get assessment object
@@ -169,10 +169,13 @@ def add_code_question_to_assessment(request):
         if check_permissions_assessment(assessment, request.user) == 0:
             return JsonResponse(error_context, status=200)
 
+        # disallow if assessment is already published
+        if assessment.published:
+            return JsonResponse(error_context, status=200)
+
         # get question (ensure only objects from question banks are allowed)
         code_question_id = request.POST.get('code_question_id')
-        code_question = CodeQuestion.objects.filter(id=code_question_id, assessment__isnull=True,
-                                                    question_bank__isnull=False).first()
+        code_question = CodeQuestion.objects.filter(id=code_question_id, assessment__isnull=True, question_bank__isnull=False).first()
         if code_question is None:
             return JsonResponse(error_context, status=200)
 
@@ -206,6 +209,9 @@ def add_code_question_to_assessment(request):
             # duplicate and link tags (M2M)
             for t in tags:
                 code_question.tags.add(t.id)
+
+            # remove past assessment attempts
+            assessment.assessmentattempt_set.all().delete()
 
         return JsonResponse({"result": "success"}, status=200)
 

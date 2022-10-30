@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.db import transaction
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.text import slugify
@@ -166,9 +167,10 @@ def update_qb_shared_with(request):
 def delete_code_question(request):
     """
     Function to delete a CodeQuestion
+    Note: Used for both QuestionBanks and Assessments
     """
     if request.method == "POST":
-        # default error response
+        # generic error response
         error_context = {"result": "error", }
 
         # get params
@@ -189,8 +191,13 @@ def delete_code_question(request):
         if code_question.assessment and code_question.assessment.published:
             return JsonResponse(error_context, status=200)
 
-        # delete code question
-        code_question.delete()
+        with transaction.atomic():
+            # remove past attempts
+            if code_question.assessment:
+                code_question.assessment.assessmentattempt_set.all().delete()
+
+            # delete code question
+            code_question.delete()
 
         return JsonResponse({"result": "success"}, status=200)
 

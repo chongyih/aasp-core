@@ -83,7 +83,7 @@
         <div class="checkbox">
           <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-hidden"
                  id="id_tc-{{ prefix|default:"__prefix__" }}-hidden"
-                 class="form-check-input" {% if form.hidden.value %}checked{% endif %}>
+                 class="form-check-input" {% if form.hidden.value and not sample %}checked{% endif %}>
           <label for="id_tc-{{ prefix|default:"__prefix__" }}-hidden">Hidden</label>
         </div>
         <div class="checkbox" style="visibility:hidden">

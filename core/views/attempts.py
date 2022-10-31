@@ -1,9 +1,8 @@
-import time
 from datetime import timedelta
 
 import requests
 from django.conf import settings
-
+from django.core.exceptions import PermissionDenied
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -149,6 +148,10 @@ def generate_assessment_attempt(user, assessment):
 def attempt_question(request, assessment_attempt_id, question_index):
     # get assessment attempt
     assessment_attempt = get_object_or_404(AssessmentAttempt, id=assessment_attempt_id)
+
+    # disallow if assessment already submitted
+    if assessment_attempt.time_submitted:
+        raise PermissionDenied
 
     # get question
     question_statuses, question_attempt = get_assessment_attempt_question(assessment_attempt_id, question_index)

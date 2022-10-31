@@ -34,7 +34,7 @@
 
                 {# non-field errors #}
                 {% for error in form.non_field_errors %}
-                  <div class="alert alert-danger py-2">Non-field error!</div>
+                  <div class="alert alert-danger py-2">{{ error }}</div>
                 {% endfor %}
 
                 <!-- First name input -->
@@ -105,13 +105,9 @@
                 <div class="col-12">
                   <div class="form-group">
                     <label for="id_course">Add to Course</label>
+
                     <div class="position-relative">
-                      <select name="course" id="id_course" class="choices form-select">
-                        {# displays only courses owned or maintained by the user #}
-                        {% for value, text in form.course.field.choices %}
-                          <option value="{{ value }}">{{ text }}</option>
-                        {% endfor %}
-                      </select>
+                      {{ form.course }}
                     </div>
                     {# course errors #}
                     {% if form.course.errors %}

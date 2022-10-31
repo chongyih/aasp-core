@@ -83,7 +83,7 @@
                                data-bs-parent="#coursesAccordion">
                             <div class="accordion-body">
                               <div class="row">
-                                <div class="col-9">
+                                <div class="col-10">
                                   <h5>Active and upcoming assessments</h5>
                                   <table class="table table-responsive">
                                     <thead>
@@ -124,10 +124,10 @@
                                   </table>
                                 </div>
 
-                                <div class="col-3 border-start">
+                                <div class="col-2 border-start">
                                   <h5>Links</h5>
                                   <a href="{% url 'course-details' course_id=course.id %}" class="fw-bold">Go to course page</a><br>
-                                  <a href="{% url 'course-details' course_id=course.id %}#pills-assessments" class="fw-bold">View all assessments</a>
+                                  <a href="{% url 'course-details' course_id=course.id %}#pills-assessments" class="fw-bold">All assessments</a>
                                 </div>
 
                               </div>

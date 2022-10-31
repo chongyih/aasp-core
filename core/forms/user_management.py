@@ -3,8 +3,10 @@ from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group
 from django.db import transaction
+from django.core.exceptions import ValidationError
 
 from core.models import User, Course, CourseGroup
+from core.views.utils import is_student
 
 
 class StudentCreationForm(forms.Form):
@@ -34,6 +36,25 @@ class StudentCreationForm(forms.Form):
 
     def clean_group(self):
         return self.cleaned_data['group'].upper()
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        # get course
+        course = cleaned_data.get("course")
+
+        # get user if user already exists
+        user = User.objects.filter(username=cleaned_data['username']).first()
+
+        # user validation
+        if user:
+            # ensure user is a student
+            if not is_student(user):
+                raise ValidationError(f"The user with username '{user.username}' is not a student.")
+
+            # ensure student not enrolled in the course yet
+            if course.coursegroup_set.filter(students=user).exists():
+                raise ValidationError("This student is already enrolled in the course.")
 
     def save(self):
         # ensures that changes are rolled back if any operation fails

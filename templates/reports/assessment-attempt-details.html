@@ -98,7 +98,7 @@
                   <div class="accordion-body">
 
                     <h6>Description</h6>
-                    <p>{{ cqa.code_question.description }}</p>
+                    <p class="cq-desc">{{ cqa.code_question.description }}</p>
 
                     <table class="table">
                       <thead>
@@ -122,7 +122,8 @@
                             <td>{{ cqs.score }}</td>
                             <td>{{ cqs.language.name }}</td>
                             <td>{{ cqs.time_submitted }}</td>
-                            <td><a href="{% url 'submission-details' cqs_id=cqs.id %}" target="_blank">Details <i class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a></td>
+                            <td><a href="{% url 'submission-details' cqs_id=cqs.id %}" target="_blank">Details <i
+                                    class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a></td>
                           </tr>
                         {% endfor %}
                       {% endif %}
@@ -145,4 +146,17 @@
 
 {% block js %}
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+  {% include "includes/js/mathjax.html" %}
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+      marked.setOptions({
+          breaks: true
+      });
+
+      $(".cq-desc").each((idx, x) => {
+          $(x).html(marked.parse($(x).html()));
+      })
+  </script>
+
 {% endblock %}

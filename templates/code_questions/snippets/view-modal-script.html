@@ -2,7 +2,14 @@
 <!-- View question script -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script type="text/javascript" src="{% static 'vendors/highlight.js/highlight.min.js' %}"></script>
+{% include 'includes/js/mathjax.html' %}
+
+
 <script>
+    marked.setOptions({
+        breaks: true
+    })
+
     const modalLoading = $("#m-loading");
     const modalBody = $("#m-body");
 
@@ -45,6 +52,9 @@
                 cqTestCases.append(rows);
                 cqLanguages.html(languages);
                 hljs.highlightAll();
+
+                // render math
+                MathJax.typeset();
 
                 setTimeout(() => {
                     modalLoading.hide();

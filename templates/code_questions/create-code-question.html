@@ -120,7 +120,7 @@
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
   <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
   <script src="{% static 'vendors/choices.js/choices.min.js' %}"></script>
-
+  {% include 'includes/js/mathjax.html' %}
 
   <!-- Configure and initialize SimpleMDE -->
   <script>
@@ -134,11 +134,13 @@
 
       // toggle preview on button click
       previewButton.click(function () {
+          simplemde.togglePreview();
           if (simplemde.isPreviewActive())
               previewButton.text("Show Preview")
-          else
+          else {
               previewButton.text("Show Markdown")
-          simplemde.togglePreview();
+              MathJax.typeset()
+          }
       });
   </script>
 

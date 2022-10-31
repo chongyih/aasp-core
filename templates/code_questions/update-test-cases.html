@@ -107,8 +107,21 @@
       const updatePrefixes = () => {
           const regex = RegExp(`tc-(\\d)-`, 'g');
           testCasesContainer.children().each((idx, tcRow) => {
+              // store current stdin, stdout values of this test case row
+              let textAreas = $(tcRow).find("textarea");
+              const stdin = $(textAreas.get(0)).val();
+              const stdout = $(textAreas.get(1)).val();
+
+              // replace html with one with updated prefixes
               $(tcRow).html($(tcRow).html().replaceAll(regex, `tc-${idx + 1}-`));
               $("#tc-" + (idx + 1) + "-label").html(idx + 1); // update label
+
+              // need to .find() again as previous references are no longer valid
+              textAreas = $(tcRow).find("textarea");
+
+              // restore the previously stored stdin, stdout values
+              $(textAreas.get(0)).val(stdin);
+              $(textAreas.get(1)).val(stdout);
           });
       };
 

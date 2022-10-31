@@ -1,5 +1,6 @@
 .idea/
 .DS_STORE
+.python-version
 
 # Django static files
 /staticfiles

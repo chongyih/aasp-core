@@ -53,11 +53,9 @@
             <form method="POST">
               {% csrf_token %}
               <div>
-                <!-- mytodo: do errors for specific fields -->
-                {% for error in testcase_formset.errors %}
-                  {{ error }}
-                  <div class="alert alert-danger">Please fill up all fields!</div>
-                {% endfor %}
+                {% if testcase_formset.errors %}
+                  <div class="alert alert-danger">Please rectify the issues below</div>
+                {% endif %}
 
                 <h4 class="pb-2">Test Cases</h4>
                 <!-- test cases & code snippet management forms -->

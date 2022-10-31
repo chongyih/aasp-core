@@ -32,7 +32,11 @@
       <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdin"
                 id="id_tc-{{ prefix|default:"__prefix__" }}-stdin" rows="4"
                 class="form-control font-monospace">{{ form.stdin.value|default:"" }}</textarea>
-      <button type="button" class="btn btn-link float-end" onclick="loadFromFile(this)">Load from file</button>
+      <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
+      {# stdin errors #}
+      {% for e in form.stdin.errors %}
+        <p class="text-danger">{{ e }}</p>
+      {% endfor %}
     </div>
   </div>
 
@@ -43,8 +47,13 @@
       <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdout"
                 id="id_tc-{{ prefix|default:"__prefix__" }}-stdout" rows="4"
                 class="form-control font-monospace">{{ form.stdout.value|default:"" }}</textarea>
-      <button type="button" class="btn btn-link float-end" onclick="loadFromFile(this)">Load from file</button>
+      <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
+      {# stdout errors #}
+      {% for e in form.stdout.errors %}
+        <p class="text-danger">{{ e }}</p>
+      {% endfor %}
     </div>
+
   </div>
 
   <!-- time and memory limit inputs -->
@@ -53,13 +62,21 @@
       <label for="id_tc-{{ prefix|default:"__prefix__" }}-time_limit">Time Limit (s)</label>
       <input name="tc-{{ prefix|default:"__prefix__" }}-time_limit"
              id="id_tc-{{ prefix|default:"__prefix__" }}-time_limit" type="number"
-             class="form-control" min="0" value="{{ form.time_limit.value|default:1000 }}">
+             class="form-control" min="0" value="{{ form.time_limit.value }}">
+      {# time_limit errors #}
+      {% for e in form.time_limit.errors %}
+        <p class="text-danger">{{ e }}</p>
+      {% endfor %}
     </div>
     <div class="form-group">
       <label for="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit">Memory Limit (KB)</label>
       <input name="tc-{{ prefix|default:"__prefix__" }}-memory_limit"
              id="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit" type="number"
-             class="form-control" min="0" value="{{ form.memory_limit.value|default:1000 }}">
+             class="form-control" min="0" value="{{ form.memory_limit.value }}">
+      {# memory_limit errors #}
+      {% for e in form.memory_limit.errors %}
+        <p class="text-danger">{{ e }}</p>
+      {% endfor %}
     </div>
   </div>
 
@@ -75,6 +92,10 @@
               {% else %}
              value="{{ form.score.value|default:5 }}"
               {% endif %}>
+      {# score errors #}
+      {% for e in form.score.errors %}
+        <p class="text-danger">{{ e }}</p>
+      {% endfor %}
     </div>
 
     <div class="form-group" {% if sample %} style="visibility:hidden"{% endif %}>

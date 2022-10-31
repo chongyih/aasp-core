@@ -6,6 +6,7 @@ urlpatterns = [
     # global auth
     path('login/', auth.Login.as_view(), name='login'),
     path('logout/', auth.Logout.as_view(), name='logout'),
+    path('changepassword/', auth.change_password, name='change-password'),
 
     # dashboards
     path('dashboard/students/', dashboards.dashboard_students, name='dashboard-students'),

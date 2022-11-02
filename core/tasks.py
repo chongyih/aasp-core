@@ -6,7 +6,7 @@ from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
 
-from core.models import TestCaseAttempt, CodeQuestionSubmission, AssessmentAttempt, TestCase, CodeQuestionAttempt
+from core.models import TestCaseAttempt, CodeQuestionSubmission, AssessmentAttempt
 
 
 @shared_task
@@ -41,7 +41,7 @@ def update_test_case_attempt_status(tca_id: int, token: str, last_status: int = 
 
             # if submission is still queued or processing, re-queue this task
             if status_id in [1, 2]:
-                update_test_case_attempt_status.delay(tca_id, token, last_status)
+                update_test_case_attempt_status.apply_async((tca_id, token, last_status), countdown=0.1)
     except ConnectionError:
         pass
 
@@ -83,7 +83,7 @@ def force_submit_assessment(assessment_attempt_id):
         assessment_attempt.time_submitted = timezone.now()
         assessment_attempt.save()
         # queue task to compute score for this AssessmentAttempt
-        compute_assessment_attempt_score.delay(assessment_attempt.id)
+        compute_assessment_attempt_score.apply_async((assessment_attempt.id,), countdown=1)
 
 
 @shared_task
@@ -99,8 +99,9 @@ def compute_assessment_attempt_score(assessment_attempt_id):
     # if all test cases are complete, proceed to compute score
     if not assessment_attempt.has_processing_submission():
         assessment_attempt.compute_score()
-    # if still processing, queue it again with a 1s delay
+    # if still processing, queue it again with a 5s delay
     else:
-        compute_assessment_attempt_score.apply_async((assessment_attempt_id,), eta=timezone.now() + timedelta(seconds=1))
+        # eta=timezone.now() + timedelta(seconds=5)
+        compute_assessment_attempt_score.apply_async((assessment_attempt_id,), countdown=5)
 
 

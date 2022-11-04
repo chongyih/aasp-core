@@ -15,7 +15,7 @@ This project is developed as part of my Final Year Project in Nanyang Technologi
 
 2. Make a copy of the `.env_dev` example file and save it as `.env`.
    ```shell
-   cp ./config/.env_prod ./config/.env
+   cp ./config/.env_dev ./config/.env
    ```
 
 3. Open `.env` and update the `SECRET_KEY` and `AASP_POSTGRES_PASSWORD` fields.

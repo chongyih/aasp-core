@@ -19,6 +19,7 @@ services:
 
   celery_worker:
     build:
+      context: .
       dockerfile: ./config/aasp/Dockerfile
     entrypoint: celery -A aasp worker --loglevel=INFO
     environment:

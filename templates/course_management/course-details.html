@@ -258,7 +258,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <h5>Assessments</h5>
                   {% if request.user|has_group:'educator' %}
-                    <a class="btn btn-sm btn-success" href="{% url 'create-assessment' %}?course_id={{ course.id }}" target="_blank">New</a>
+                    <a class="btn btn-sm btn-success" href="{% url 'create-assessment' %}?course_id={{ course.id }}">New</a>
                   {% endif %}
                 </div>
                 <!-- Assessments table -->

@@ -10,13 +10,17 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet, CodeQuestionSubmission, \
+from core.decorators import groups_allowed, UserGroup
+from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet, \
+    CodeQuestionSubmission, \
     TestCaseAttempt, Language
-from core.tasks import update_test_case_attempt_status, update_cqs_passed_flag, force_submit_assessment, compute_assessment_attempt_score
+from core.tasks import update_test_case_attempt_status, update_cqs_passed_flag, force_submit_assessment, \
+    compute_assessment_attempt_score
 from core.views.utils import get_assessment_attempt_question, check_permissions_course, user_enrolled_in_course
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant, UserGroup.student)
 def assessment_landing(request, assessment_id):
     """
     Landing page of an Assessment
@@ -47,7 +51,8 @@ def assessment_landing(request, assessment_id):
             raise PermissionDenied("You are not enrolled in this course.")
 
     # check for incomplete attempts
-    incomplete_attempt: bool = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user, time_submitted=None).exists()
+    incomplete_attempt: bool = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user,
+                                                                time_submitted=None).exists()
 
     # get current number of attempts by the user
     attempt_count: int = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user).count()
@@ -71,6 +76,7 @@ def assessment_landing(request, assessment_id):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.student)
 def enter_assessment(request, assessment_id):
     """
     This view will redirect the user to the assessment.
@@ -129,7 +135,7 @@ def enter_assessment(request, assessment_id):
             assessment_attempt = generate_assessment_attempt(request.user, assessment)
             return redirect('attempt-question', assessment_attempt_id=assessment_attempt.id, question_index=0)
 
-    raise Http404
+    raise Http404()
 
 
 def generate_assessment_attempt(user, assessment):
@@ -144,33 +150,40 @@ def generate_assessment_attempt(user, assessment):
 
         # generate a cq_attempt for each code question in the assessment
         code_questions = CodeQuestion.objects.filter(assessment=assessment).order_by('id')
-        cq_attempts = [CodeQuestionAttempt(assessment_attempt=assessment_attempt, code_question=cq) for cq in code_questions]
+        cq_attempts = [CodeQuestionAttempt(assessment_attempt=assessment_attempt, code_question=cq) for cq in
+                       code_questions]
         CodeQuestionAttempt.objects.bulk_create(cq_attempts)
 
-    # queue celery auto submit
+    # queue celery task to automatically submit the attempt when duration has lapsed (30 seconds grace period)
+    # ensures that the attempt is automatically submitted even if the user has closed the page
     duration = assessment_attempt.assessment.duration
-    if duration != 0:
-        auto_submission_time = timezone.now() + timedelta(minutes=duration)
+    if duration != 0:  # if duration is 0 (unlimited time), no need to auto submit
+        auto_submission_time = timezone.now() + timedelta(minutes=duration) + timedelta(seconds=30)
         force_submit_assessment.apply_async((assessment_attempt.id,), eta=auto_submission_time)
 
     return assessment_attempt
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.student)
 def attempt_question(request, assessment_attempt_id, question_index):
     # get assessment attempt
     assessment_attempt = get_object_or_404(AssessmentAttempt, id=assessment_attempt_id)
 
     # disallow if assessment already submitted
     if assessment_attempt.time_submitted:
-        raise PermissionDenied
+        raise PermissionDenied()
+
+    # ensure attempt belongs to user
+    if assessment_attempt.candidate != request.user:
+        raise PermissionDenied()
 
     # get question
     question_statuses, question_attempt = get_assessment_attempt_question(assessment_attempt_id, question_index)
 
     # if no question exist at the index, raise 404
     if not question_attempt:
-        raise Http404
+        raise Http404()
 
     # context
     context = {
@@ -186,6 +199,7 @@ def attempt_question(request, assessment_attempt_id, question_index):
         code_snippets = CodeSnippet.objects.filter(code_question=code_question)
         sample_tc = TestCase.objects.filter(code_question=code_question, sample=True).first()
         code_question_submissions = CodeQuestionSubmission.objects.filter(cq_attempt=question_attempt).order_by('-id')
+
         # add to base context
         context.update({
             'code_question': code_question,
@@ -193,17 +207,21 @@ def attempt_question(request, assessment_attempt_id, question_index):
             'code_snippets': code_snippets,
             'code_question_submissions': code_question_submissions,
         })
+
         return render(request, "attempts/code-question-attempt.html", context)
+
     else:
-        raise Exception("Unknown question!")
+        # should not reach here
+        raise Exception("Unknown question type!")
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.student)
 def submit_single_test_case(request, test_case_id):
     """
     Submits a single test case to judge0 for execution, returns the token.
     This is used for the "Compile and Run" option for users to run the sample test case.
-    This submission is not recorded.
+    This submission is not stored in the database.
     """
     if request.method == "POST":
         # get test case instance
@@ -239,13 +257,15 @@ def submit_single_test_case(request, test_case_id):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.student)
 def get_tc_details(request):
     """
-    Retrieves the status_id of a submission from Judge0, given a token.
-    Used for checking the status of a submitted sample test case.
+    Retrieves the status_id of a submission from Judge0, given a judge0 token.
+    - Used for checking the status of a submitted sample test case => status_only=true
+    - Used for viewing the details of a submitted test case (in the test case details modal) => status_only=false
     """
     # friendly names of status_ids
-    STATUSES = {
+    judge0_statuses = {
         1: "In Queue",
         2: "Processing",
         3: "Accepted",
@@ -280,7 +300,7 @@ def get_tc_details(request):
             data = res.json()
 
             # append friendly status name
-            data['status'] = STATUSES[int(data['status_id'])]
+            data['status'] = judge0_statuses[int(data['status_id'])]
 
             # hide fields if this belongs to a hidden test case
             if TestCase.objects.filter(hidden=True, testcaseattempt__token=token).exists():
@@ -295,12 +315,15 @@ def get_tc_details(request):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.student)
 def code_question_submission(request, code_question_attempt_id):
     """
-    Submits answer for a code question.
+    When user submits an answer for a code question.
+
+    Algorithm:
     - Generates 'CodeQuestionSubmission' and 'TestCaseAttempt's and stores in the database.
-    - Calls Judge0 api for the submission of the test cases
-    - Queues celery tasks for updating the statuses of TestCaseAttempt
+    - Calls Judge0 api to submit the test cases
+    - Queues celery tasks for updating the statuses of TestCaseAttempt (by polling judge0)
     """
 
     if request.method == "POST":
@@ -342,7 +365,8 @@ def code_question_submission(request, code_question_attempt_id):
 
         with transaction.atomic():
             # create CodeQuestionSubmission
-            cqs = CodeQuestionSubmission.objects.create(cq_attempt=cqa, code=code, language=Language.objects.get(judge_language_id=language_id))
+            cqs = CodeQuestionSubmission.objects.create(cq_attempt=cqa, code=code,
+                                                        language=Language.objects.get(judge_language_id=language_id))
 
             # create TestCaseAttempts
             test_case_attempts = TestCaseAttempt.objects.bulk_create([
@@ -363,6 +387,7 @@ def code_question_submission(request, code_question_attempt_id):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.student)
 def get_cq_submission_status(request):
     """
     Returns the statuses of each TestCaseAttempt belonging to a CodeQuestionSubmission.
@@ -371,8 +396,13 @@ def get_cq_submission_status(request):
         cq_submission_id = request.GET.get("cqs_id")
 
         # get test case attempts
-        statuses = list(TestCaseAttempt.objects.filter(cq_submission=cq_submission_id).values_list('id', 'status', 'token'))
+        statuses = list(
+            TestCaseAttempt.objects.filter(cq_submission=cq_submission_id).values_list('id', 'status', 'token'))
         cqs = CodeQuestionSubmission.objects.get(id=cq_submission_id)
+
+        # check if the cqa belongs to the request user
+        if cqs.cq_attempt.assessment_attempt.candidate != request.user:
+            return JsonResponse({"result": "error", "msg": "You do not have permissions to perform this action."})
 
         context = {
             "result": "success",
@@ -384,22 +414,29 @@ def get_cq_submission_status(request):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.student)
 def submit_assessment(request, assessment_attempt_id):
+    """
+    When the user submits an assessment attempt.
+    """
     if request.method == "POST":
         # check permissions
         assessment_attempt = get_object_or_404(AssessmentAttempt, id=assessment_attempt_id)
         if assessment_attempt.candidate != request.user:
-            messages.warning(request, "You do not have permissions to perform this action.")
-            return redirect('dashboard')
+            raise PermissionDenied()
 
         # set time_submitted
         if assessment_attempt.time_submitted is None:
             assessment_attempt.auto_submit = False
             assessment_attempt.time_submitted = timezone.now()
             assessment_attempt.save()
+
+            # queue celery task to compute the assessment attempt's score (using results from test cases)
             compute_assessment_attempt_score.delay(assessment_attempt.id)
+
             messages.success(request, "Assessment submitted successfully!")
+
         else:
-            messages.warning(request, "Assessment was already submitted previously.")
+            return PermissionDenied()
 
         return redirect('assessment-landing', assessment_id=assessment_attempt.assessment.id)

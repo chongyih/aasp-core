@@ -2,11 +2,13 @@ import random
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
+from core.decorators import groups_allowed, UserGroup
 from core.filters import CodeQuestionFilter
 from core.forms.assessments import AssessmentForm
 from core.models import Course, Assessment, CodeQuestion, TestCase, CodeSnippet, Tag, QuestionBank
@@ -15,12 +17,14 @@ from core.views.utils import check_permissions_course, check_permissions_assessm
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def create_assessment(request):
-    # get course_id if exists
+    # get course_id if exists (optional)
     course_id = request.GET.get('course_id')
 
     # retrieve courses for this user
-    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct().prefetch_related('owner', 'maintainers')
+    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct().prefetch_related(
+        'owner', 'maintainers')
 
     # form
     form = AssessmentForm(courses=courses, initial={'course': course_id})
@@ -35,8 +39,7 @@ def create_assessment(request):
 
             # check permissions before saving form
             if check_permissions_course(course, request.user) == 0:
-                messages.success(request, "You do not have permissions for this course.")
-                return redirect('view-courses')
+                raise PermissionDenied("You do not have permissions for this course.")
 
             assessment = form.save(commit=False)
             if form.cleaned_data['require_pin'] is False:  # remove pin
@@ -46,7 +49,7 @@ def create_assessment(request):
             assessment.save()
 
             # redirect
-            messages.success(request, "The assessment has been successfully created! ✅")
+            messages.success(request, "The assessment has been successfully created!")
             return redirect('assessment-details', assessment_id=assessment.id)
 
     context = {
@@ -57,17 +60,18 @@ def create_assessment(request):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def update_assessment(request, assessment_id):
     # retrieve courses for this user
-    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct().prefetch_related('owner', 'maintainers')
+    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct().prefetch_related(
+        'owner', 'maintainers')
 
     # get assessment
     assessment = get_object_or_404(Assessment, id=assessment_id)
 
     # check permissions
     if check_permissions_assessment(assessment, request.user) == 0:
-        messages.warning(request, "You do not have permissions to edit the assessment.")
-        return redirect('dashboard')
+        raise PermissionDenied("You do not have permissions for this course.")
 
     # form
     form = AssessmentForm(courses=courses, instance=assessment)
@@ -81,19 +85,21 @@ def update_assessment(request, assessment_id):
 
             # check permissions before saving form
             if check_permissions_course(course, request.user) == 0:
-                messages.success(request, "You do not have permissions for this course.")
-                return redirect('view-courses')
+                raise PermissionDenied("You do not have permissions for this course.")
 
             # update pin
             assessment = form.save(commit=False)
             if form.cleaned_data['require_pin'] is False:  # remove pin
                 assessment.pin = None
-            elif form.cleaned_data['require_pin'] is True and assessment.pin is None:  # only generate new pin if just switched
+
+            # only generate new pin if it was previously not required
+            elif form.cleaned_data['require_pin'] is True and assessment.pin is None:
                 assessment.pin = random.randint(100_000, 999_999)  # generate random 6-digit pin
+
             assessment.save()
 
             # redirect
-            messages.success(request, "The assessment has been successfully updated! ✅")
+            messages.success(request, "The assessment has been successfully updated!")
             return redirect('assessment-details', assessment_id=assessment.id)
 
     context = {
@@ -104,14 +110,14 @@ def update_assessment(request, assessment_id):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
 def assessment_details(request, assessment_id):
     # get assessment object
     assessment = get_object_or_404(Assessment, id=assessment_id)
 
     # check permissions
     if check_permissions_assessment(assessment, request.user) == 0:
-        messages.warning(request, "You do not have permissions to view this assessment.")
-        return redirect('view-courses')
+        raise PermissionDenied("You do not have permissions to view this assessment.")
 
     # get all question banks accessible by this user
     all_question_banks = QuestionBank.objects.filter(
@@ -130,8 +136,11 @@ def assessment_details(request, assessment_id):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def get_code_questions(request):
-    # mytodo: add pagination for these
+    """
+    Used in the Assessment Details page for educators to clone questions from question banks into assessments.
+    """
     if request.method == "GET":
         # get all question banks accessible by this user
         all_question_banks = QuestionBank.objects.filter(
@@ -155,6 +164,7 @@ def get_code_questions(request):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def add_code_question_to_assessment(request):
     if request.method == "POST":
         # generic error response
@@ -175,7 +185,8 @@ def add_code_question_to_assessment(request):
 
         # get question (ensure only objects from question banks are allowed)
         code_question_id = request.POST.get('code_question_id')
-        code_question = CodeQuestion.objects.filter(id=code_question_id, assessment__isnull=True, question_bank__isnull=False).first()
+        code_question = CodeQuestion.objects.filter(id=code_question_id, assessment__isnull=True,
+                                                    question_bank__isnull=False).first()
         if code_question is None:
             return JsonResponse(error_context, status=200)
 
@@ -216,12 +227,16 @@ def add_code_question_to_assessment(request):
         return JsonResponse({"result": "success"}, status=200)
 
 
+@login_required()
+@groups_allowed(UserGroup.educator)
 def publish_assessment(request, assessment_id):
     if request.method == "POST":
         # get assessment object
         assessment = get_object_or_404(Assessment, id=assessment_id)
 
-        # mytodo: check permissions for this assessment
+        # check permissions
+        if check_permissions_assessment(assessment, request.user) == 0:
+            raise PermissionDenied("You do not have permissions to modify this assessment.")
 
         if not assessment.published:
             # check if all questions are valid
@@ -230,12 +245,13 @@ def publish_assessment(request, assessment_id):
                 messages.warning(request, f"Not published! {msg}")
                 return redirect("assessment-details", assessment_id=assessment_id)
 
-            # delete attempts
-            assessment_attempts = assessment.assessmentattempt_set.all().delete()
+            with transaction.atomic():
+                # delete attempts
+                assessment.assessmentattempt_set.all().delete()
 
-            # publish assessment
-            assessment.published = True
-            assessment.save()
+                # publish assessment
+                assessment.published = True
+                assessment.save()
 
             messages.success(request, "The assessment has been published!")
             return redirect("assessment-details", assessment_id=assessment_id)
@@ -245,6 +261,7 @@ def publish_assessment(request, assessment_id):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def delete_assessment(request, assessment_id):
     if request.method == "POST":
         # get assessment
@@ -252,8 +269,7 @@ def delete_assessment(request, assessment_id):
 
         # check permissions (only course owner/maintainer can delete)
         if check_permissions_assessment(assessment, request.user) == 0:
-            messages.warning(request, "You do not have permissions to delete the assessment.")
-            return redirect('dashboard')
+            raise PermissionDenied("You do not have permissions to modify this assessment.")
         else:
             if assessment.deleted:
                 messages.warning(request, "Assessment was already deleted!")
@@ -265,6 +281,7 @@ def delete_assessment(request, assessment_id):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def undo_delete_assessment(request, assessment_id):
     if request.method == "POST":
         # get assessment
@@ -272,8 +289,7 @@ def undo_delete_assessment(request, assessment_id):
 
         # check permissions (only course owner/maintainer can delete)
         if check_permissions_assessment(assessment, request.user) == 0:
-            messages.warning(request, "You do not have permissions to modify the assessment.")
-            return redirect('dashboard')
+            raise PermissionDenied("You do not have permissions to modify this assessment.")
         else:
             if assessment.deleted is False:
                 messages.warning(request, "Assessment was not deleted, no undo needed!")

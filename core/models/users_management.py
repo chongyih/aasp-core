@@ -5,8 +5,6 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 
-from core.models import Assessment
-
 
 class User(AbstractUser):
     # override email field to make it unique and required
@@ -34,6 +32,7 @@ class User(AbstractUser):
         self.last_name = self.last_name.upper()
         self.email = self.email.upper()
         self.username = self.username.upper()
+        self.email = f"{self.username}@E.NTU.EDU.SG"
 
     @property
     def name(self):
@@ -66,18 +65,21 @@ class Course(models.Model):
 
     name = models.CharField(max_length=150, blank=False, null=False)
     code = models.CharField(max_length=20, blank=False, null=False)
-    year = models.PositiveIntegerField(validators=[MaxValueValidator(9999)], blank=False, null=False)  # e.g. 2017 (means AY17/18)
-    semester = models.CharField(max_length=1, choices=Semesters.choices, default=Semesters.SEMESTER_1, blank=False, null=False)
+    year = models.PositiveIntegerField(validators=[MaxValueValidator(9999)], blank=False,
+                                       null=False)  # e.g. 2017 (means AY17/18)
+    semester = models.CharField(max_length=1, choices=Semesters.choices, default=Semesters.SEMESTER_1, blank=False,
+                                null=False)
     owner = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
-    maintainers = models.ManyToManyField(User, related_name='maintained_courses', blank=True)  # maintainers can modify, but not delete the course
+    maintainers = models.ManyToManyField(User, related_name='maintained_courses',
+                                         blank=True)  # maintainers can modify, but not delete the course
     active = models.BooleanField(default=True, blank=False, null=False)
 
     def __str__(self):
-        return f"{self.code} {self.name} (AY{str(self.year)[2:]}/{str(self.year+1)[2:]} {self.get_semester_display()})"
+        return f"{self.code} {self.name} (AY{str(self.year)[2:]}/{str(self.year + 1)[2:]} {self.get_semester_display()})"
 
     @property
     def short_name(self):
-        return f"{self.code} (AY{str(self.year)[2:]}/{str(self.year+1)[2:]} S{self.get_semester_display()})"
+        return f"{self.code} (AY{str(self.year)[2:]}/{str(self.year + 1)[2:]} S{self.get_semester_display()})"
 
     def clean(self):
         super().clean()
@@ -94,8 +96,9 @@ class Course(models.Model):
             published=True, deleted=False
         ).filter(
             Q(time_start__isnull=True, time_end__isnull=True) |  # unlimited
-            Q(time_start__isnull=False, time_start__gt=timezone.now()) |   # upcoming
-            Q(time_start__isnull=False, time_end__isnull=False, time_start__lte=timezone.now(), time_end__gt=timezone.now())  # active
+            Q(time_start__isnull=False, time_start__gt=timezone.now()) |  # upcoming
+            Q(time_start__isnull=False, time_end__isnull=False, time_start__lte=timezone.now(),
+              time_end__gt=timezone.now())  # active
         ).distinct()
 
 

@@ -5,9 +5,10 @@ from django.db import transaction
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.text import slugify
-from rest_framework.exceptions import ParseError
+from rest_framework.exceptions import ParseError, PermissionDenied
 from rest_framework.parsers import JSONParser
 
+from core.decorators import UserGroup, groups_allowed
 from core.forms.question_banks import QuestionBankForm, ImportQuestionBankForm
 from core.models import QuestionBank, User, CodeQuestion
 from core.serializers import QuestionBankSerializer
@@ -15,6 +16,7 @@ from core.views.utils import check_permissions_qb, check_permissions_code_questi
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def view_question_banks(request):
     # all question banks (public/private) owned by the current user
     owned_question_banks = QuestionBank.objects.filter(owner=request.user)
@@ -35,6 +37,7 @@ def view_question_banks(request):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def create_question_bank(request):
     # initialize form
     form = QuestionBankForm()
@@ -57,14 +60,14 @@ def create_question_bank(request):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def update_question_bank(request, question_bank_id):
     # get question bank object
     question_bank = get_object_or_404(QuestionBank.objects.prefetch_related('owner'), id=question_bank_id)
 
     # check permissions of question bank
     if check_permissions_qb(question_bank, request.user) != 2:
-        messages.warning(request, "You do not have permissions to update the question bank.")
-        return redirect('view-question-banks')
+        raise PermissionDenied("You do not have permissions to modify the question bank.")
 
     # initialize form with question bank instance
     form = QuestionBankForm(instance=question_bank)
@@ -93,18 +96,19 @@ def update_question_bank(request, question_bank_id):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def question_bank_details(request, question_bank_id):
     # get question bank object
     question_bank = get_object_or_404(QuestionBank.objects.prefetch_related('owner', 'shared_with', 'codequestion_set',
-                                                                            'codequestion_set__testcase_set'), id=question_bank_id)
+                                                                            'codequestion_set__testcase_set'),
+                                      id=question_bank_id)
 
     # if no permissions, redirect back to course page
     if check_permissions_qb(question_bank, request.user) == 0:
-        messages.warning(request, "You do not have permissions to view this question bank.")
-        return redirect('view-question-banks')
+        raise PermissionDenied("You do not have permissions to view the question bank.")
 
-    # get a list of staff accounts (educator/lab_assistant/superuser role)
-    staff = User.objects.filter(Q(groups__name__in=('educator', 'lab_assistant')) | Q(is_superuser=True))
+    # get a list of staff accounts (educator and superusers)
+    staff = User.objects.filter(Q(groups__name__in=['educator']) | Q(is_superuser=True))
 
     context = {
         'question_bank': question_bank,
@@ -115,6 +119,7 @@ def question_bank_details(request, question_bank_id):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def update_qb_shared_with(request):
     """
     Function to share/unshare a question bank with a user.
@@ -134,7 +139,8 @@ def update_qb_shared_with(request):
             return JsonResponse(error_context, status=200)
 
         # get question bank object
-        question_bank = QuestionBank.objects.filter(id=question_bank_id).prefetch_related('owner', 'shared_with').first()
+        question_bank = QuestionBank.objects.filter(id=question_bank_id).prefetch_related('owner',
+                                                                                          'shared_with').first()
 
         # question bank not found
         if not question_bank:
@@ -164,10 +170,10 @@ def update_qb_shared_with(request):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def delete_code_question(request):
     """
-    Function to delete a CodeQuestion
-    Note: Used for both QuestionBanks and Assessments
+    Deletes a CodeQuestion from either a QuestionBank or an Assessment.
     """
     if request.method == "POST":
         # generic error response
@@ -203,10 +209,14 @@ def delete_code_question(request):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def export_question_bank(request, question_bank_id):
-    # mytodo: check permissions
-
     question_bank = get_object_or_404(QuestionBank, id=question_bank_id)
+
+    # check permissions
+    if check_permissions_qb(question_bank, request.user) == 0:
+        raise PermissionDenied("You do not have permissions to export the question bank.")
+
     serialized = QuestionBankSerializer(question_bank)
     response = JsonResponse(serialized.data)
     response['Content-Disposition'] = f'attachment; filename={slugify(question_bank.name)}.json'
@@ -214,6 +224,7 @@ def export_question_bank(request, question_bank_id):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def import_question_bank(request):
     form = ImportQuestionBankForm()
 
@@ -255,6 +266,8 @@ def import_question_bank(request):
     return render(request, 'question_banks/import-question-bank.html', context)
 
 
+@login_required()
+@groups_allowed(UserGroup.educator)
 def delete_question_bank(request, question_bank_id):
     if request.method == "POST":
         # get question bank

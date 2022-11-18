@@ -3,17 +3,18 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group
-from django.db import transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 
+from core.decorators import UserGroup, groups_allowed
 from core.forms.user_management import StudentCreationForm
 from core.models import User, Course, CourseGroup
 from core.views.utils import clean_csv, check_permissions_course
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
 def enrol_students(request):
     """
     Student enrolment page
@@ -21,13 +22,14 @@ def enrol_students(request):
     """
 
     # retrieve courses for this user
-    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct().prefetch_related('owner', 'maintainers')
+    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct().prefetch_related(
+        'owner', 'maintainers')
 
     if request.method == 'POST':  # POST
         form = StudentCreationForm(courses, request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "The user has been added to the Course! ✅")
+            messages.success(request, "The user has been added to the Course!")
             return redirect('enrol-students')
     else:  # GET
         form = StudentCreationForm(courses=courses)
@@ -40,6 +42,7 @@ def enrol_students(request):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
 def enrol_students_bulk(request):
     if request.method == "POST":
         # retrieve selected course from the request if exist
@@ -83,7 +86,8 @@ def enrol_students_bulk(request):
 
         # ensure file is <= 5MB
         if file.size >= 5242880:
-            return JsonResponse({"result": "error", "msg": "The uploaded file is too large! (up to 5MB allowed)"}, status=200)
+            return JsonResponse({"result": "error", "msg": "The uploaded file is too large! (up to 5MB allowed)"},
+                                status=200)
 
         # process uploaded file
         try:
@@ -144,4 +148,5 @@ def enrol_students_bulk(request):
 
         except Exception as e:
             print(e)
-            return JsonResponse({"result": "error", "msg": "Something went wrong while processing your file."}, status=200)
+            return JsonResponse({"result": "error", "msg": "Something went wrong while processing your file."},
+                                status=200)

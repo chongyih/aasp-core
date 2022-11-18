@@ -72,10 +72,8 @@
                 {% endfor %}
               </div>
 
-              <!-- mytodo: Form errors -->
               {% for error in code_snippet_formset.errors %}
                 {{ error }}
-                <div class="alert alert-danger">Please fill up all fields!</div>
               {% endfor %}
 
               <form method="POST">

@@ -25,8 +25,6 @@ urlpatterns = [
     path('courses/update/<int:course_id>/', course_management.update_course, name='update-course'),
     path('courses/details/<int:course_id>/', course_management.course_details, name='course-details'),
     path('api/remove-student-from-course/', course_management.remove_student, name='remove-student-from-course'),  # ajax
-    path('api/add-students-to-course/', course_management.add_students, name='add-students-to-course'),  # ajax
-    path('api/get-course-students/', course_management.get_course_students, name='get-course-students'),  # ajax
     path('api/update-course-maintainer/', course_management.update_course_maintainer, name='update-course-maintainer'),  # ajax
     path('api/reset-student-password/', course_management.reset_student_password, name='reset-student-password'),  # ajax
 

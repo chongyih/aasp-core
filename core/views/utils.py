@@ -1,4 +1,3 @@
-# utility functions for checking group membership
 from core.models import CodeQuestionAttempt
 
 
@@ -55,7 +54,6 @@ def clean_csv(rows):
     return cleaned2, removed
 
 
-# mytodo: refactor this to check_permissions_course()
 def check_permissions_course(course, user):
     """
     Returns the permission level of a user for this course.
@@ -121,7 +119,9 @@ def get_assessment_attempt_question(assessment_attempt, question_index=None):
     Else, return the entire list.
     """
     questions = []
-    cq_attempts = list(CodeQuestionAttempt.objects.filter(assessment_attempt=assessment_attempt).order_by('id').prefetch_related('code_question'))
+    cq_attempts = list(
+        CodeQuestionAttempt.objects.filter(assessment_attempt=assessment_attempt).order_by('id').prefetch_related(
+            'code_question'))
     statuses = [cqa.attempted for cqa in cq_attempts]
 
     if question_index is None:  # return all questions
@@ -135,4 +135,3 @@ def get_assessment_attempt_question(assessment_attempt, question_index=None):
 def user_enrolled_in_course(course, user) -> bool:
     """Checks if a user is enrolled in a course."""
     return course.coursegroup_set.filter(students=user).exists()
-

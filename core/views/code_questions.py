@@ -1,10 +1,12 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.forms import inlineformset_factory
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
+from core.decorators import groups_allowed, UserGroup
 from core.forms.question_banks import CodeQuestionForm
 from core.models import QuestionBank, Assessment, CodeQuestion
 from core.models.questions import TestCase, CodeSnippet, Language, Tag
@@ -13,21 +15,30 @@ from core.views.utils import check_permissions_course, check_permissions_code_qu
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def create_code_question(request, parent, parent_id):
+    """
+    For creating a new code question.
+    Parent is either a Question Bank or an Assessment.
+    """
     question_bank = None
     assessment = None
 
     # get object instance and check permissions
     if parent == "qb":
         question_bank = get_object_or_404(QuestionBank, id=parent_id)
+
+        # the user must be the question bank's owner
         if question_bank.owner != request.user:
-            messages.warning(request, "You do not have permissions for this question bank.")
-            return redirect('view-question-banks')
+            return PermissionDenied("You do not have permissions to modify this question bank.")
+
     elif parent == "as":
         assessment = get_object_or_404(Assessment, id=parent_id)
+
+        # the user must have permissions to the course
         if check_permissions_course(assessment.course, request.user) == 0:
-            messages.warning(request, "You do not have permissions for this course.")
-            return redirect('view-courses')
+            return PermissionDenied("You do not have permissions to modify this assessment.")
+
     else:
         raise Http404()
 
@@ -41,17 +52,9 @@ def create_code_question(request, parent, parent_id):
             with transaction.atomic():
                 # create tags
                 tags = request.POST.get('tags')
+                tags = [t.title() for t in tags.split(",")]
                 if tags:
-                    # get a list of tags
-                    tags = set([t.title() for t in tags.split(",")])
-
-                    # get tags that already exist (so that we don't create them again)
-                    existing_tags = set(Tag.objects.filter(name__in=tags).values_list('name', flat=True))
-
-                    # create the new tags
-                    new_tags = tags - existing_tags
-                    new_tags = [Tag(name=t) for t in new_tags]
-                    Tag.objects.bulk_create(new_tags)
+                    Tag.objects.bulk_create([Tag(name=t) for t in tags], ignore_conflicts=True)
 
                 # save code question
                 code_question = form.save()
@@ -66,7 +69,12 @@ def create_code_question(request, parent, parent_id):
     context = {
         'assessment': assessment,
         'question_bank': question_bank,
-        'description_placeholder': "This editor supports **markdown**!\n",
+        'description_placeholder': """This editor supports **markdown**! And math equations too!
+
+You can do this: $a \\ne 0$, and this:
+$$x = {-b \pm \sqrt{b^2-4ac} \over 2a}$$
+
+**Click preview!**""",
         'form': form,
     }
 
@@ -74,6 +82,7 @@ def create_code_question(request, parent, parent_id):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def update_code_question(request, code_question_id):
     # get code question object
     code_question = get_object_or_404(CodeQuestion, id=code_question_id)
@@ -81,11 +90,9 @@ def update_code_question(request, code_question_id):
     # check permissions
     if check_permissions_code_question(code_question, request.user) != 2:
         if code_question.question_bank:
-            messages.warning(request, "You do not have permissions for this question bank.")
-            return redirect('view-question-banks')
+            return PermissionDenied("You do not have permissions to modify this question bank.")
         else:
-            messages.warning(request, "You do not have permissions for this course.")
-            return redirect('view-courses')
+            return PermissionDenied("You do not have permissions to modify this assessment.")
 
     # prepare form
     form = CodeQuestionForm(instance=code_question)
@@ -98,20 +105,12 @@ def update_code_question(request, code_question_id):
             with transaction.atomic():
                 # create tags
                 tags = request.POST.get('tags')
+                tags = [t.title() for t in tags.split(",")]
                 if tags:
-                    # get a list of tags
-                    tags = set([t.title() for t in tags.split(",")])
-
-                    # get tags that already exist (so that we don't create them again)
-                    existing_tags = set(Tag.objects.filter(name__in=tags).values_list('name', flat=True))
-
-                    # create the new tags
-                    new_tags = tags - existing_tags
-                    new_tags = [Tag(name=t) for t in new_tags]
-                    Tag.objects.bulk_create(new_tags)
+                    Tag.objects.bulk_create([Tag(name=t) for t in tags], ignore_conflicts=True)
 
                 code_question = form.save()
-                messages.success(request, "Code Question successfully updated! ✅")
+                messages.success(request, "Code Question successfully updated!")
 
                 # clear old tags and add tags to code question
                 code_question.tags.clear()
@@ -132,14 +131,14 @@ def update_code_question(request, code_question_id):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def update_test_cases(request, code_question_id):
     # get CodeQuestion instance
     code_question = get_object_or_404(CodeQuestion, id=code_question_id)
 
     # check permissions
     if check_permissions_code_question(code_question, request.user) != 2:
-        messages.warning(request, "You do not have permissions to perform that action.")
-        return redirect('dashboard')
+        return PermissionDenied()
 
     # if belongs to a published assessment, disallow
     if code_question.assessment and code_question.assessment.published:
@@ -183,14 +182,15 @@ def update_test_cases(request, code_question_id):
     return render(request, 'code_questions/update-test-cases.html', context)
 
 
+@login_required()
+@groups_allowed(UserGroup.educator)
 def update_languages(request, code_question_id):
     # get CodeQuestion instance
     code_question = get_object_or_404(CodeQuestion, id=code_question_id)
 
     # check permissions
     if check_permissions_code_question(code_question, request.user) != 2:
-        messages.warning(request, "You do not have permissions to perform that action.")
-        return redirect('dashboard')
+        return PermissionDenied()
 
     # if belongs to a published assessment, disallow
     if code_question.assessment and code_question.assessment.published:
@@ -233,6 +233,8 @@ def update_languages(request, code_question_id):
     return render(request, 'code_questions/update-languages.html', context)
 
 
+@login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
 def get_cq_details(request):
     error_context = {"result": "error", }
 
@@ -247,7 +249,9 @@ def get_cq_details(request):
         if not code_question:
             return JsonResponse(error_context, status=200)
 
-        # mytodo: check permissions
+        # check permissions
+        if check_permissions_code_question(code_question, request.user) == 0:
+            return JsonResponse(error_context, status=200)
 
         # prepare context and serialize code question
         context = {

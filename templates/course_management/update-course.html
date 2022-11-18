@@ -90,11 +90,12 @@
                   <div class="form-group has-icon-left">
                     <label for="id_year">Academic Year</label>
                     <div class="position-relative">
-                    <select class="form-select" id="id_year" name="year">
-                      {% for value, text in form.year.field.choices %}
-                        <option value="{{ value }}" {% if value == form.year.value %}selected{% endif %}>{{ text }}</option>
-                      {% endfor %}
-                    </select>
+                      <select class="form-select" id="id_year" name="year">
+                        {% for value, text in form.year.field.choices %}
+                          <option value="{{ value }}"
+                                  {% if value == form.year.value %}selected{% endif %}>{{ text }}</option>
+                        {% endfor %}
+                      </select>
                     </div>
                     {# year errors #}
                     {% if form.year.errors %}
@@ -112,11 +113,12 @@
                   <div class="form-group has-icon-left">
                     <label for="id_semester">Semester</label>
                     <div class="position-relative">
-                    <select class="form-select" id="id_semester" name="semester">
-                      {% for value, text in form.semester.field.choices %}
-                        <option value="{{ value }}" {% if value == form.semester.value %}selected{% endif %}>{{ text }}</option>
-                      {% endfor %}
-                    </select>
+                      <select class="form-select" id="id_semester" name="semester">
+                        {% for value, text in form.semester.field.choices %}
+                          <option value="{{ value }}"
+                                  {% if value == form.semester.value %}selected{% endif %}>{{ text }}</option>
+                        {% endfor %}
+                      </select>
                     </div>
                     {# year errors #}
                     {% if form.semester.errors %}
@@ -126,6 +128,15 @@
                         {% endfor %}
                       </p>
                     {% endif %}
+                  </div>
+                </div>
+
+                <!-- Active checkbox -->
+                <div class="col-6">
+                  <div class="checkbox">
+                    <input type="checkbox" id="id_active" name="active" class="form-check-input me-2"
+                           {% if form.active.value %}checked{% endif %}>
+                    <label for="id_active">Active</label>
                   </div>
                 </div>
 

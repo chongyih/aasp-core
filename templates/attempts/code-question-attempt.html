@@ -51,9 +51,12 @@
           <h2>{{ question_attempt.assessment_attempt.assessment }}</h2>
         </div>
         <div class="col-3">
-          <form id="end-assessment-form" method="post" action="{% url 'submit-assessment' assessment_attempt_id=assessment_attempt.id %}">
+          <form id="end-assessment-form" method="post"
+                action="{% url 'submit-assessment' assessment_attempt_id=assessment_attempt.id %}">
             {% csrf_token %}
-            <button class="btn btn-success btn-lg float-end" type="button" onclick="submitAssessment(true);">End Assessment</button>
+            <button class="btn btn-success btn-lg float-end validNavigation" type="button" onclick="submitAssessment(true);">
+              End Assessment
+            </button>
           </form>
         </div>
       </div>
@@ -71,12 +74,12 @@
             <div class="col-9">
               {% for status in question_statuses %}
                 {% if status == True %}
-                  <a class="btn btn-sm btn-success"
+                  <a class="btn btn-sm btn-success validNavigation"
                      href="{% url 'attempt-question' assessment_attempt_id=assessment_attempt.id question_index=forloop.counter0 %}">
                     {{ forloop.counter }} {% if forloop.counter0 == question_index|add:"0" %} (current) {% endif %}
                   </a>
                 {% else %}
-                  <a class="btn btn-sm btn-secondary"
+                  <a class="btn btn-sm btn-secondary validNavigation"
                      href="{% url 'attempt-question' assessment_attempt_id=assessment_attempt.id question_index=forloop.counter0 %}">
                     {{ forloop.counter }} {% if forloop.counter0 == question_index|add:"0" %} (current) {% endif %}
                   </a>
@@ -95,7 +98,8 @@
         <div class="card-content">
           <div class="card-body">
             <h4 class="card-title">Time Remaining</h4>
-            <h1 class="card-text" id="countdown-timer">{% if assessment_attempt.assessment.duration == 0 %}Unlimited{% else %}-{% endif %}</h1>
+            <h1 class="card-text" id="countdown-timer">{% if assessment_attempt.assessment.duration == 0 %}
+              Unlimited{% else %}-{% endif %}</h1>
           </div>
         </div>
       </div>
@@ -178,15 +182,17 @@
 
             <div class="d-flex justify-content-between">
               <div>
-                <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile and Run<i
-                        class="fa-solid fa-play ms-2"></i></button>
+                <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile and
+                  Run<i
+                      class="fa-solid fa-play ms-2"></i></button>
                 <button type="button" id="submit-btn" onclick="submit();" class="btn btn-success">Submit</button>
               </div>
               <div>
                 <span class="h5" id="run-status">Ready</span>
                 <div class="spinner-border spinner-border-sm ms-2" id="main-loading" style="display:none;"></div>
                 <br>
-                <button type="button" id="more-details" class="btn btn-link p-0 view-modal" onclick="viewModal(this)" style="display:none;">
+                <button type="button" id="more-details" class="btn btn-link p-0 view-modal" onclick="viewModal(this)"
+                        style="display:none;">
                   More Details
                 </button>
               </div>
@@ -203,34 +209,41 @@
                   <div class="accordion-item">
 
                     <h2 class="accordion-header">
-                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#submission-{{ cqs.id }}">
+                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                              data-bs-target="#submission-{{ cqs.id }}">
                         {{ cqs.time_submitted }}
                         {% if cqs.outcome == "Failed" %}
                           <span class="badge bg-light-danger ms-3" id="cqs-status-{{ cqs.id }}">{{ cqs.outcome }}</span>
                         {% elif cqs.outcome == "Passed" %}
-                          <span class="badge bg-light-success ms-3" id="cqs-status-{{ cqs.id }}">{{ cqs.outcome }}</span>
+                          <span class="badge bg-light-success ms-3"
+                                id="cqs-status-{{ cqs.id }}">{{ cqs.outcome }}</span>
                         {% else %}
-                          <span class="badge bg-light-warning ms-3" id="cqs-status-{{ cqs.id }}">{{ cqs.outcome }}</span>
+                          <span class="badge bg-light-warning ms-3"
+                                id="cqs-status-{{ cqs.id }}">{{ cqs.outcome }}</span>
                         {% endif %}
                       </button>
                     </h2>
 
-                    <div id="submission-{{ cqs.id }}" class="accordion-collapse collapse" data-bs-parent="#submissions-accordion">
+                    <div id="submission-{{ cqs.id }}" class="accordion-collapse collapse"
+                         data-bs-parent="#submissions-accordion">
                       <div class="accordion-body">
                         <div class="row">
                           {% for tca in cqs.testcaseattempt_set.all %}
                             <div class="col-4">
                               {# disable button if TCA is still in queue or processing #}
-                              <button id="tca-{{ tca.id }}" class="btn btn-link p-0 {% if tca.status == 1 or tca.status == 2 %}disabled{% endif %}"
+                              <button id="tca-{{ tca.id }}"
+                                      class="btn btn-link p-0 {% if tca.status == 1 or tca.status == 2 %}disabled{% endif %}"
                                       data-token="{{ tca.token }}" onclick="viewModal(this);">
                                 Test Case {{ forloop.counter }}
                               </button>
                               <div class="spinner-border spinner-border-sm ms-2" id="tca-loading-{{ tca.id }}"
-                                   style="{% if tca.status == 1 or tca.status == 2 %}{% else %}display: none;{% endif %}"></div>
+                                   style="
+                                       {% if tca.status == 1 or tca.status == 2 %}{% else %}display: none;{% endif %}"></div>
                               <i class="fa-solid fa-check text-success" id="tca-accepted-{{ tca.id }}"
                                  style="{% if tca.status == 3 %}{% else %}display: none;{% endif %}"></i>
                               <i class="fa-solid fa-xmark text-danger" id="tca-failed-{{ tca.id }}"
-                                 style="{% if tca.status >= 4 and tca.status <= 14 %}{% else %}display: none;{% endif %}"></i>
+                                 style="
+                                     {% if tca.status >= 4 and tca.status <= 14 %}{% else %}display: none;{% endif %}"></i>
                             </div>
                           {% endfor %}
                         </div>
@@ -263,7 +276,8 @@
   {% include "includes/js/mathjax.html" %}
   <!-- momentjs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-duration-format/1.3.0/moment-duration-format.min.js"></script>
+  <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/moment-duration-format/1.3.0/moment-duration-format.min.js"></script>
 
   <!-- General script -->
   <script>
@@ -283,6 +297,23 @@
           breaks: true
       })
       $("#question-desc").html(marked.parse("{{ code_question.description|escapejs }}"));
+
+      let validNavigation = false;
+      $(document).on('click', '.validNavigation', function () {
+          validNavigation = true;
+      });
+  </script>
+
+  <!-- Unload warning -->
+  <script>
+      window.onbeforeunload = function () {
+          if (validNavigation) {
+              validNavigation = false;
+              return;
+          }
+
+          return true;
+      };
   </script>
 
   <!-- Ace code editor config -->

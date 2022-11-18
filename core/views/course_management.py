@@ -4,11 +4,13 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Q
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
+from core.decorators import groups_allowed, UserGroup
 from core.filters import CourseStudentFilter
 from core.forms.course_management import CourseForm
 from core.models import Course, User, CourseGroup
@@ -16,9 +18,11 @@ from core.views.utils import check_permissions_course
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
 def view_courses(request):
     # retrieve courses for this user
-    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct().prefetch_related('owner', 'maintainers')
+    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct().prefetch_related(
+        'owner', 'maintainers')
 
     active_courses = courses.filter(active=True)
     inactive_courses = courses.filter(active=False)
@@ -32,14 +36,16 @@ def view_courses(request):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def create_course(request):
-    year_start = datetime.today().year - 1
+    year_now = datetime.today().year
+    year_start = 2020
     years = []
-    for y in range(year_start, year_start + 5):
+    for y in range(year_start, year_now + 2):
         years.append((y, y))
 
     # initialize form
-    form = CourseForm(years)
+    form = CourseForm(years, initial={'year': year_now, 'active': True})
 
     # process POST request
     if request.method == 'POST':  # POST
@@ -48,7 +54,7 @@ def create_course(request):
             created_course = form.save(commit=False)
             created_course.owner = request.user
             created_course.save()
-            messages.success(request, "The course has been created! ✅")
+            messages.success(request, "The course has been created!")
             return redirect('view-courses')
 
     context = {
@@ -58,10 +64,12 @@ def create_course(request):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator)
 def update_course(request, course_id):
-    current_year = datetime.today().year
+    year_now = datetime.today().year
+    year_start = 2020
     years = []
-    for y in range(2020, current_year + 5):
+    for y in range(year_start, year_now + 2):
         years.append((y, y))
 
     # get course object
@@ -69,8 +77,7 @@ def update_course(request, course_id):
 
     # check permissions of user (needs to be owner)
     if check_permissions_course(course, request.user) != 2:
-        messages.warning(request, "You do not have permissions to update the course.")
-        return redirect('view-courses')
+        raise PermissionDenied("You do not have permissions to modify the course.")
 
     # initialize form with course instance
     form = CourseForm(years, instance=course)
@@ -80,7 +87,7 @@ def update_course(request, course_id):
         form = CourseForm(years, request.POST, instance=course)
         if form.is_valid():
             form.save()
-            messages.success(request, "The course has been updated! ✅")
+            messages.success(request, "The course has been updated!")
 
             # redirect to where the user came from
             next_url = request.GET.get("next")
@@ -96,21 +103,22 @@ def update_course(request, course_id):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
 def course_details(request, course_id):
     # get course object
     course = get_object_or_404(Course.objects.prefetch_related('owner', 'maintainers', 'coursegroup_set'), id=course_id)
 
     # if no permissions, redirect back to course page
     if check_permissions_course(course, request.user) == 0:
-        messages.warning(request, "You do not have permissions to view that course.")
-        return redirect('view-courses')
+        raise PermissionDenied("You do not have permissions to view the course.")
 
     # get a list of staff accounts (educator/lab_assistant/superuser role)
     staff = User.objects.filter(Q(groups__name__in=('educator', 'lab_assistant')) | Q(is_superuser=True))
 
     # get queryset of students who are enrolled in this course
     course_groups = course.coursegroup_set.all().order_by('name')
-    all_students = User.objects.filter(enrolled_groups__course=course).prefetch_related('enrolled_groups', 'enrolled_groups__course').order_by(
+    all_students = User.objects.filter(enrolled_groups__course=course).prefetch_related('enrolled_groups',
+                                                                                        'enrolled_groups__course').order_by(
         'username')
     students_filter = CourseStudentFilter(course_groups, request.GET, queryset=all_students)
 
@@ -135,6 +143,7 @@ def course_details(request, course_id):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
 def remove_student(request):
     if request.method == "POST":
         course_id = request.POST.get("course_id")
@@ -185,104 +194,8 @@ def remove_student(request):
         return JsonResponse(context, status=200)
 
 
-@login_required()  # not used
-def add_students(request):
-    if request.method == "POST":
-        course_id = request.POST.get("course_id")
-        usernames = request.POST.get("usernames")
-
-        # get course object
-        course = Course.objects.filter(id=course_id).prefetch_related('owner', 'maintainers').first()
-        if not course:
-            context = {
-                "result": "error",
-                "msg": "The selected course does not exist."
-            }
-            return JsonResponse(context, status=200)
-
-        # check if user has permissions for this course
-        if check_permissions_course(course, request.user) == 0:
-            context = {
-                "result": "error",
-                "msg": "You do not have permissions for this course."
-            }
-            return JsonResponse(context, status=200)
-
-        if usernames is not None:
-            usernames = usernames.upper().strip().splitlines()
-
-        # remove duplicates by converting to set
-        usernames = set(usernames)
-
-        # if no usernames entered
-        if not usernames:
-            context = {
-                "result": "error",
-                "msg": "No usernames selected."
-            }
-            return JsonResponse(context, status=200)
-
-        # check which usernames exist, which does not...?
-        user_search = User.objects.in_bulk(usernames, field_name="username")
-
-        # retrieve user ids from the search results
-        student_ids = [user.id for user in user_search.values()]
-
-        # add these IDs to the course
-        course.students.add(*student_ids)
-
-        # compute list of usernames that were not found
-        not_found = list(set(usernames) - set(user_search.keys()))
-
-        # success message
-        n = len(student_ids)
-        if n == 0:
-            msg = "No students were added to the course. Refer to the section below for more details."
-        else:
-            if len(not_found) == 0:
-                msg = f"{n} student(s) were successfully added to the course!"
-            else:
-                msg = f"{n} student(s) were successfully added to the course, with some rows ignored (refer to the section below for more details)."
-
-        # result
-        context = {
-            "result": "success",
-            "msg": msg,
-            "not_found": not_found,
-        }
-        return JsonResponse(context, status=200)
-
-
-@login_required()  # not used
-def get_course_students(request):
-    if request.method == "GET":
-        course_id = request.GET.get("course_id")
-
-        # get course object
-        course = Course.objects.filter(id=course_id).prefetch_related('owner', 'maintainers').first()
-        if not course:
-            context = {
-                "result": "error",
-                "msg": "The course does not exist."
-            }
-            return JsonResponse(context, status=200)
-
-        # check if user has permissions for this course
-        if check_permissions_course(course, request.user) == 0:
-            context = {
-                "result": "error",
-                "msg": "You do not have permissions for this course."
-            }
-            return JsonResponse(context, status=200)
-
-        # get students
-        students = list(course.students.all().values('id', 'username', 'first_name', 'last_name'))
-
-        # get students
-        return JsonResponse({"result": "success", "students": students}, status=200)
-
-
 @login_required()
+@groups_allowed(UserGroup.educator)
 def update_course_maintainer(request):
     """
     Function to add a maintainer to a course.
@@ -332,6 +245,7 @@ def update_course_maintainer(request):
 
 
 @login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
 def reset_student_password(request):
     if request.method == "POST":
         course_id = request.POST.get("course_id")

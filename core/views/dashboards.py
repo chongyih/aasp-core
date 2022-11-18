@@ -3,17 +3,18 @@ from django.db.models import Q
 from django.shortcuts import render, redirect
 from django.utils import timezone
 
+from core.decorators import UserGroup, groups_allowed
 from core.models import Course, CourseGroup, Assessment
 from core.views.utils import is_student, is_educator, is_lab_assistant
 
 
-@login_required
+@login_required()
 def dashboard(request):
     """
     redirects a logged-in user to the correct dashboard
     """
     if request.user.is_superuser:
-        return redirect('dashboard-educators')
+        return redirect('admin:index')
     elif request.user.groups.filter(name='student').exists():
         return redirect('dashboard-students')
     elif request.user.groups.filter(name='educator').exists():
@@ -22,8 +23,8 @@ def dashboard(request):
         return redirect('dashboard-lab-assistants')
 
 
-@login_required
-@user_passes_test(is_student, login_url='dashboard')
+@login_required()
+@groups_allowed(UserGroup.student)
 def dashboard_students(request):
     # courses count
     courses_count = Course.objects.filter(coursegroup__students=request.user, active=True).count()
@@ -50,8 +51,8 @@ def dashboard_students(request):
     return render(request, 'dashboards/students.html', context)
 
 
-@login_required
-@user_passes_test(is_educator, login_url='dashboard')
+@login_required()
+@groups_allowed(UserGroup.educator)
 def dashboard_educators(request):
     # get active courses
     courses = Course.objects.filter(
@@ -85,8 +86,8 @@ def dashboard_educators(request):
     return render(request, 'dashboards/educators.html', context)
 
 
-@login_required
-@user_passes_test(is_lab_assistant, login_url='dashboard')
+@login_required()
+@groups_allowed(UserGroup.lab_assistant)
 def dashboard_lab_assistants(request):
     # get active courses
     courses = Course.objects.filter(

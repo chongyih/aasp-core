@@ -20,6 +20,5 @@ class AssessmentForm(models.ModelForm):
         cleaned_data = super().clean()
 
         if cleaned_data['time_start'] and cleaned_data['time_end']:
-            # mytodo: ensure time start is before or same as time end
-            pass
-
+            if cleaned_data['time_start'] > cleaned_data['time_end']:
+                raise forms.ValidationError("Start data/time must be before end date/time.")

@@ -6,7 +6,8 @@ from core.models import User, Course, CourseGroup, QuestionBank, CodeQuestion, A
 
 
 class CustomUserAdmin(UserAdmin):
-    list_display = ("username", "email", "first_name", "last_name", "is_staff", "session_key")
+    list_display = ("username", "email", "first_name", "last_name", "is_superuser", "session_key")
+    readonly_fields = ("email", "session_key", "is_staff", "last_login", "date_joined")
 
 
 class CourseAdmin(admin.ModelAdmin):

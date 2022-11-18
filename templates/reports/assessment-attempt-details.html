@@ -49,7 +49,7 @@
             </div>
             <div class="col-4">
               <h6>Time Submitted</h6>
-              <p>{{ assessment_attempt.time_submitted }}</p>
+              <p>{{ assessment_attempt.time_submitted }} {% if assessment_attempt.auto_submit %}(Automatic){% endif %}</p>
             </div>
             <div class="col-4">
               <h6>Duration</h6>

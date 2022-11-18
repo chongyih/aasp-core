@@ -12,7 +12,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from core.filters import CourseStudentFilter
 from core.forms.course_management import CourseForm
 from core.models import Course, User, CourseGroup
-from core.views.utils import check_permissions
+from core.views.utils import check_permissions_course
 
 
 @login_required()
@@ -68,7 +68,7 @@ def update_course(request, course_id):
     course = get_object_or_404(Course.objects.prefetch_related('owner', 'maintainers'), id=course_id)
 
     # check permissions of user (needs to be owner)
-    if check_permissions(course, request.user) != 2:
+    if check_permissions_course(course, request.user) != 2:
         messages.warning(request, "You do not have permissions to update the course.")
         return redirect('view-courses')
 
@@ -101,7 +101,7 @@ def course_details(request, course_id):
     course = get_object_or_404(Course.objects.prefetch_related('owner', 'maintainers', 'coursegroup_set'), id=course_id)
 
     # if no permissions, redirect back to course page
-    if check_permissions(course, request.user) == 0:
+    if check_permissions_course(course, request.user) == 0:
         messages.warning(request, "You do not have permissions to view that course.")
         return redirect('view-courses')
 
@@ -150,7 +150,7 @@ def remove_student(request):
             return JsonResponse(context, status=200)
 
         # check if user has permissions for this course
-        if check_permissions(course, request.user) == 0:
+        if check_permissions_course(course, request.user) == 0:
             context = {
                 "result": "error",
                 "msg": "You do not have permissions for this course."
@@ -201,7 +201,7 @@ def add_students(request):
             return JsonResponse(context, status=200)
 
         # check if user has permissions for this course
-        if check_permissions(course, request.user) == 0:
+        if check_permissions_course(course, request.user) == 0:
             context = {
                 "result": "error",
                 "msg": "You do not have permissions for this course."
@@ -268,7 +268,7 @@ def get_course_students(request):
             return JsonResponse(context, status=200)
 
         # check if user has permissions for this course
-        if check_permissions(course, request.user) == 0:
+        if check_permissions_course(course, request.user) == 0:
             context = {
                 "result": "error",
                 "msg": "You do not have permissions for this course."
@@ -309,7 +309,7 @@ def update_course_maintainer(request):
             return JsonResponse(error_context, status=200)
 
         # check if user has permissions for this course
-        if check_permissions(course, request.user) != 2:
+        if check_permissions_course(course, request.user) != 2:
             return JsonResponse(error_context, status=200)
 
         # get maintainer object
@@ -348,7 +348,7 @@ def reset_student_password(request):
             return JsonResponse(context, status=200)
 
         # check if user has permissions for this course
-        if check_permissions(course, request.user) == 0:
+        if check_permissions_course(course, request.user) == 0:
             context = {
                 "result": "error",
                 "msg": "You do not have permissions for this course."

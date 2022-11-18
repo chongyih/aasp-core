@@ -13,42 +13,46 @@ from django.utils import timezone
 from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet, CodeQuestionSubmission, \
     TestCaseAttempt, Language
 from core.tasks import update_test_case_attempt_status, update_cqs_passed_flag, force_submit_assessment, compute_assessment_attempt_score
-from core.views.utils import get_assessment_attempt_question, check_permissions
+from core.views.utils import get_assessment_attempt_question, check_permissions_course, user_enrolled_in_course
 
 
 @login_required()
 def assessment_landing(request, assessment_id):
     """
-    Landing page for a candidate taking an Assessment
-    Displays the various information about an assessment
+    Landing page of an Assessment
+    - Displays the various information about an assessment
+    - Candidates can start the assessment from here (only when published)
+    - Educators can preview assessments from here (only when unpublished)
     """
+
     # get assessment object
     assessment = get_object_or_404(Assessment, id=assessment_id)
 
-    if not assessment.published:  # not published: preview-only for educators
+    # if assessment is not published, it should only be accessible to educators for preview
+    if not assessment.published:
         # must be course owner or maintainer
-        if check_permissions(assessment.course, request.user) == 0:
-            messages.warning(request, "You do not have permissions to view this assessment.")
-            return redirect('dashboard')
+        if check_permissions_course(assessment.course, request.user) == 0:
+            raise PermissionDenied()
 
         # check if assessment is valid for previewing
         valid, msg = assessment.is_valid()
-
         if not valid:
             messages.warning(request, f"Assessment is incomplete! {msg}")
             return redirect("assessment-details", assessment_id=assessment_id)
 
-    else:  # published: only for students
-        # check if user is enrolled into the course (students)
-        if not assessment.course.coursegroup_set.filter(students=request.user).exists():
-            messages.warning(request, "You do not have permissions to view this assessment.")
-            return redirect('dashboard')
+    # if assessment is published, it should only be accessible to candidates
+    else:
+        # check if user is enrolled in the course (students)
+        if not user_enrolled_in_course(assessment.course, request.user):
+            raise PermissionDenied("You are not enrolled in this course.")
 
     # check for incomplete attempts
     incomplete_attempt: bool = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user, time_submitted=None).exists()
 
-    # check if there are any attempts remaining
+    # get current number of attempts by the user
     attempt_count: int = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user).count()
+
+    # check if there are any attempts remaining
     no_more_attempts: bool = False if assessment.num_attempts == 0 else attempt_count >= assessment.num_attempts
 
     # get all existing assessment attempts
@@ -69,40 +73,48 @@ def assessment_landing(request, assessment_id):
 @login_required()
 def enter_assessment(request, assessment_id):
     """
-    This view will redirect the user to the assessment. POST method is selected to prevent CSRF attacks.
+    This view will redirect the user to the assessment.
+
     If an incomplete AssessmentAttempt exists:
      - redirect to first question of this attempt
+
     If an AssessmentAttempt does not exist:
-     - use generateAttempt() to generate models
+     - use generateAttempt() to generate records
      - redirect to first question of this attempt
     """
+
+    # POST method is used to prevent CSRF attacks
     if request.method == "POST":
+
         # get assessment object
         assessment = get_object_or_404(Assessment, id=assessment_id)
         pin = request.POST.get('pin')
 
-        if not assessment.published:  # not published: preview-only for educators
-            if check_permissions(assessment.course, request.user) == 0:
-                messages.warning(request, "You do not have permissions to view this assessment.")
-                return redirect('dashboard')
-        else:  # published: only for students
-            # check if user is enrolled into the course (students)
-            if not assessment.course.coursegroup_set.filter(students=request.user).exists():
-                messages.warning(request, "You do not have permissions to view this assessment.")
-                return redirect('dashboard')
+        # get incomplete attempt
+        incomplete_attempt = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user,
+                                                              time_submitted=None).first()
 
-            # check if assessment is active (only needed for students)
-            if assessment.status != "Active":
+        # if assessment is not published, it should only be accessible to educators for preview
+        if not assessment.published:
+            if check_permissions_course(assessment.course, request.user) == 0:
+                raise PermissionDenied()
+
+        # if assessment is published, it should only be accessible to candidates
+        else:
+            # check if user is enrolled in the course (students)
+            if not user_enrolled_in_course(assessment.course, request.user):
+                raise PermissionDenied("You are not enrolled in this course.")
+
+            # check if assessment is active, don't deny if there is an existing incomplete attempt
+            if assessment.status != "Active" and not incomplete_attempt:
                 messages.warning(request, "You may not enter this assessment.")
                 return redirect('assessment-landing', assessment_id=assessment.id)
 
-        # get incomplete attempt, if it exists
-        incomplete_attempt = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user, time_submitted=None).first()
+        # if incomplete attempt exists, redirect to it
         if incomplete_attempt:
-            print("incomplete attempt exist")
             return redirect('attempt-question', assessment_attempt_id=incomplete_attempt.id, question_index=0)
 
-        # no incomplete attempt (create new one if permissible)
+        # create a new attempt if there are attempts left
         attempt_count = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user).count()
         if assessment.num_attempts != 0 and attempt_count >= assessment.num_attempts:  # all attempts used up
             messages.warning(request, "You may not enter this assessment.")

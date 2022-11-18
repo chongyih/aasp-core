@@ -10,7 +10,7 @@ from django.shortcuts import render, redirect
 
 from core.forms.user_management import StudentCreationForm
 from core.models import User, Course, CourseGroup
-from core.views.utils import clean_csv, check_permissions
+from core.views.utils import clean_csv, check_permissions_course
 
 
 @login_required()
@@ -63,7 +63,7 @@ def enrol_students_bulk(request):
             return JsonResponse(context, status=200)
 
         # check if user has permissions for this course
-        if check_permissions(course, request.user) == 0:
+        if check_permissions_course(course, request.user) == 0:
             context = {
                 "result": "error",
                 "msg": "You do not have permissions for this course."

@@ -56,7 +56,7 @@ def clean_csv(rows):
 
 
 # mytodo: refactor this to check_permissions_course()
-def check_permissions(course, user):
+def check_permissions_course(course, user):
     """
     Returns the permission level of a user for this course.
     0 - no permissions
@@ -96,7 +96,7 @@ def check_permissions_code_question(code_question, user):
     if code_question.question_bank:  # belongs to qb
         return check_permissions_qb(code_question.question_bank, user)
     else:  # belongs to assessment
-        if check_permissions(code_question.assessment.course, user) != 0:
+        if check_permissions_course(code_question.assessment.course, user) != 0:
             return 2
 
 
@@ -130,3 +130,9 @@ def get_assessment_attempt_question(assessment_attempt, question_index=None):
         return [], None
     else:  # return specific question
         return statuses, cq_attempts[question_index]
+
+
+def user_enrolled_in_course(course, user) -> bool:
+    """Checks if a user is enrolled in a course."""
+    return course.coursegroup_set.filter(students=user).exists()
+

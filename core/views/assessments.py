@@ -11,7 +11,7 @@ from core.filters import CodeQuestionFilter
 from core.forms.assessments import AssessmentForm
 from core.models import Course, Assessment, CodeQuestion, TestCase, CodeSnippet, Tag, QuestionBank
 from core.serializers import CodeQuestionsSerializer
-from core.views.utils import check_permissions, check_permissions_assessment, check_permissions_code_question
+from core.views.utils import check_permissions_course, check_permissions_assessment, check_permissions_code_question
 
 
 @login_required()
@@ -34,7 +34,7 @@ def create_assessment(request):
             course = get_object_or_404(Course, id=form.data['course'])
 
             # check permissions before saving form
-            if check_permissions(course, request.user) == 0:
+            if check_permissions_course(course, request.user) == 0:
                 messages.success(request, "You do not have permissions for this course.")
                 return redirect('view-courses')
 
@@ -80,7 +80,7 @@ def update_assessment(request, assessment_id):
             course = get_object_or_404(Course, id=form.data['course'])
 
             # check permissions before saving form
-            if check_permissions(course, request.user) == 0:
+            if check_permissions_course(course, request.user) == 0:
                 messages.success(request, "You do not have permissions for this course.")
                 return redirect('view-courses')
 

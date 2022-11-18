@@ -9,7 +9,7 @@ from core.forms.question_banks import CodeQuestionForm
 from core.models import QuestionBank, Assessment, CodeQuestion
 from core.models.questions import TestCase, CodeSnippet, Language, Tag
 from core.serializers import CodeQuestionsSerializer
-from core.views.utils import check_permissions, check_permissions_code_question
+from core.views.utils import check_permissions_course, check_permissions_code_question
 
 
 @login_required()
@@ -25,7 +25,7 @@ def create_code_question(request, parent, parent_id):
             return redirect('view-question-banks')
     elif parent == "as":
         assessment = get_object_or_404(Assessment, id=parent_id)
-        if check_permissions(assessment.course, request.user) == 0:
+        if check_permissions_course(assessment.course, request.user) == 0:
             messages.warning(request, "You do not have permissions for this course.")
             return redirect('view-courses')
     else:

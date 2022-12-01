@@ -45,6 +45,105 @@ class Migration(migrations.Migration):
 
         CodeTemplate.objects.bulk_create([ct1, ct2, ct3])
 
+    """
+    The following functions are for demo purposes only.
+    """
+
+    def create_users(apps, schema_editor):
+        Group = apps.get_model('auth', 'Group')
+        User = apps.get_model('core', 'User')
+
+        # educator 1
+        User.objects.create(
+            username="YRLOKE",
+            first_name="YUAN REN",
+            last_name="LOKE",
+            email='YRLOKE@NTU.EDU.SG',
+            password=make_password('password123'),
+            is_staff=False,
+            is_superuser=False,
+        )
+        # educator 2
+        User.objects.create(
+            username="LON898",
+            first_name="LONG YAN",
+            last_name="TAN",
+            email='LON898@NTU.EDU.SG',
+            password=make_password('password123'),
+            is_staff=False,
+            is_superuser=False,
+        )
+        # educator 3
+        User.objects.create(
+            username="TIM111",
+            first_name="TIMOTHY",
+            last_name="NG",
+            email='TIM111@NTU.EDU.SG',
+            password=make_password('password123'),
+            is_staff=False,
+            is_superuser=False,
+        )
+        # student
+        User.objects.create(
+            username="JLEE254",
+            first_name="JUN WEI",
+            last_name="LEE",
+            email='JLEE254@E.NTU.EDU.SG',
+            password=make_password('password123'),
+            is_staff=False,
+            is_superuser=False,
+        )
+        # lab assistant
+        User.objects.create(
+            username="LIM287",
+            first_name="GRACE",
+            last_name="LIM",
+            email='LIM287@NTU.EDU.SG',
+            password=make_password('password123'),
+            is_staff=False,
+            is_superuser=False,
+        )
+        Group.objects.get(name="educator").user_set.add(User.objects.get(username='YRLOKE'))
+        Group.objects.get(name="educator").user_set.add(User.objects.get(username='LON898'))
+        Group.objects.get(name="educator").user_set.add(User.objects.get(username='TIM111'))
+        Group.objects.get(name="student").user_set.add(User.objects.get(username='JLEE254'))
+        Group.objects.get(name="lab_assistant").user_set.add(User.objects.get(username='LIM287'))
+
+    def create_question_banks(apps, schema_editor):
+        User = apps.get_model('core', 'User')
+        QuestionBank = apps.get_model('core', 'QuestionBank')
+
+        # default admin question bank for testing
+        QuestionBank.objects.create(
+            name="Questions for Platform Familiarisation",
+            description="Simple questions for familiarisation with the system.",
+            owner=User.objects.get(username="LON898"),
+            private=False
+        )
+
+        # Dr Loke's question bank
+        QuestionBank.objects.create(
+            name="Basic Algorithms Practice",
+            description="These questions will be used to test the students on their understanding of basic algorithms.",
+            owner=User.objects.get(username="YRLOKE"),
+            private=True
+        )
+
+    def create_courses(apps, schema_editor):
+        User = apps.get_model('core', 'User')
+        Course = apps.get_model('core', 'Course')
+
+        c = Course.objects.create(
+            name="DATA STRUCTURES AND ALGORITHMS",
+            code="SC1007",
+            year=2022,
+            owner=User.objects.get(username="YRLOKE"),
+            semester='2',
+        )
+
+        # add maintainer
+        c.maintainers.add(User.objects.get(username="LIM287"))
+
     dependencies = [
         ('core', '0001_initial'),
     ]
@@ -53,4 +152,7 @@ class Migration(migrations.Migration):
         migrations.RunPython(create_groups),
         migrations.RunPython(create_admin),
         migrations.RunPython(create_languages),
+        migrations.RunPython(create_users),
+        migrations.RunPython(create_question_banks),
+        migrations.RunPython(create_courses),
     ]

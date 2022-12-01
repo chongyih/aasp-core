@@ -108,7 +108,7 @@ def question_bank_details(request, question_bank_id):
         raise PermissionDenied("You do not have permissions to view the question bank.")
 
     # get a list of staff accounts (educator and superusers)
-    staff = User.objects.filter(Q(groups__name__in=['educator']) | Q(is_superuser=True))
+    staff = User.objects.filter(Q(groups__name__in=('educator',)) & ~Q(username=request.user.username))
 
     context = {
         'question_bank': question_bank,

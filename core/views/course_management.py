@@ -113,7 +113,7 @@ def course_details(request, course_id):
         raise PermissionDenied("You do not have permissions to view the course.")
 
     # get a list of staff accounts (educator/lab_assistant/superuser role)
-    staff = User.objects.filter(Q(groups__name__in=('educator', 'lab_assistant')) | Q(is_superuser=True))
+    staff = User.objects.filter(Q(groups__name__in=('educator', 'lab_assistant')) & ~Q(username=request.user.username))
 
     # get queryset of students who are enrolled in this course
     course_groups = course.coursegroup_set.all().order_by('name')

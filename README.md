@@ -4,7 +4,7 @@ This project is developed as part of my Final Year Project in Nanyang Technologi
 ## Instructions
 
 ### Local Development
-1. Clone the repository, check out the `development` branch.
+1. Clone the repository, check out the branch.
    ```bash
    # via http
    git clone https://github.com/leejunweisg/aasp
@@ -33,12 +33,13 @@ This project is developed as part of my Final Year Project in Nanyang Technologi
    python3 -m pip install -r requirements.txt
    ```
 
-6. Since this is the first launch, the database needs to be generated with Django, and pre-populated with required data.
+6. Since this is the first launch, the database needs to be generated with Django, and pre-populated with an admin account.  
+   Refer to [migration files](./core/migrations) for the default admin account credentials.
    ```shell
-   python3 manage.py gendb
+   python3 manage.py migrate
    ```
 
-7. Run the development webserver. The site will be accessible at `http://localhost:8000/`
+7. Run the development webserver. The site will be accessible at [http://localhost:8000/](http://localhost:8000/)
    ```shell
    python3 manage.py runserver
    ```
@@ -48,7 +49,7 @@ This project is developed as part of my Final Year Project in Nanyang Technologi
 
 #### Initial Deployment
 
-1. Clone the repository, check out the `main` branch.
+1. Clone the repository, check out the branch.
    ```bash
    # via http
    git clone https://github.com/leejunweisg/aasp
@@ -69,13 +70,7 @@ This project is developed as part of my Final Year Project in Nanyang Technologi
    sudo docker-compose -f docker-compose.yml up -d
    ```
 
-5. Since this is the first launch, the database needs to be generated with Django, and pre-populated with required data.
-   ```shell
-   # assuming 'aasp_aasp_web_1' is the name of the aasp_web container
-   sudo docker exec -it aasp_aasp_web_1 python3 manage.py gendb
-   ```
-
-6. The site should now be accessible at `http://<docker-host-ip>/`
+5. Once the containers have been created and started, the site will be accessible at `http://<host-ip>/` (port 80)
 
 #### Update instructions
 Note: If changes were made to the database schema, make sure to commit the migration files as well.
@@ -88,7 +83,7 @@ Note: If changes were made to the database schema, make sure to commit the migra
    ```
 
 ## Credits
-### Contributions
+### Contributors
 - Lee Jun Wei ([LinkedIn](https://www.linkedin.com/in/leejunweisg/))
 
 ### Others

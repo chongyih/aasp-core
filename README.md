@@ -1,9 +1,19 @@
 # Automatic Assessment Platform (AASP)
-This project is developed as part of my Final Year Project in Nanyang Technological University, Singapore.
 
-## Instructions
+This project was developed as part of my Final Year Project in Nanyang Technological University, Singapore.
+
+## About
+
+AASP is a web-based online assessment platform that allows educators to create and manage assessments for their
+students.
+
+The platform is built with the [Django Web Framework](https://djangoproject.com/) and
+uses [Judge0](https://github.com/judge0/judge0) for code compilation and execution.
+
+## Installation
 
 ### Local Development
+
 1. Clone the repository, check out the branch.
    ```bash
    # via http
@@ -24,7 +34,7 @@ This project is developed as part of my Final Year Project in Nanyang Technologi
    ```shell
    docker-compose -f docker-compose-dev.yml up -d
    ```
-   
+
 5. Open the project in your IDE, create a virtual environment and install the requirements.
    ```shell
    # unix/linux
@@ -33,7 +43,8 @@ This project is developed as part of my Final Year Project in Nanyang Technologi
    python3 -m pip install -r requirements.txt
    ```
 
-6. Since this is the first launch, the database needs to be generated with Django, and pre-populated with an admin account.  
+6. Since this is the first launch, the database needs to be generated with Django, and pre-populated with an admin
+   account.  
    Refer to [migration files](./core/migrations) for the default admin account credentials.
    ```shell
    python3 manage.py migrate
@@ -43,7 +54,6 @@ This project is developed as part of my Final Year Project in Nanyang Technologi
    ```shell
    python3 manage.py runserver
    ```
-
 
 ### Production
 
@@ -72,7 +82,8 @@ This project is developed as part of my Final Year Project in Nanyang Technologi
 
 5. Once the containers have been created and started, the site will be accessible at `http://<host-ip>/` (port 80)
 
-#### Update instructions
+#### Performing updates
+
 Note: If changes were made to the database schema, make sure to commit the migration files as well.
 
 1. Push your commits to remote.
@@ -83,8 +94,13 @@ Note: If changes were made to the database schema, make sure to commit the migra
    ```
 
 ## Credits
-### Contributors
-- Lee Jun Wei ([LinkedIn](https://www.linkedin.com/in/leejunweisg/))
+
+### Project Contributors
+
+| Contributor                                             | Period         | Links                                                                                                                                                                                                     |
+|---------------------------------------------------------|----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [Lee Jun Wei](https://www.linkedin.com/in/leejunweisg/) | Jan - Dec 2022 | [Report](./documents/leejunwei/SCSE21-0804_report.pdf) [Slides](./documents/leejunwei/final-presentation-slides.pdf) [Poster](./documents/leejunwei/fyp-poster.pdf) [Video](https://youtu.be/T0sULC8Wh7k) |
 
 ### Others
-- Admin Dashboard Template from https://github.com/zuramai/mazer
+
+- Bootstrap 5 Template from [mazer](https://github.com/zuramai/mazer)

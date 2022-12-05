@@ -4,6 +4,60 @@
 {% block title %}{{ assessment.name }}{% endblock %}
 
 {% block styles %}
+  <style>
+      #video {
+        border: 1px solid black;
+        box-shadow: 2px 2px 3px black;
+        width: 320px;
+        height: 240px;
+      }
+      
+      #photo {
+        border: 1px solid black;
+        box-shadow: 2px 2px 3px black;
+        width: 320px;
+        height: 240px;
+      }
+      
+      #canvas {
+        display: none;
+      }
+    
+      .camera {
+        width: 340px;
+        display: inline-block;
+        float: left;
+      }
+      
+      .output {
+        width: 340px;
+        display: inline-block;
+        vertical-align: top;
+      }
+      
+      #picture-button, #clear-picture{
+        display: block;
+        position: relative;
+        margin-left: auto;
+        margin-right: auto;
+        bottom: 32px;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        box-shadow: 0px 0px 1px 2px rgba(0, 0, 0, 0.2);
+        font-size: 14px;
+        font-family: "Lucida Grande", "Arial", sans-serif;
+      }
+
+      #picture-button {
+        background-color: rgba(0, 150, 0, 0.5);
+        color: rgba(255, 255, 255, 1);
+      }
+
+      .contentarea {
+        font-size: 16px;
+        font-family: "Lucida Grande", "Arial", sans-serif;
+        width: 760px;
+      }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -171,13 +225,43 @@
             <div class="input-group">
               {% csrf_token %}
               {% if incomplete_attempt %}
-                <button type="submit" id="enter-btn" class="btn btn-lg btn-warning" href="#">Resume</button>
+                <button 
+                  type="button" id="enter-btn" class="btn btn-lg btn-warning" href="#" onClick="viewModal(this)">Resume</button>
               {% elif not no_more_attempts %}
                 {% if assessment.pin %}
                   <input type="text" class="form-control" name="pin" id="id_pin" placeholder="PIN Required"/>
                 {% endif %}
-                <button type="submit" id="enter-btn" class="btn btn-lg btn-success" href="#">Begin</button>
+                  <button 
+                    type="button" id="enter-btn" class="btn btn-lg btn-success"href="#" onClick="viewModal(this)">Next</button>
               {% endif %}
+            </div>
+
+            <!-- Modal -->
+            <div class="modal fade" id="camera-modal" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="camera-model-label">Candidate Webcam Check</h5>
+                    <button type="button" class="btn-close" onClick="closeModal(this)" />
+                  </div>
+                  <div class="modal-body">
+                    <div>Please ensure you see your image in the window below.</div>
+                    <div class="camera">
+                      <video id="video">Video stream not available.</video>
+                      <button type="button" id="picture-button">Take picture</button>
+                    </div>
+                    <canvas id="canvas"></canvas>
+                    <div class="output">
+                      <img id="photo" />
+                      <button type="button" id="clear-picture">Clear</button>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-lg" onClick="closeModal(this)">Close</button>
+                    <button type="submit" id="start-btn" class="btn btn-lg btn-success">Start</button>
+                  </div>
+                </div>
+              </div>
             </div>
 
           </form>
@@ -192,13 +276,143 @@
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
   <script>
       const form = $("#enter-form");
-      const enterBtn = $("#enter-btn");
+      const startBtn = $("#start-btn");
 
       form.submit(() => {
-          console.log("called");
-          enterBtn.html("Loading ...");
-          enterBtn.prop("disabled", true);
-          return true;
+        startBtn.html("Loading ...");
+        startBtn.prop("disabled", true);
+        return true;
       });
+  </script>
+
+  <!-- Webcam check script -->
+  <script>
+      const cameraModal = $('#camera-modal');
+      
+      const viewModal = (btn) => {
+        cameraModal.modal("show");
+        startup();
+      };
+
+      const closeModal = (btn) => {
+        cameraModal.modal("hide");
+        stopCamera();
+      };
+      
+      const width = 320;
+      let height = 0;
+    
+      let streaming = false;
+    
+      let video = null;
+      let canvas = null;
+      let photo = null;
+
+      let pictureButton = null;
+      let clearPicture = null;
+
+      let setInterval_id;
+    
+      function stopCamera() {
+        video = document.getElementById("video");
+        const stream = video.srcObject;
+        const tracks = stream.getTracks();
+        tracks[0].stop();
+        clearInterval(setInterval_id);
+      }
+    
+      function startup() {
+        video = document.getElementById("video");
+        canvas = document.getElementById("canvas");
+        photo = document.getElementById("photo");
+        pictureButton = document.getElementById("picture-button");
+        clearPicture = document.getElementById("clear-picture");
+    
+        navigator.mediaDevices
+          .getUserMedia({ video: true, audio: false })
+          .then((stream) => {
+            video.srcObject = stream;
+            video.play();
+          })
+          .catch((err) => {
+            console.error(`An error occurred: ${err}`);
+          });
+    
+        video.addEventListener(
+          "canplay",
+          ($e) => {
+            if (!streaming) {
+              height = video.videoHeight / (video.videoWidth / width);
+    
+              if (isNaN(height)) {
+                height = width / (4 / 3);
+              }
+    
+              video.setAttribute("width", width);
+              video.setAttribute("height", height);
+              canvas.setAttribute("width", width);
+              canvas.setAttribute("height", height);
+              streaming = true;
+            }
+          },
+          false
+        );
+    
+        pictureButton.addEventListener(
+          "click",
+          ($e) => {
+            takePicture();
+            $e.preventDefault();
+          },
+          false
+        );
+
+        setInterval_id = setInterval(() => {
+          takePicture();
+        }, 5000); // every 5s
+
+        setTimeout(() => {
+          clearInterval(setInterval_id);
+          console.log("timeout")
+        }, 10000) // stop after 10s
+
+        clearPicture.addEventListener(
+          "click",
+          ($e) => {
+            clearPhoto();
+            $e.preventDefault();
+          },
+          false
+        );
+    
+        clearPhoto();
+      }
+    
+      function clearPhoto() {
+        const context = canvas.getContext("2d");
+        context.fillStyle = "#AAA";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+    
+        const data = canvas.toDataURL("image/png");
+        photo.setAttribute("src", data);
+      }
+    
+      function takePicture() {
+        const context = canvas.getContext("2d");
+        if (width && height) {
+          canvas.width = width;
+          canvas.height = height;
+          context.drawImage(video, 0, 0, width, height);
+    
+          const data = canvas.toDataURL("image/png");
+          photo.setAttribute("src", data);
+          console.log(`photo: `, photo);
+        }
+        else {
+          clearPhoto();
+        }
+      }
+
+      //window.addEventListener("load", startup, false);
   </script>
 {% endblock %}

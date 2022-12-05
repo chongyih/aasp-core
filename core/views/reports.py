@@ -18,10 +18,12 @@ from core.views.utils import check_permissions_assessment
 def assessment_report(request, assessment_id):
     assessment = get_object_or_404(Assessment, id=assessment_id)
 
-    best_attempts = AssessmentAttempt.objects.filter(assessment=assessment, best_attempt=True).order_by("-score")
-    ongoing_ungraded_attempts = AssessmentAttempt.objects.filter(
-        Q(assessment=assessment, time_submitted__isnull=True) | Q(assessment=assessment, time_submitted__isnull=False,
-                                                                  score__isnull=True))
+    best_attempts = AssessmentAttempt.objects \
+                    .select_related("assessment") \
+                    .filter(best_attempt=True).order_by("-score")
+    ongoing_ungraded_attempts = AssessmentAttempt.objects \
+                                .select_related("assessment") \
+                                .filter(Q(time_submitted__isnull=True) | Q(time_submitted__isnull=False, score__isnull=True))
 
     context = {
         "assessment": assessment,

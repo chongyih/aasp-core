@@ -26,6 +26,51 @@ class Migration(migrations.Migration):
             is_superuser=True,
         )
 
+    def create_users(apps, schema_editor):
+        Group = apps.get_model('auth', 'Group')
+        User = apps.get_model('core', 'User')
+
+        User.objects.create(
+            username="YRLOKE",
+            first_name="YUAN REN",
+            last_name="LOKE",
+            email='YRLOKE@NTU.EDU.SG',
+            password=make_password('password123'),
+            is_staff=False,
+            is_superuser=False,
+        )
+        User.objects.create(
+            username="JLEE254",
+            first_name="JUN WEI",
+            last_name="LEE",
+            email='JLEE254@E.NTU.EDU.SG',
+            password=make_password('password123'),
+            is_staff=False,
+            is_superuser=False,
+        )
+        User.objects.create(
+            username="LIM287",
+            first_name="JASMINE",
+            last_name="LIM",
+            email='LIM287@NTU.EDU.SG',
+            password=make_password('password123'),
+            is_staff=False,
+            is_superuser=False,
+        )
+        User.objects.create(
+            username="WLIU020",
+            first_name="WING LAM",
+            last_name="LIU",
+            email='WLIU020@E.NTU.EDU.SG',
+            password=make_password('password123'),
+            is_staff=False,
+            is_superuser=False,
+        )
+        Group.objects.get(name="educator").user_set.add(User.objects.get(username='YRLOKE'))
+        Group.objects.get(name="student").user_set.add(User.objects.get(username='JLEE254'))
+        Group.objects.get(name="student").user_set.add(User.objects.get(username='WLIU020'))
+        Group.objects.get(name="lab_assistant").user_set.add(User.objects.get(username='LIM287'))
+
     # default languages and corresponding code templates
     def create_languages(apps, schema_editor):
         Language = apps.get_model('core', 'Language')
@@ -53,5 +98,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(create_groups),
         migrations.RunPython(create_admin),
+        migrations.RunPython(create_users),
         migrations.RunPython(create_languages),
     ]

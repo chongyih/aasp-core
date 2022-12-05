@@ -1,6 +1,7 @@
 # Automatic Assessment Platform (AASP)
+This repository is forked from the initial version and is developed as part of my Final Year Project in Nanyang Technological University, Singapore.
 
-This project was developed as part of my Final Year Project in Nanyang Technological University, Singapore.
+This project includes enhancements - Test Proctoring features, and bug fixes.
 
 ## About
 
@@ -14,13 +15,13 @@ uses [Judge0](https://github.com/judge0/judge0) for code compilation and executi
 
 ### Local Development
 
-1. Clone the repository, check out the branch.
+1. Clone the repository, check out the `master` branch.
    ```bash
    # via http
-   git clone https://github.com/leejunweisg/aasp
+   git clone https://github.com/winglam209/aasp
    
    # or via ssh (you need to add your ssh publickey to your github account)
-   git clone git@github.com:leejunweisg/aasp.git
+   git clone git@github.com:winglam209/aasp.git
    ```
 
 2. Make a copy of the `.env_dev` example file and save it as `.env`.
@@ -59,13 +60,13 @@ uses [Judge0](https://github.com/judge0/judge0) for code compilation and executi
 
 #### Initial Deployment
 
-1. Clone the repository, check out the branch.
+1. Clone the repository, check out the `master` branch.
    ```bash
    # via http
-   git clone https://github.com/leejunweisg/aasp
+   git clone https://github.com/winglam209/aasp
    
    # or via ssh (you need to add your ssh publickey to your github account)
-   git clone git@github.com:leejunweisg/aasp.git
+   git clone git@github.com:winglam209/aasp.git
    ```
 
 2. Make a copy of the `.env_prod` example file and save it as `.env`.
@@ -100,6 +101,7 @@ Note: If changes were made to the database schema, make sure to commit the migra
 | Contributor                                             | Period         | Links                                                                                                                                                                                                     |
 |---------------------------------------------------------|----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [Lee Jun Wei](https://www.linkedin.com/in/leejunweisg/) | Jan - Dec 2022 | [Report](./documents/leejunwei/SCSE21-0804_report.pdf) [Slides](./documents/leejunwei/final-presentation-slides.pdf) [Poster](./documents/leejunwei/fyp-poster.pdf) [Video](https://youtu.be/T0sULC8Wh7k) |
+| [Liu Wing Lam](https://www.linkedin.com/in/liuwinglam) | Aug 2022 - May 2023 | 
 
 ### Others
 

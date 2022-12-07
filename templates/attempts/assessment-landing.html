@@ -225,14 +225,12 @@
             <div class="input-group">
               {% csrf_token %}
               {% if incomplete_attempt %}
-                <button 
-                  type="button" id="enter-btn" class="btn btn-lg btn-warning" href="#" onClick="viewModal(this)">Resume</button>
+                <button type="button" id="enter-btn" class="btn btn-lg btn-warning" href="#" onClick="viewModal(this)">Resume</button>
               {% elif not no_more_attempts %}
                 {% if assessment.pin %}
                   <input type="text" class="form-control" name="pin" id="id_pin" placeholder="PIN Required"/>
                 {% endif %}
-                  <button 
-                    type="button" id="enter-btn" class="btn btn-lg btn-success"href="#" onClick="viewModal(this)">Next</button>
+                  <button type="button" id="enter-btn" class="btn btn-lg btn-success" href="#" onClick="viewModal(this)">Next</button>
               {% endif %}
             </div>
 
@@ -285,6 +283,8 @@
       });
   </script>
 
+  <!-- momentjs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
   <!-- Webcam check script -->
   <script>
       const cameraModal = $('#camera-modal');
@@ -298,6 +298,7 @@
         cameraModal.modal("hide");
         stopCamera();
       };
+      cameraModal.on("hidden.bs.modal", () => { stopCamera(); });
       
       const width = 320;
       let height = 0;
@@ -367,7 +368,7 @@
           false
         );
 
-        setInterval_id = setInterval(() => {
+       setInterval_id = setInterval(() => {
           takePicture();
         }, 5000); // every 5s
 
@@ -398,6 +399,8 @@
       }
     
       function takePicture() {
+        const current = moment().format("DDMMYYYY_HHmmss");
+
         const context = canvas.getContext("2d");
         if (width && height) {
           canvas.width = width;
@@ -406,11 +409,36 @@
     
           const data = canvas.toDataURL("image/png");
           photo.setAttribute("src", data);
-          console.log(`photo: `, photo);
+
+          let file = null;
+          let blob = canvas.toBlob(
+            (blob) => {
+              file = new File([blob], `${current}.png`, { type: 'image/png' });
+              uploadImage(current, file) // ajax request to save image
+            },
+            'image/png');
         }
         else {
           clearPhoto();
         }
+      }
+
+      function uploadImage(current, file) {
+        let formData = new FormData();
+        formData.append("course", "{{ assessment.course }}");
+        formData.append("test_name", "{{ assessment.name }}");
+        formData.append("timestamp", current);
+        formData.append("image", file);
+        formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+        $.ajax({
+          type: 'POST',
+          url: "{% url 'upload-snapshot' %}",
+          enctype: 'multipart/form-data',
+          data: formData,
+          processData: false,
+          contentType: false,
+        });
       }
 
       //window.addEventListener("load", startup, false);

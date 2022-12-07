@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
 from core.models import User, Course, CourseGroup, QuestionBank, CodeQuestion, Assessment, TestCase, Language, CodeSnippet, CodeTemplate, Tag, \
-    AssessmentAttempt, CodeQuestionAttempt, CodeQuestionSubmission, TestCaseAttempt
+    AssessmentAttempt, CodeQuestionAttempt, CodeQuestionSubmission, TestCaseAttempt, UploadFile
 
 
 class CustomUserAdmin(UserAdmin):
@@ -57,6 +57,8 @@ class CodeQuestionSubmissionAdmin(admin.ModelAdmin):
 class TestCaseAttemptAdmin(admin.ModelAdmin):
     list_display = ('id', 'cq_submission', 'test_case', 'token', 'status')
 
+class UploadFileAdmin(admin.ModelAdmin):
+    list_display = ('id', 'username', 'course', 'test_name', 'timestamp', 'image')
 
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Course, CourseAdmin)
@@ -73,3 +75,4 @@ admin.site.register(AssessmentAttempt, AssessmentAttemptAdmin)
 admin.site.register(CodeQuestionAttempt, CodeQuestionAttemptAdmin)
 admin.site.register(CodeQuestionSubmission, CodeQuestionSubmissionAdmin)
 admin.site.register(TestCaseAttempt, TestCaseAttemptAdmin)
+admin.site.register(UploadFile, UploadFileAdmin)

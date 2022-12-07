@@ -14,9 +14,32 @@ from core.decorators import groups_allowed, UserGroup
 from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet, \
     CodeQuestionSubmission, \
     TestCaseAttempt, Language
+from core.forms.upload_form import UploadFileForm
 from core.tasks import update_test_case_attempt_status, update_cqs_passed_flag, force_submit_assessment, \
     compute_assessment_attempt_score
 from core.views.utils import get_assessment_attempt_question, check_permissions_course, user_enrolled_in_course
+
+
+@login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant, UserGroup.student)
+def upload_snapshot(request):
+    error_context = {"result": "error", }
+
+    if request.method == "POST":
+        form = UploadFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            upload_file = form.save(commit=False)
+            upload_file.course = upload_file.course.replace(' ', '_')
+            upload_file.course = upload_file.course.replace('/', '-')
+            upload_file.test_name = upload_file.test_name.replace(' ', '_')
+            upload_file.username = request.user
+
+            upload_file.save()
+
+            context = {"result": "success"}
+            return JsonResponse(context, status=200)
+    
+    return JsonResponse(error_context, status=400)
 
 
 @login_required()

@@ -58,6 +58,7 @@ urlpatterns = [
 
     # taking assessments (attempts)
     path('assessment/landing/<int:assessment_id>/', attempts.assessment_landing, name='assessment-landing'),
+    path('api/upload-snapshot/', attempts.upload_snapshot, name='upload-snapshot'), #ajax
     path('assessment/enter/<int:assessment_id>/', attempts.enter_assessment, name='enter-assessment'),
     path('attempt/<int:assessment_attempt_id>/question/<int:question_index>/', attempts.attempt_question, name='attempt-question'),
     path('assessment/submit/<int:assessment_attempt_id>/', attempts.submit_assessment, name='submit-assessment'),

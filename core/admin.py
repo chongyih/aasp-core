@@ -58,7 +58,7 @@ class TestCaseAttemptAdmin(admin.ModelAdmin):
     list_display = ('id', 'cq_submission', 'test_case', 'token', 'status')
 
 class UploadFileAdmin(admin.ModelAdmin):
-    list_display = ('id', 'username', 'course', 'test_name', 'timestamp', 'image')
+    list_display = ('id', 'candidate', 'course', 'test_name', 'timestamp', 'image')
 
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Course, CourseAdmin)

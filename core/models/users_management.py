@@ -79,7 +79,7 @@ class Course(models.Model):
 
     @property
     def short_name(self):
-        return f"{self.code} (AY{str(self.year)[2:]}/{str(self.year + 1)[2:]} S{self.get_semester_display()})"
+        return f"{self.code} (AY{str(self.year)[2:]}/{str(self.year + 1)[2:]} S{self.semester})"
 
     def clean(self):
         super().clean()

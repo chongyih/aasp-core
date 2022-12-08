@@ -305,13 +305,11 @@
     let video = document.getElementById("video");
     let canvas = document.getElementById("canvas");
     let photo = document.getElementById("photo");
-    //let setInterval_id;
 
     function stopCamera() {
       const stream = video.srcObject;
       const tracks = stream.getTracks();
       tracks[0].stop();
-      clearInterval(setInterval_id);
     }
   
     function startup() {

@@ -9,37 +9,39 @@ from django.db import transaction
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.renderers import JSONRenderer
 
 from core.decorators import groups_allowed, UserGroup
 from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet, \
-    CodeQuestionSubmission, \
-    TestCaseAttempt, Language
-from core.forms.upload_form import UploadFileForm
-from core.tasks import update_test_case_attempt_status, update_cqs_passed_flag, force_submit_assessment, \
-    compute_assessment_attempt_score
+    CodeQuestionSubmission, TestCaseAttempt, Language
+from core.forms.assessments import CandidateSnapshotForm
+from core.tasks import update_test_case_attempt_status, force_submit_assessment, compute_assessment_attempt_score
 from core.views.utils import get_assessment_attempt_question, check_permissions_course, user_enrolled_in_course
 
 
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.lab_assistant, UserGroup.student)
 def upload_snapshot(request):
-    error_context = {"result": "error", }
+    content = {"error": ""}
 
     if request.method == "POST":
-        form = UploadFileForm(request.POST, request.FILES)
+        form = CandidateSnapshotForm(request.POST, request.FILES)
         if form.is_valid():
-            upload_file = form.save(commit=False)
-            upload_file.course = upload_file.course.replace(' ', '_')
-            upload_file.course = upload_file.course.replace('/', '-')
-            upload_file.test_name = upload_file.test_name.replace(' ', '_')
-            upload_file.username = request.user
+            snapshot = form.save(commit=False)
+            snapshot.candidate = request.user
 
-            upload_file.save()
+            snapshot.save()
 
-            context = {"result": "success"}
-            return JsonResponse(context, status=200)
+            return Response(status=status.HTTP_200_OK)
+        else:
+            content["error"] = form.errors
     
-    return JsonResponse(error_context, status=400)
+    return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
 
 @login_required()

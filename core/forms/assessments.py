@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.forms import models
 from django import forms
-from core.models import Assessment
+from core.models import Assessment, CandidateSnapshot
 
 
 class AssessmentForm(models.ModelForm):
@@ -22,3 +22,9 @@ class AssessmentForm(models.ModelForm):
         if cleaned_data['time_start'] and cleaned_data['time_end']:
             if cleaned_data['time_start'] > cleaned_data['time_end']:
                 raise forms.ValidationError("Start data/time must be before end date/time.")
+
+
+class CandidateSnapshotForm(models.ModelForm):
+    class Meta:
+        model = CandidateSnapshot
+        fields = ['course', 'test_name', 'timestamp', 'image']

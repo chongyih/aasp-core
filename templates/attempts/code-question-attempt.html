@@ -742,21 +742,125 @@
         const endTime = moment(startTime).add({{ assessment_attempt.assessment.duration }}, 'minutes');
 
         console.log("Time started: " + startTime.format("DD/MM/YYYY HH:mm:ss"));
-        console.log("End time: " + endTime.format("DD/MM/YYYY HH:mm:ss"));
+        console.log("End time: " + endTime.format("DD/MM/YYYY HH:mm:ss"));        
+
+        const randomMinutes = (min, max) => { 
+          min = Math.ceil(min);
+          max = Math.floor(max);
+          return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        const snapshotTimer = setInterval(
+          () => { captureSnapshot(); },
+          randomMinutes(5, 10) * 60000); // randomise time between 5 and 10 min
 
         const timer = setInterval(() => {
             const now = moment();
             const remaining = moment.duration(endTime.diff(now));
             const formatted = remaining.format('DD:HH:mm:ss');
             $("#countdown-timer").html(formatted);
-
+            
             // check if time ended
             if (now >= endTime) {
                 console.log("Time end reached, assessment ended.");
                 clearInterval(timer);
+                clearInterval(snapshotTimer);
+                stopCamera();
                 submitAssessment(false);
             }
         }, 1000);
     </script>
-  {% endif %}
+    {% endif %}
+
+  <!-- Capture and upload candidate snapshot -->
+  <script>
+    const captureSnapshot = () => {
+      const current = moment().format("DDMMYYYY_HHmmss");
+
+      const context = canvas.getContext("2d");
+      if (width && height) {
+        canvas.width = width;
+        canvas.height = height;
+        context.drawImage(video, 0, 0, width, height);
+  
+        const data = canvas.toDataURL("image/png");
+
+        let file = null;
+        let blob = canvas.toBlob(
+          (blob) => {
+            file = new File([blob], `${current}.png`, { type: 'image/png' });
+            uploadImage(current, file);
+          },
+          'image/png');
+      }
+    }
+
+    // ajax request to save image
+    function uploadImage(current, file) {
+      let formData = new FormData();
+      formData.append("course", "{{ assessment_attempt.assessment.course.short_name }}");
+      formData.append("test_name", "{{ assessment_attempt.assessment.name }}");
+      formData.append("timestamp", current);
+      formData.append("image", file);
+      formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+      $.ajax({
+        type: 'POST',
+        url: "{% url 'upload-snapshot' %}",
+        enctype: 'multipart/form-data',
+        data: formData,
+        processData: false,
+        contentType: false,
+      });
+    }
+  </script>
+
+  <video hidden id="video"></video>
+  <canvas hidden id="canvas"></canvas>
+  <!-- Webcam script -->
+  <script>
+    const width = 320; let height = 0;
+    let streaming = false;
+    let video = document.getElementById("video");
+    let canvas = document.getElementById("canvas");
+
+    window.addEventListener("load", startup, false);
+
+    function stopCamera() {
+      const stream = video.srcObject;
+      const tracks = stream.getTracks();
+      tracks[0].stop();
+    }
+  
+    function startup() {
+      navigator.mediaDevices
+        .getUserMedia({ video: true, audio: false })
+        .then((stream) => {
+          video.srcObject = stream;
+          video.play();
+        })
+        .catch((err) => {
+          console.error(`An error occurred: ${err}`);
+        });
+  
+      video.addEventListener(
+        "canplay",
+        ($e) => {
+          if (!streaming) {
+            height = video.videoHeight / (video.videoWidth / width);
+  
+            if (isNaN(height)) {
+              height = width / (4 / 3);
+            }
+  
+            video.setAttribute("width", width);
+            video.setAttribute("height", height);
+            canvas.setAttribute("width", width);
+            canvas.setAttribute("height", height);
+            streaming = true;
+          }
+        },
+        false
+      );
+    }
+  </script>
 {% endblock %}

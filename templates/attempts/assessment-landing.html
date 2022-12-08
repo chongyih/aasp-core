@@ -5,57 +5,35 @@
 
 {% block styles %}
   <style>
+      .modal-dialog {
+        max-width: 80%;
+      }
+
+      #camera, #output {
+        {% comment %} border: 1px solid red; {% endcomment %}
+      }
+
       #video {
         border: 1px solid black;
-        box-shadow: 2px 2px 3px black;
         width: 320px;
         height: 240px;
-      }
-      
-      #photo {
-        border: 1px solid black;
-        box-shadow: 2px 2px 3px black;
-        width: 320px;
-        height: 240px;
-      }
-      
-      #canvas {
-        display: none;
-      }
-    
-      .camera {
-        width: 340px;
-        display: inline-block;
-        float: left;
-      }
-      
-      .output {
-        width: 340px;
-        display: inline-block;
-        vertical-align: top;
-      }
-      
-      #picture-btn, #clear-btn{
         display: block;
-        position: relative;
+        margin: auto;
+      }
+
+      #canvas {
+        border: 1px solid black;
+        width: 320px;
+        height: 240px;
+        display: block;
+        margin: auto;
+      }
+      
+      #picture-btn, #clear-btn {
+        display: block;
+        margin-top: 5%;
         margin-left: auto;
-        margin-right: auto;
-        bottom: 32px;
-        border: 1px solid rgba(255, 255, 255, 0.7);
-        box-shadow: 0px 0px 1px 2px rgba(0, 0, 0, 0.2);
-        font-size: 14px;
-        font-family: "Lucida Grande", "Arial", sans-serif;
-      }
-
-      #picture-btn {
-        background-color: rgba(0, 150, 0, 0.5);
-        color: rgba(255, 255, 255, 1);
-      }
-
-      .contentarea {
-        font-size: 16px;
-        font-family: "Lucida Grande", "Arial", sans-serif;
-        width: 760px;
+        margin-right: auto
       }
   </style>
 {% endblock %}
@@ -116,7 +94,7 @@
     <div class="col-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <h4 class="card-title ">Assessment Information</h4>
+          <h4 class="card-title">Assessment Information</h4>
         </div>
 
         <div class="card-body">
@@ -225,39 +203,42 @@
             <div class="input-group">
               {% csrf_token %}
               {% if incomplete_attempt %}
-                <button type="button" id="enter-btn" class="btn btn-lg btn-warning" href="#" onClick="viewModal(this)">Resume</button>
+                <button type="submit" id="enter-btn" class="btn btn-lg btn-warning" href="#">Resume</button>
               {% elif not no_more_attempts %}
                 {% if assessment.pin %}
                   <input type="text" class="form-control" name="pin" id="id_pin" placeholder="PIN Required"/>
                 {% endif %}
-                  <button type="button" id="enter-btn" class="btn btn-lg btn-success" href="#" onClick="viewModal(this)">Next</button>
+                  <button type="button" id="next-btn" class="btn btn-lg btn-success" href="#" onClick="viewModal(this)">Next</button>
               {% endif %}
             </div>
 
             <!-- Modal -->
-            <div class="modal fade" id="camera-modal" tabindex="-1">
+            <div class="modal fade" id="camera-modal">
               <div class="modal-dialog">
                 <div class="modal-content">
                   <div class="modal-header">
-                    <h5 class="modal-title" id="camera-model-label">Candidate Webcam Check</h5>
-                    <button type="button" class="btn-close" onClick="closeModal(this)" />
+                    <h5 class="card-title" id="camera-model-label">Candidate Identification</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" />
                   </div>
                   <div class="modal-body">
-                    <div>Please position your face so it fills most of the window below.</div>
-                    <div>Look into the camera and click "Take Picture".</div>
-                    <div class="camera">
-                      <video id="video">Video stream not available.</video>
-                      <button type="button" id="picture-btn" onClick="takePicture(this)">Take Picture</button>
-                    </div>
-                    <canvas id="canvas"></canvas>
-                    <div class="output">
-                      <img id="photo" />
-                      <button type="button" id="clear-btn" onClick="clearPhoto(this)">Clear</button>
+                    <div class="text-start">Please position your face so it fills most of the window below.</div>
+                    <div class="text-start">Hold your matriculation card beside your face.</div>
+                    <div class="text-start">Look into the camera and click "Take Picture".</div>
+                    <br>
+                    <div class="row">
+                      <div class="col" id="camera">
+                        <video id="video">Video stream not available.</video>
+                        <button type="button" id="picture-btn" class="btn btn-sm btn-primary" onClick="takePicture(this)">Take Picture</button>
+                      </div>
+                      <div class="col" id="output">
+                        <canvas id="canvas"></canvas>
+                        <button type="button" id="clear-btn" class="btn btn-sm btn-outline-secondary" onClick="clearPhoto(this)">Clear</button>
+                      </div>
                     </div>
                   </div>
                   <div class="modal-footer">
-                    <button type="button" class="btn btn-lg" onClick="closeModal(this)">Close</button>
-                    <button type="submit" id="start-btn" class="btn btn-lg btn-success">Start</button>
+                    <button type="button" class="btn btn-lg btn-link" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" id="enter-btn" class="btn btn-lg btn-success">Start</button>
                   </div>
                 </div>
               </div>
@@ -274,28 +255,75 @@
 {% block js %}
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
   <!-- momentjs -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>  <script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+  <script>
       const form = $("#enter-form");
-      const startBtn = $("#start-btn");
+      const enterBtn = $("#enter-btn");
       const cameraModal = $('#camera-modal');
 
       form.submit(() => {
-        startBtn.html("Loading ...");
-        startBtn.prop("disabled", true);
+        enterBtn.html("Loading ...");
+        enterBtn.prop("disabled", true);
         return true;
       });
       
       const viewModal = (btn) => {
         cameraModal.modal("show");
-        startBtn.prop("disabled", true);
+        enterBtn.prop("disabled", true);
         startup();
       };
 
-      const closeModal = (btn) => {
-        cameraModal.modal("hide");
-        stopCamera();
-      };
       cameraModal.on("hidden.bs.modal", () => { stopCamera(); });
+  </script>
+
+  <!-- Capture and upload candidate snapshot -->
+  <script>
+    const clearPhoto = (btn) => {
+      const context = canvas.getContext("2d");
+      context.fillStyle = "#AAA";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    const takePicture = (btn) => {
+      const current = moment().format("DDMMYYYY_HHmmss");
+
+      const context = canvas.getContext("2d");
+      if (width && height) {
+        canvas.width = width;
+        canvas.height = height;
+        context.drawImage(video, 0, 0, width, height);
+  
+        let file = null;
+        let blob = canvas.toBlob(
+          (blob) => {
+            file = new File([blob], 'initial.png', { type: 'image/png' });
+            uploadImage(current, file);
+          },
+          'image/png');
+      }
+
+      // only enable enter button after candidate takes an initial snapshot
+      enterBtn.prop("disabled", false);
+    }
+
+    // ajax request to save image
+    function uploadImage(current, file) {
+      let formData = new FormData();
+      formData.append("course", "{{ assessment.course.short_name }}");
+      formData.append("test_name", "{{ assessment.name }}");
+      formData.append("timestamp", current);
+      formData.append("image", file);
+      formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+      $.ajax({
+        type: 'POST',
+        url: "{% url 'upload-snapshot' %}",
+        enctype: 'multipart/form-data',
+        data: formData,
+        processData: false,
+        contentType: false,
+      });
+    }
   </script>
 
   <!-- Webcam script -->
@@ -304,7 +332,6 @@
     let streaming = false;
     let video = document.getElementById("video");
     let canvas = document.getElementById("canvas");
-    let photo = document.getElementById("photo");
 
     function stopCamera() {
       const stream = video.srcObject;
@@ -342,60 +369,6 @@
         },
         false
       );
-    }
-
-    // Capture and upload candidate snapshot
-    const clearPhoto = (btn) => {
-      const context = canvas.getContext("2d");
-      context.fillStyle = "#AAA";
-      context.fillRect(0, 0, canvas.width, canvas.height);
-  
-      const data = canvas.toDataURL("image/png");
-      photo.setAttribute("src", data);
-    }
-
-    const takePicture = (btn) => {
-      const current = moment().format("DDMMYYYY_HHmmss");
-
-      const context = canvas.getContext("2d");
-      if (width && height) {
-        canvas.width = width;
-        canvas.height = height;
-        context.drawImage(video, 0, 0, width, height);
-  
-        const data = canvas.toDataURL("image/png");
-        photo.setAttribute("src", data);
-
-        let file = null;
-        let blob = canvas.toBlob(
-          (blob) => {
-            file = new File([blob], 'initial.png', { type: 'image/png' });
-            uploadImage(current, file);
-          },
-          'image/png');
-      }
-
-      // only enable start button after candidate takes an initial snapshot
-      startBtn.prop("disabled", false);
-    }
-
-    // ajax request to save image
-    function uploadImage(current, file) {
-      let formData = new FormData();
-      formData.append("course", "{{ assessment.course.short_name }}");
-      formData.append("test_name", "{{ assessment.name }}");
-      formData.append("timestamp", current);
-      formData.append("image", file);
-      formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
-
-      $.ajax({
-        type: 'POST',
-        url: "{% url 'upload-snapshot' %}",
-        enctype: 'multipart/form-data',
-        data: formData,
-        processData: false,
-        contentType: false,
-      });
     }
   </script>
 {% endblock %}

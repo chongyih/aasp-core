@@ -635,7 +635,7 @@
                   showError("Internal API Error &#x274C;");
               }
           }).fail((res) => {
-
+          
           })
       };
 
@@ -735,99 +735,16 @@
       }
   </script>
 
-  {% if assessment_attempt.assessment.duration != 0 %}
-    <!-- Timer script -->
-    <script>
-        const startTime = moment.unix({{ assessment_attempt.time_started|date:"U" }});
-        const endTime = moment(startTime).add({{ assessment_attempt.assessment.duration }}, 'minutes');
-
-        console.log("Time started: " + startTime.format("DD/MM/YYYY HH:mm:ss"));
-        console.log("End time: " + endTime.format("DD/MM/YYYY HH:mm:ss"));        
-
-        const randomMinutes = (min, max) => { 
-          min = Math.ceil(min);
-          max = Math.floor(max);
-          return Math.floor(Math.random() * (max - min + 1)) + min;
-        }
-        const snapshotTimer = setInterval(
-          () => { captureSnapshot(); },
-          randomMinutes(5, 10) * 60000); // randomise time between 5 and 10 min
-
-        const timer = setInterval(() => {
-            const now = moment();
-            const remaining = moment.duration(endTime.diff(now));
-            const formatted = remaining.format('DD:HH:mm:ss');
-            $("#countdown-timer").html(formatted);
-            
-            // check if time ended
-            if (now >= endTime) {
-                console.log("Time end reached, assessment ended.");
-                clearInterval(timer);
-                clearInterval(snapshotTimer);
-                stopCamera();
-                submitAssessment(false);
-            }
-        }, 1000);
-    </script>
-    {% endif %}
-
-  <!-- Capture and upload candidate snapshot -->
-  <script>
-    const captureSnapshot = () => {
-      const current = moment().format("DDMMYYYY_HHmmss");
-
-      const context = canvas.getContext("2d");
-      if (width && height) {
-        canvas.width = width;
-        canvas.height = height;
-        context.drawImage(video, 0, 0, width, height);
-  
-        const data = canvas.toDataURL("image/png");
-
-        let file = null;
-        let blob = canvas.toBlob(
-          (blob) => {
-            file = new File([blob], `${current}.png`, { type: 'image/png' });
-            uploadImage(current, file);
-          },
-          'image/png');
-      }
-    }
-
-    // ajax request to save image
-    function uploadImage(current, file) {
-      let formData = new FormData();
-      formData.append("course", "{{ assessment_attempt.assessment.course.short_name }}");
-      formData.append("test_name", "{{ assessment_attempt.assessment.name }}");
-      formData.append("timestamp", current);
-      formData.append("image", file);
-      formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
-
-      $.ajax({
-        type: 'POST',
-        url: "{% url 'upload-snapshot' %}",
-        enctype: 'multipart/form-data',
-        data: formData,
-        processData: false,
-        contentType: false,
-      }).done((response) => {
-        console.log("Snapshot uploaded.");
-      }).fail((response)) => {
-        console.log(`An error occurred while uploading! ${response.error}`)
-      };
-    }
-  </script>
-
+  <!-- Webcam script -->
   <video hidden id="video"></video>
   <canvas hidden id="canvas"></canvas>
-  <!-- Webcam script -->
   <script>
     const width = 320; let height = 0;
     let streaming = false;
     let video = document.getElementById("video");
     let canvas = document.getElementById("canvas");
 
-    window.addEventListener("load", startup, false);
+    {% comment %} window.addEventListener("load", startup, false); {% endcomment %}
 
     function stopCamera() {
       const stream = video.srcObject;
@@ -867,4 +784,94 @@
       );
     }
   </script>
+
+  <!-- Capture and upload candidate snapshot -->
+  <script>
+    function randomMinutes(min, max) {
+      min = Math.ceil(min * 10);
+      max = Math.floor(max * 10);
+      return  Math.floor(Math.random() * (max - min) + 10) / 10;
+    }
+
+    function captureSnapshot() {
+      // randomise time between 10% and 20% of assessment duration
+      const min = {{ assessment_attempt.assessment.duration }} * 0.1;
+      const max = {{ assessment_attempt.assessment.duration }} * 0.2;
+      let minutes = randomMinutes(min, max);
+      console.log(`${minutes}min next`)
+      snapshotTimer = setTimeout(captureSnapshot, minutes*60000);
+
+      const current = moment();
+      const context = canvas.getContext("2d");
+      if (width && height) {
+        canvas.width = width;
+        canvas.height = height;
+        context.drawImage(video, 0, 0, width, height);
+        
+        let file = null;
+        let filename = current.format("DDMMYYYY_HHmmss");
+        let timestamp = current.format("DD/MM/YYYY HH:mm:ss");
+        let blob = canvas.toBlob(
+          (blob) => {
+            file = new File([blob], `${filename}.png`, { type: 'image/png' });
+            uploadImage(timestamp, file);
+          },
+          'image/png');
+      }
+    }
+
+    // ajax request to save image
+    function uploadImage(timestamp, file) {
+      let formData = new FormData();
+      formData.append("course", "{{ assessment_attempt.assessment.course.short_name }}");
+      formData.append("test_name", "{{ assessment_attempt.assessment.name }}");
+      formData.append("attempt_number", "{{ assessment_attempt.total_attempts }}");
+      formData.append("timestamp", timestamp);
+      formData.append("image", file);
+      formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+      $.ajax({
+        type: 'POST',
+        url: "{% url 'upload-snapshot' %}",
+        enctype: 'multipart/form-data',
+        data: formData,
+        processData: false,
+        contentType: false,
+      }).done((response) => {
+        console.log("Snapshot uploaded.");
+      }).fail((response) => {
+        console.log(`An error occurred while uploading! ${response.error}`)
+      });
+    }
+  </script>
+
+  {% if assessment_attempt.assessment.duration != 0 %}
+    <!-- Timer script -->
+    <script>
+        const startTime = moment.unix({{ assessment_attempt.time_started|date:"U" }});
+        const endTime = moment(startTime).add({{ assessment_attempt.assessment.duration }}, 'minutes');
+
+        console.log("Time started: " + startTime.format("DD/MM/YYYY HH:mm:ss"));
+        console.log("End time: " + endTime.format("DD/MM/YYYY HH:mm:ss"));        
+        
+        startup();
+        let snapshotTimer;
+        captureSnapshot();
+        const timer = setInterval(() => {
+            const now = moment();
+            const remaining = moment.duration(endTime.diff(now));
+            const formatted = remaining.format('DD:HH:mm:ss');
+            $("#countdown-timer").html(formatted);
+            
+            // check if time ended
+            if (now >= endTime) {
+                console.log("Time end reached, assessment ended.");
+                clearInterval(timer);
+                clearInterval(snapshotTimer);
+                //stopCamera();
+                submitAssessment(false);
+            }
+        }, 1000);
+    </script>
+  {% endif %}
 {% endblock %}

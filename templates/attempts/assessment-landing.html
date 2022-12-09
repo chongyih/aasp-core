@@ -285,7 +285,7 @@
     }
 
     const takePicture = (btn) => {
-      const current = moment().format("DDMMYYYY_HHmmss");
+      const timestamp = moment().format("DD/MM/YYYY HH:mm:ss");
 
       const context = canvas.getContext("2d");
       if (width && height) {
@@ -297,7 +297,7 @@
         let blob = canvas.toBlob(
           (blob) => {
             file = new File([blob], 'initial.png', { type: 'image/png' });
-            uploadImage(current, file);
+            uploadImage(timestamp, file);
           },
           'image/png');
       }
@@ -307,11 +307,13 @@
     }
 
     // ajax request to save image
-    function uploadImage(current, file) {
+    function uploadImage(timestamp, file) {
+      let attempt_number = {{ attempt_count }} + 1
       let formData = new FormData();
       formData.append("course", "{{ assessment.course.short_name }}");
       formData.append("test_name", "{{ assessment.name }}");
-      formData.append("timestamp", current);
+      formData.append("attempt_number", attempt_number);
+      formData.append("timestamp", timestamp);
       formData.append("image", file);
       formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
 

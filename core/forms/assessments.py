@@ -27,4 +27,4 @@ class AssessmentForm(models.ModelForm):
 class CandidateSnapshotForm(models.ModelForm):
     class Meta:
         model = CandidateSnapshot
-        fields = ['course', 'test_name', 'timestamp', 'image']
+        fields = ['course', 'test_name', 'attempt_number', 'timestamp', 'image']

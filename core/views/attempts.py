@@ -27,6 +27,11 @@ from core.views.utils import get_assessment_attempt_question, check_permissions_
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.lab_assistant, UserGroup.student)
 def upload_snapshot(request):
+    """
+    Saves snapshot of candidate to MEDIA_ROOT/<course>/<test_name>/<username>/<filename>.
+    Endpoint called by assessment-landing and code-question-attempt pages.
+    """
+    
     content = {"error": ""}
 
     if request.method == "POST":

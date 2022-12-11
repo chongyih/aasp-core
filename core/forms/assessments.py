@@ -22,9 +22,3 @@ class AssessmentForm(models.ModelForm):
         if cleaned_data['time_start'] and cleaned_data['time_end']:
             if cleaned_data['time_start'] > cleaned_data['time_end']:
                 raise forms.ValidationError("Start data/time must be before end date/time.")
-
-
-class CandidateSnapshotForm(models.ModelForm):
-    class Meta:
-        model = CandidateSnapshot
-        fields = ['course', 'test_name', 'attempt_number', 'timestamp', 'image']

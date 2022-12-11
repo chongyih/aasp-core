@@ -744,8 +744,6 @@
     let video = document.getElementById("video");
     let canvas = document.getElementById("canvas");
 
-    {% comment %} window.addEventListener("load", startup, false); {% endcomment %}
-
     function stopCamera() {
       const stream = video.srcObject;
       const tracks = stream.getTracks();
@@ -810,7 +808,7 @@
         
         let file = null;
         let filename = current.format("DDMMYYYY_HHmmss");
-        let timestamp = current.format("DD/MM/YYYY HH:mm:ss");
+        let timestamp = current.format("YYYY-MM-DD HH:mm:ss");
         let blob = canvas.toBlob(
           (blob) => {
             file = new File([blob], `${filename}.png`, { type: 'image/png' });
@@ -823,8 +821,6 @@
     // ajax request to save image
     function uploadImage(timestamp, file) {
       let formData = new FormData();
-      formData.append("course", "{{ assessment_attempt.assessment.course.short_name }}");
-      formData.append("test_name", "{{ assessment_attempt.assessment.name }}");
       formData.append("attempt_number", "{{ assessment_attempt.total_attempts }}");
       formData.append("timestamp", timestamp);
       formData.append("image", file);
@@ -832,7 +828,7 @@
 
       $.ajax({
         type: 'POST',
-        url: "{% url 'upload-snapshot' %}",
+        url: "{% url 'upload-snapshot' assessment_attempt_id=assessment_attempt.id %}",
         enctype: 'multipart/form-data',
         data: formData,
         processData: false,
@@ -868,7 +864,6 @@
                 console.log("Time end reached, assessment ended.");
                 clearInterval(timer);
                 clearInterval(snapshotTimer);
-                //stopCamera();
                 submitAssessment(false);
             }
         }, 1000);

@@ -142,3 +142,22 @@ class TestCaseAttempt(models.Model):
     stdout = models.TextField(blank=True, null=True)
     time = models.FloatField(blank=True, null=True)
     memory = models.FloatField(blank=True, null=True)
+
+
+def snapshots_directory_path(instance, filename):
+    assessment = instance.assessment_attempt.assessment
+    course = assessment.course.short_name.replace(' ', '_').replace('/', '-')
+    test_name = assessment.name.replace(' ', '_')
+    username = instance.candidate.username
+    attempt_number = instance.attempt_number
+
+    # file will be uploaded to MEDIA_ROOT/<course>/<test_name>/<username>/<attempt_number>/<filename>
+    return '{0}/{1}/{2}/attempt_{3}/{4}'.format(course, test_name, username, attempt_number, filename)
+
+
+class CandidateSnapshot(models.Model):
+    candidate = models.ForeignKey("User", null=False, blank=False, on_delete=models.PROTECT)
+    assessment_attempt = models.ForeignKey("AssessmentAttempt", null=False, blank=False, on_delete=models.CASCADE)
+    attempt_number = models.PositiveIntegerField(null=False, blank=False)
+    timestamp = models.DateTimeField(null=False, blank=False)
+    image = models.ImageField(null=True, blank=True, upload_to=snapshots_directory_path)   

@@ -16,8 +16,7 @@ from rest_framework.renderers import JSONRenderer
 
 from core.decorators import groups_allowed, UserGroup
 from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet, \
-    CodeQuestionSubmission, TestCaseAttempt, Language
-from core.forms.assessments import CandidateSnapshotForm
+    CodeQuestionSubmission, TestCaseAttempt, Language, CandidateSnapshot
 from core.tasks import update_test_case_attempt_status, force_submit_assessment, compute_assessment_attempt_score
 from core.views.utils import get_assessment_attempt_question, check_permissions_course, user_enrolled_in_course
 
@@ -26,25 +25,24 @@ from core.views.utils import get_assessment_attempt_question, check_permissions_
 @renderer_classes([JSONRenderer])
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.lab_assistant, UserGroup.student)
-def upload_snapshot(request):
+def upload_snapshot(request, assessment_attempt_id):
     """
-    Saves snapshot of candidate to MEDIA_ROOT/<course>/<test_name>/<username>/<filename>.
-    Endpoint called by assessment-landing and code-question-attempt pages.
+    Saves snapshot of candidate to MEDIA_ROOT/<course>/<test_name>/<username>/<attempt_number>/<filename> at randomised timings.
     """
     
     content = {"error": ""}
 
     if request.method == "POST":
-        form = CandidateSnapshotForm(request.POST, request.FILES)
-        if form.is_valid():
-            snapshot = form.save(commit=False)
-            snapshot.candidate = request.user
+        assessment_attempt = get_object_or_404(AssessmentAttempt, id=assessment_attempt_id)
 
-            snapshot.save()
+        attempt_number = request.POST.get('attempt_number')
+        timestamp = request.POST.get('timestamp')
+        image = request.FILES['image']
+        snapshot = CandidateSnapshot(candidate=request.user, assessment_attempt=assessment_attempt, 
+                                    attempt_number=attempt_number, timestamp=timestamp, image=image)
+        snapshot.save()
 
-            return Response(status=status.HTTP_200_OK)
-        else:
-            content["error"] = form.errors
+        return Response(status=status.HTTP_200_OK)
     
     return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
@@ -163,6 +161,15 @@ def enter_assessment(request, assessment_id):
 
             # generate new assessment_attempt
             assessment_attempt = generate_assessment_attempt(request.user, assessment)
+            
+            # upload initial candidate snapshot
+            attempt_number = request.POST.get('attempt_number')
+            timestamp = request.POST.get('timestamp')
+            image = request.FILES['image']
+            snapshot = CandidateSnapshot(candidate=request.user, assessment_attempt=assessment_attempt, 
+                                        attempt_number=attempt_number, timestamp=timestamp, image=image)
+            snapshot.save()
+
             return redirect('attempt-question', assessment_attempt_id=assessment_attempt.id, question_index=0)
 
     raise Http404()

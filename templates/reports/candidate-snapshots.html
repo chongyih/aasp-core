@@ -1,0 +1,121 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}Candidate Snapshots{% endblock %}
+
+{% block styles %}
+{% endblock %}
+
+{% block content %}
+  <!-- Page Title -->
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-12 order-md-1 order-last">
+          <h5>Candidate Snapshots</h5>
+          <h2>{{ candidate.username }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assessment Attempt information -->
+  <div class="row">
+    <!-- details -->
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h4>Details</h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-3">
+              <h6>Course</h6>
+              <p>{{ assessment_attempt.assessment.course }}</p>
+            </div>
+            <div class="col-3">
+              <h6>Assessment</h6>
+              <p>{{ assessment_attempt.assessment.name }}</p>
+            </div>
+            <div class="col-3">
+              <h6>Time Started</h6>
+              <p>{{ assessment_attempt.time_started }}</p>
+            </div>
+            <div class="col-3">
+              <h6>Time Submitted</h6>
+              <p>{{ assessment_attempt.time_submitted }} {% if assessment_attempt.auto_submit %}(Automatic){% endif %}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Candidate snapshots -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h4>Categories</h4>
+        </div>
+
+        <div class="card-body">
+          <div class="accordion" id="snapshotsAccordion">
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                    <strong>All Snapshots ({{ snapshots.count }})</strong>
+                  </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#snapshotsAccordion">
+                  <div class="accordion-body">
+                    {% comment %} <h6>Description</h6> {% endcomment %}
+                    <div class="row">
+                      {% for snapshot in snapshots %}
+                      <div class="col-md-4">
+                        <div class="thumbnail">
+                          <img src="{{ snapshot.image.url }}" width="100%"/>
+                          <div class="caption">
+                            <p>{{ snapshot.timestamp }}</p>
+                          </div>
+                        </div>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                    <strong>Multiple Faces Detected (0)</strong>
+                  </button>
+                </h2>
+                <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#snapshotsAccordion">
+                  <div class="accordion-body">
+                  </div>
+                </div>
+              </div>
+
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                    <strong>Missing Candidate (0)</strong>
+                  </button>
+                </h2>
+                <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#snapshotsAccordion">
+                  <div class="accordion-body">
+                  </div>
+                </div>
+              </div>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+{% endblock %}

@@ -34,7 +34,7 @@
               <span>{{ assessment_attempt.candidate.username }}</span>
               <br>
               <span>
-                <a href="" target="_blank">Snapshots<i
+                <a href="{% url 'candidate-snapshots' %}?attempt_id={{ assessment_attempt.id }}" target="_blank">Snapshots<i
                   class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a>
               </span>
             </div>

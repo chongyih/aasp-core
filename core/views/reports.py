@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from core.decorators import UserGroup, groups_allowed
-from core.models import Assessment, AssessmentAttempt, CodeQuestionSubmission, TestCaseAttempt, TestCase
+from core.models import Assessment, AssessmentAttempt, CodeQuestionSubmission, TestCaseAttempt, TestCase, CandidateSnapshot
 from core.views.utils import check_permissions_assessment
 
 
@@ -155,3 +155,19 @@ def export_assessment_results(request, assessment_id):
                          'Y' if attempt.auto_submit else 'N'])
 
     return response
+
+@login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
+def candidate_snapshots(request):
+    assessment_attempt_id = request.GET.get("attempt_id")
+    snapshots = CandidateSnapshot.objects.filter(assessment_attempt__id=assessment_attempt_id)
+    candidate = snapshots.first().candidate
+    assessment_attempt = snapshots.first().assessment_attempt
+
+    context = {
+        "snapshots": snapshots,
+        "candidate": candidate,
+        "assessment_attempt": assessment_attempt,
+    }
+    
+    return render(request, "reports/candidate-snapshots.html", context)

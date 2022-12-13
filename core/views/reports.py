@@ -160,14 +160,18 @@ def export_assessment_results(request, assessment_id):
 @groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
 def candidate_snapshots(request):
     assessment_attempt_id = request.GET.get("attempt_id")
-    snapshots = CandidateSnapshot.objects.filter(assessment_attempt__id=assessment_attempt_id)
-    candidate = snapshots.first().candidate
-    assessment_attempt = snapshots.first().assessment_attempt
+    all_snapshots = CandidateSnapshot.objects.filter(assessment_attempt__id=assessment_attempt_id).order_by("timestamp")
+    multiple_faces = all_snapshots.filter(faces_detected__gt=1)
+    missing_face = all_snapshots.filter(faces_detected=0)
+    candidate = all_snapshots.first().candidate
+    assessment_attempt = all_snapshots.first().assessment_attempt
 
     context = {
-        "snapshots": snapshots,
         "candidate": candidate,
         "assessment_attempt": assessment_attempt,
+        "all_snapshots": all_snapshots,
+        "multiple_faces": multiple_faces,
+        "missing_face": missing_face,
     }
     
     return render(request, "reports/candidate-snapshots.html", context)

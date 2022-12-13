@@ -160,4 +160,5 @@ class CandidateSnapshot(models.Model):
     assessment_attempt = models.ForeignKey("AssessmentAttempt", null=False, blank=False, on_delete=models.CASCADE)
     attempt_number = models.PositiveIntegerField(null=False, blank=False)
     timestamp = models.DateTimeField(null=False, blank=False)
-    image = models.ImageField(null=True, blank=True, upload_to=snapshots_directory_path)   
+    image = models.ImageField(null=True, blank=True, upload_to=snapshots_directory_path)
+    faces_detected = models.PositiveIntegerField(default=0, null=False, blank=False)

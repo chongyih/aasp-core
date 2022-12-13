@@ -1,8 +1,9 @@
 # celery tasks
-from datetime import timedelta
-
 import requests
+import cv2
+import os
 from celery import shared_task
+from insightface.app import FaceAnalysis
 from django.conf import settings
 from django.utils import timezone
 
@@ -101,12 +102,34 @@ def compute_assessment_attempt_score(assessment_attempt_id):
         assessment_attempt.compute_score()
     # if still processing, queue it again with a 5s delay
     else:
-        # eta=timezone.now() + timedelta(seconds=5)
         compute_assessment_attempt_score.apply_async((assessment_attempt_id,), countdown=5)
 
 
 @shared_task
 def upload_candidate_snapshot(candidate, assessment_attempt, attempt_number, timestamp, image):
+    """
+    This task uploads candidate snapshots to MEDIA_ROOT/<course>/<test_name>/<username>/<attempt_number>/<filename>.
+    It is queued when candidate snapshots are:
+    1. captured as initial.png on assessment-landing page
+    2. auto-captured as <timestamp>.png at randomised intervals on code-question-attempt page
+    """
     snapshot = CandidateSnapshot(candidate=candidate, assessment_attempt=assessment_attempt, 
-                                    attempt_number=attempt_number, timestamp=timestamp, image=image)
+                    attempt_number=attempt_number, timestamp=timestamp, image=image)
     snapshot.save()
+    detect_faces(snapshot)
+
+@shared_task
+def detect_faces(snapshot):
+    image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
+
+    model_pack_name = "buffalo_l"
+    app = FaceAnalysis(name=model_pack_name)
+    app.prepare(ctx_id=0, det_size=(640, 640))
+    image = cv2.imread(image_path)
+    faces = app.get(image)
+
+    snapshot.faces_detected = len(faces)
+    snapshot.save()
+
+    # rimg = app.draw_on(image, faces)
+    # cv2.imwrite(image_path, rimg)

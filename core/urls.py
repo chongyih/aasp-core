@@ -82,4 +82,6 @@ urlpatterns = [
     path('export/testcase/stdout/', reports.export_test_case_stdout, name="export-test-case-stdout"),  # expected output
     path('export/tca/<int:tca_id>/stdout/', reports.export_test_case_attempt_stdout, name="export-test-case-attempt-stdout"),
 
+    # for testing, to remove later
+    path('test', attempts.test, name="test")
 ]

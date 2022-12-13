@@ -1,6 +1,8 @@
 from datetime import timedelta, datetime
 
+import cv2
 import requests
+import os
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.contrib import messages
@@ -9,6 +11,7 @@ from django.db import transaction
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from insightface.app import FaceAnalysis
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, renderer_classes
@@ -16,7 +19,7 @@ from rest_framework.renderers import JSONRenderer
 
 from core.decorators import groups_allowed, UserGroup
 from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet, \
-    CodeQuestionSubmission, TestCaseAttempt, Language, CandidateSnapshot
+    CodeQuestionSubmission, TestCaseAttempt, Language
 from core.tasks import update_test_case_attempt_status, force_submit_assessment, compute_assessment_attempt_score, \
     upload_candidate_snapshot
 from core.views.utils import get_assessment_attempt_question, check_permissions_course, user_enrolled_in_course
@@ -460,9 +463,6 @@ def submit_assessment(request, assessment_attempt_id):
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.lab_assistant, UserGroup.student)
 def upload_snapshot(request, assessment_attempt_id):
-    """
-    Saves snapshot of candidate to MEDIA_ROOT/<course>/<test_name>/<username>/<attempt_number>/<filename>.
-    """
     error_context = {"error": ""}
 
     if request.method == "POST":
@@ -479,3 +479,42 @@ def upload_snapshot(request, assessment_attempt_id):
         return Response(status=status.HTTP_200_OK)
     
     return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
+
+
+# for testing, to remove later
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
+def test(request):
+    # Get image
+    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/initial.png")
+    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/13122022_191730.png")
+    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/13122022_190417.png")
+    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_2/13122022_181430.png")
+    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/front.png")
+    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/up.png")
+    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/side.png")
+    image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/joey.png")
+
+    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/test0.png")
+    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/test.png")
+    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/test1.png")
+    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_2/test.png")
+    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/front0.png")
+    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/up0.png")
+    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/side0.png")
+    path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/joey0.png")
+
+    model_pack_name = 'buffalo_l'
+    app = FaceAnalysis(name=model_pack_name)
+    app.prepare(ctx_id=0, det_size=(640, 640))
+    image = cv2.imread(image_path)
+    faces = app.get(image)
+    rimg = app.draw_on(image, faces)
+    cv2.imwrite(path, rimg)
+
+    context = {
+        "result": "success",
+        "faces_detected": len(faces),
+    }
+    return Response(context, status=status.HTTP_200_OK)
+

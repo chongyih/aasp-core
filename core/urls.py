@@ -75,6 +75,7 @@ urlpatterns = [
     path('assessment/attempt/details/', reports.assessment_attempt_details, name='assessment-attempt-details'),
     path('assessment/submission/details/<int:cqs_id>/', reports.submission_details, name='submission-details'),
     path('assessment/export-assessment-results/<int:assessment_id>/', reports.export_assessment_results, name='export-assessment-results'),
+    path('assessment/submission/candidate-snapshots/', reports.candidate_snapshots, name='candidate-snapshots'),
 
     # exporting stdin, stdout
     path('export/testcase/stdin/', reports.export_test_case_stdin, name="export-test-case-stdin"),  # stdin

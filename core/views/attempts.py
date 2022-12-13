@@ -21,32 +21,6 @@ from core.tasks import update_test_case_attempt_status, force_submit_assessment,
 from core.views.utils import get_assessment_attempt_question, check_permissions_course, user_enrolled_in_course
 
 
-@api_view(["POST"])
-@renderer_classes([JSONRenderer])
-@login_required()
-@groups_allowed(UserGroup.educator, UserGroup.lab_assistant, UserGroup.student)
-def upload_snapshot(request, assessment_attempt_id):
-    """
-    Saves snapshot of candidate to MEDIA_ROOT/<course>/<test_name>/<username>/<attempt_number>/<filename> at randomised timings.
-    """
-    
-    content = {"error": ""}
-
-    if request.method == "POST":
-        assessment_attempt = get_object_or_404(AssessmentAttempt, id=assessment_attempt_id)
-
-        attempt_number = request.POST.get('attempt_number')
-        timestamp = request.POST.get('timestamp')
-        image = request.FILES['image']
-        snapshot = CandidateSnapshot(candidate=request.user, assessment_attempt=assessment_attempt, 
-                                    attempt_number=attempt_number, timestamp=timestamp, image=image)
-        snapshot.save()
-
-        return Response(status=status.HTTP_200_OK)
-    
-    return Response(content, status=status.HTTP_400_BAD_REQUEST)
-
-
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.lab_assistant, UserGroup.student)
 def assessment_landing(request, assessment_id):
@@ -477,3 +451,28 @@ def submit_assessment(request, assessment_attempt_id):
             return PermissionDenied()
 
         return redirect('assessment-landing', assessment_id=assessment_attempt.assessment.id)
+
+
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
+@login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant, UserGroup.student)
+def upload_snapshot(request, assessment_attempt_id):
+    """
+    Saves snapshot of candidate to MEDIA_ROOT/<course>/<test_name>/<username>/<attempt_number>/<filename>.
+    """
+    error_context = {"error": ""}
+
+    if request.method == "POST":
+        assessment_attempt = get_object_or_404(AssessmentAttempt, id=assessment_attempt_id)
+
+        attempt_number = request.POST.get('attempt_number')
+        timestamp = request.POST.get('timestamp')
+        image = request.FILES['image']
+        snapshot = CandidateSnapshot(candidate=request.user, assessment_attempt=assessment_attempt, 
+                                    attempt_number=attempt_number, timestamp=timestamp, image=image)
+        snapshot.save()
+
+        return Response(status=status.HTTP_200_OK)
+    
+    return Response(error_context, status=status.HTTP_400_BAD_REQUEST)

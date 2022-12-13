@@ -6,7 +6,7 @@ from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
 
-from core.models import TestCaseAttempt, CodeQuestionSubmission, AssessmentAttempt
+from core.models import TestCaseAttempt, CodeQuestionSubmission, AssessmentAttempt, CandidateSnapshot
 
 
 @shared_task
@@ -105,3 +105,8 @@ def compute_assessment_attempt_score(assessment_attempt_id):
         compute_assessment_attempt_score.apply_async((assessment_attempt_id,), countdown=5)
 
 
+@shared_task
+def upload_candidate_snapshot(candidate, assessment_attempt, attempt_number, timestamp, image):
+    snapshot = CandidateSnapshot(candidate=candidate, assessment_attempt=assessment_attempt, 
+                                    attempt_number=attempt_number, timestamp=timestamp, image=image)
+    snapshot.save()

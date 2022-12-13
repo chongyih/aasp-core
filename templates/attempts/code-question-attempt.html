@@ -808,7 +808,7 @@
         
         let file = null;
         let filename = current.format("DDMMYYYY_HHmmss");
-        let timestamp = current.format("YYYY-MM-DD HH:mm:ss");
+        let timestamp = current.format("DD-MM-YYYY HH:mm:ss");
         let blob = canvas.toBlob(
           (blob) => {
             file = new File([blob], `${filename}.png`, { type: 'image/png' });

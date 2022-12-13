@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 import requests
 from django.conf import settings
@@ -17,7 +17,8 @@ from rest_framework.renderers import JSONRenderer
 from core.decorators import groups_allowed, UserGroup
 from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet, \
     CodeQuestionSubmission, TestCaseAttempt, Language, CandidateSnapshot
-from core.tasks import update_test_case_attempt_status, force_submit_assessment, compute_assessment_attempt_score
+from core.tasks import update_test_case_attempt_status, force_submit_assessment, compute_assessment_attempt_score, \
+    upload_candidate_snapshot
 from core.views.utils import get_assessment_attempt_question, check_permissions_course, user_enrolled_in_course
 
 
@@ -97,20 +98,21 @@ def enter_assessment(request, assessment_id):
         # get assessment object
         assessment = get_object_or_404(Assessment, id=assessment_id)
         pin = request.POST.get('pin')
+        candidate = request.user
 
         # get incomplete attempt
-        incomplete_attempt = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user,
+        incomplete_attempt = AssessmentAttempt.objects.filter(assessment=assessment, candidate=candidate,
                                                               time_submitted=None).first()
 
         # if assessment is not published, it should only be accessible to educators for preview
         if not assessment.published:
-            if check_permissions_course(assessment.course, request.user) == 0:
+            if check_permissions_course(assessment.course, candidate) == 0:
                 raise PermissionDenied()
 
         # if assessment is published, it should only be accessible to candidates
         else:
             # check if user is enrolled in the course (students)
-            if not user_enrolled_in_course(assessment.course, request.user):
+            if not user_enrolled_in_course(assessment.course, candidate):
                 raise PermissionDenied("You are not enrolled in this course.")
 
             # check if assessment is active, don't deny if there is an existing incomplete attempt
@@ -123,7 +125,7 @@ def enter_assessment(request, assessment_id):
             return redirect('attempt-question', assessment_attempt_id=incomplete_attempt.id, question_index=0)
 
         # create a new attempt if there are attempts left
-        attempt_count = AssessmentAttempt.objects.filter(assessment=assessment, candidate=request.user).count()
+        attempt_count = AssessmentAttempt.objects.filter(assessment=assessment, candidate=candidate).count()
         if assessment.num_attempts != 0 and attempt_count >= assessment.num_attempts:  # all attempts used up
             messages.warning(request, "You may not enter this assessment.")
             return redirect('assessment-landing', assessment_id=assessment.id)
@@ -134,15 +136,15 @@ def enter_assessment(request, assessment_id):
                 return redirect('assessment-landing', assessment_id=assessment.id)
 
             # generate new assessment_attempt
-            assessment_attempt = generate_assessment_attempt(request.user, assessment)
+            assessment_attempt = generate_assessment_attempt(candidate, assessment)
             
             # upload initial candidate snapshot
             attempt_number = request.POST.get('attempt_number')
             timestamp = request.POST.get('timestamp')
+            timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
             image = request.FILES['image']
-            snapshot = CandidateSnapshot(candidate=request.user, assessment_attempt=assessment_attempt, 
-                                        attempt_number=attempt_number, timestamp=timestamp, image=image)
-            snapshot.save()
+
+            upload_candidate_snapshot(candidate, assessment_attempt, attempt_number, timestamp_tz, image)
 
             return redirect('attempt-question', assessment_attempt_id=assessment_attempt.id, question_index=0)
 
@@ -466,12 +468,13 @@ def upload_snapshot(request, assessment_attempt_id):
     if request.method == "POST":
         assessment_attempt = get_object_or_404(AssessmentAttempt, id=assessment_attempt_id)
 
+        candidate = request.user
         attempt_number = request.POST.get('attempt_number')
         timestamp = request.POST.get('timestamp')
+        timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
         image = request.FILES['image']
-        snapshot = CandidateSnapshot(candidate=request.user, assessment_attempt=assessment_attempt, 
-                                    attempt_number=attempt_number, timestamp=timestamp, image=image)
-        snapshot.save()
+
+        upload_candidate_snapshot(candidate, assessment_attempt, attempt_number, timestamp_tz, image)
 
         return Response(status=status.HTTP_200_OK)
     

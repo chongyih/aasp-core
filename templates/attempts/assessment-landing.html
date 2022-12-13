@@ -258,6 +258,7 @@
     let canvas = document.getElementById("canvas");
     const pictureBtn = $("#picture-btn");
     const clearBtn = $("#clear-btn");
+    
     pictureBtn.prop("disabled", true);
     clearBtn.prop("disabled", true);
 
@@ -306,8 +307,7 @@
       const enterBtn = $("#enter-btn");
       const resumeBtn = $("#resume-btn");
       const cameraModal = $("#camera-modal");
-      {% comment %} const pictureBtn = $("#picture-btn");
-      const clearBtn = $("#clear-btn"); {% endcomment %}
+      
       let file = null;
       let timestamp;
       let formData;
@@ -320,12 +320,6 @@
 
       cameraModal.on("hidden.bs.modal", () => { if (streaming) stopCamera(); });
 
-      // webcam must be turned on, video streamingß
-      /*if (streaming) {
-        pictureBtn.prop("disabled", false);
-        clearBtn.prop("disabled", false);
-      }*/
-
       const clearPhoto = (btn) => {
         const context = canvas.getContext("2d");
         context.fillStyle = "#AAA";
@@ -333,8 +327,8 @@
       };
 
       const takePicture = (btn) => {
-        timestamp = moment().format("YYYY-MM-DD HH:mm:ss");
-  
+        timestamp = moment().format("DD-MM-YYYY HH:mm:ss");
+
         const context = canvas.getContext("2d");
         if (width && height) {
           canvas.width = width;
@@ -371,6 +365,8 @@
           contentType: false,
         }).done((res) => {
           form.submit();
+        }).fail((res) => {
+          console.log("An error occurred!");
         });
       };
 
@@ -389,6 +385,8 @@
           contentType: false,
         }).done((res) => {
           form.submit();
+        }).fail((res) => {
+          console.log("An error occurred!");
         });
       }   
   </script>

@@ -300,6 +300,8 @@
       const enterBtn = $("#enter-btn");
       const resumeBtn = $("#resume-btn");
       const cameraModal = $("#camera-modal");
+      const pictureBtn = $("#picture-btn");
+      const clearBtn = $("#clear-btn");
       let file = null;
       let timestamp;
       let formData;
@@ -310,7 +312,13 @@
         startup();
       };
 
-      cameraModal.on("hidden.bs.modal", () => { stopCamera(); });
+      cameraModal.on("hidden.bs.modal", () => { if (streaming) stopCamera(); });
+
+      // webcam must be turned on, video streamingß
+      if (!streaming) {
+        pictureBtn.prop("disabled", true);
+        clearBtn.prop("disabled", true)
+      }
 
       const clearPhoto = (btn) => {
         const context = canvas.getContext("2d");

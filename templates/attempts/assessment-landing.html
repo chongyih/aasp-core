@@ -256,6 +256,10 @@
     let streaming = false;
     let video = document.getElementById("video");
     let canvas = document.getElementById("canvas");
+    const pictureBtn = $("#picture-btn");
+    const clearBtn = $("#clear-btn");
+    pictureBtn.prop("disabled", true);
+    clearBtn.prop("disabled", true);
 
     function stopCamera() {
       const stream = video.srcObject;
@@ -289,6 +293,8 @@
             canvas.setAttribute("width", width);
             canvas.setAttribute("height", height);
             streaming = true;
+            pictureBtn.prop("disabled", false);
+            clearBtn.prop("disabled", false);
           }
         },
         false
@@ -300,8 +306,8 @@
       const enterBtn = $("#enter-btn");
       const resumeBtn = $("#resume-btn");
       const cameraModal = $("#camera-modal");
-      const pictureBtn = $("#picture-btn");
-      const clearBtn = $("#clear-btn");
+      {% comment %} const pictureBtn = $("#picture-btn");
+      const clearBtn = $("#clear-btn"); {% endcomment %}
       let file = null;
       let timestamp;
       let formData;
@@ -315,10 +321,10 @@
       cameraModal.on("hidden.bs.modal", () => { if (streaming) stopCamera(); });
 
       // webcam must be turned on, video streamingß
-      if (!streaming) {
-        pictureBtn.prop("disabled", true);
-        clearBtn.prop("disabled", true)
-      }
+      /*if (streaming) {
+        pictureBtn.prop("disabled", false);
+        clearBtn.prop("disabled", false);
+      }*/
 
       const clearPhoto = (btn) => {
         const context = canvas.getContext("2d");

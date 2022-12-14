@@ -61,37 +61,14 @@
 
         <div class="card-body">
           <div class="accordion" id="snapshotsAccordion">
-              <div class="accordion-item">
-                <h2 class="accordion-header">
-                  <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
-                    <strong>All Snapshots ({{ all_snapshots.count }})</strong>
-                  </button>
-                </h2>
-                <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#snapshotsAccordion">
-                  <div class="accordion-body">
-                    <div class="row">
-                      {% for snapshot in all_snapshots %}
-                      <div class="col-md-4">
-                        <div class="thumbnail">
-                          <img src="{{ snapshot.image.url }}" width="100%"/>
-                          <div class="caption">
-                            <p>{{ snapshot.timestamp }}</p>
-                          </div>
-                        </div>
-                      </div>
-                      {% endfor %}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
+              <!-- Multiple Faces -->
               <div class="accordion-item">
                 <h2 class="accordion-header">
                   <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
                     <strong>Multiple Faces Detected ({{ multiple_faces.count }})</strong>
                   </button>
                 </h2>
-                <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#snapshotsAccordion">
+                <div id="collapseTwo" class="accordion-collapse collapse show" data-bs-parent="#snapshotsAccordion">
                   <div class="accordion-body">
                     <div class="row">
                       {% for snapshot in multiple_faces %}
@@ -109,6 +86,7 @@
                 </div>
               </div>
 
+              <!-- Missing Candidate -->
               <div class="accordion-item">
                 <h2 class="accordion-header">
                   <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
@@ -133,6 +111,30 @@
                 </div>
               </div>
 
+              <!-- All Snapshots -->
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                    <strong>All Snapshots ({{ all_snapshots.count }})</strong>
+                  </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#snapshotsAccordion">
+                  <div class="accordion-body">
+                    <div class="row">
+                      {% for snapshot in all_snapshots %}
+                      <div class="col-md-4">
+                        <div class="thumbnail">
+                          <img src="{{ snapshot.image.url }}" width="100%"/>
+                          <div class="caption">
+                            <p>{{ snapshot.timestamp }}</p>
+                          </div>
+                        </div>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+              </div>
           </div>
 
         </div>

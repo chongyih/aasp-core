@@ -32,11 +32,13 @@
             <div class="col-4">
               <h6>Candidate</h6>
               <span>{{ assessment_attempt.candidate.username }}</span>
-              <br>
-              <span>
-                <a href="{% url 'candidate-snapshots' %}?attempt_id={{ assessment_attempt.id }}" target="_blank">Snapshots<i
-                  class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a>
-              </span>
+              {% if assessment_attempt.assessment.require_webcam %}
+                <br>
+                <span>
+                  <a href="{% url 'candidate-snapshots' %}?attempt_id={{ assessment_attempt.id }}" target="_blank">Snapshots<i
+                    class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a>
+                </span>
+              {% endif %}
             </div>
             <div class="col-4">
               <h6>Course</h6>

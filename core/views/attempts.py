@@ -142,12 +142,13 @@ def enter_assessment(request, assessment_id):
             assessment_attempt = generate_assessment_attempt(candidate, assessment)
             
             # upload initial candidate snapshot
-            attempt_number = request.POST.get('attempt_number')
-            timestamp = request.POST.get('timestamp')
-            timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
-            image = request.FILES['image']
+            if assessment.require_webcam:
+                attempt_number = request.POST.get('attempt_number')
+                timestamp = request.POST.get('timestamp')
+                timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
+                image = request.FILES['image']
 
-            upload_candidate_snapshot(candidate, assessment_attempt, attempt_number, timestamp_tz, image)
+                upload_candidate_snapshot(candidate, assessment_attempt, attempt_number, timestamp_tz, image)
 
             return redirect('attempt-question', assessment_attempt_id=assessment_attempt.id, question_index=0)
 
@@ -493,7 +494,8 @@ def test(request):
     # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/front.png")
     # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/up.png")
     # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/side.png")
-    image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/joey.png")
+    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/joey.png")
+    image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/sh_1.png")
 
     # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/test0.png")
     # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/test.png")
@@ -502,7 +504,8 @@ def test(request):
     # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/front0.png")
     # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/up0.png")
     # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/side0.png")
-    path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/joey0.png")
+    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/joey0.png")
+    path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/sh_10.png")
 
     model_pack_name = 'buffalo_l'
     app = FaceAnalysis(name=model_pack_name)

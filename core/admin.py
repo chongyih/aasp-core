@@ -57,8 +57,10 @@ class CodeQuestionSubmissionAdmin(admin.ModelAdmin):
 class TestCaseAttemptAdmin(admin.ModelAdmin):
     list_display = ('id', 'cq_submission', 'test_case', 'token', 'status')
 
+
 class CandidateSnapshotAdmin(admin.ModelAdmin):
-    list_display = ('id', 'candidate', 'assessment_attempt', 'attempt_number', 'timestamp', 'image')
+    list_display = ('id', 'candidate', 'assessment_attempt', 'attempt_number', 'timestamp', 'faces_detected', 'image')
+
 
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Course, CourseAdmin)

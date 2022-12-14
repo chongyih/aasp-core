@@ -195,12 +195,16 @@
             <div class="input-group">
               {% csrf_token %}
               {% if incomplete_attempt %}
-                <button type="button" id="resume-btn" class="btn btn-lg btn-warning" onClick="resumeAttempt(this)">Resume</button>
+                <button type="button" id="enter-btn" class="btn btn-lg btn-warning" onClick="enterAssessment(false)">Resume</button>
               {% elif not no_more_attempts %}
                 {% if assessment.pin %}
                   <input type="text" class="form-control" name="pin" id="id_pin" placeholder="PIN Required"/>
                 {% endif %}
-                  <button type="button" id="next-btn" class="btn btn-lg btn-success" href="#" onClick="viewModal(this)">Next</button>
+                {% if assessment.require_webcam %}
+                  <button type="button" id="next-btn" class="btn btn-lg btn-success" href="#" onClick="viewModal()">Next</button>
+                {% else %}
+                  <button type="button" id="enter-btn" class="btn btn-lg btn-success" onClick="enterAssessment(true)">Start</button>
+                {% endif %}
               {% endif %}
             </div>
 
@@ -222,17 +226,17 @@
                     <div class="row">
                       <div class="col" id="camera">
                         <video id="video">Video stream not available.</video>
-                        <button type="button" id="picture-btn" class="btn btn-sm btn-primary" onClick="takePicture(this)">Take Picture</button>
+                        <button type="button" id="picture-btn" class="btn btn-sm btn-primary" onClick="takePicture()" disabled>Take Picture</button>
                       </div>
                       <div class="col" id="output">
                         <canvas id="canvas"></canvas>
-                        <button type="button" id="clear-btn" class="btn btn-sm btn-outline-secondary" onClick="clearPhoto(this)">Clear</button>
+                        <button type="button" id="clear-btn" class="btn btn-sm btn-outline-secondary" onClick="clearPhoto()" disabled>Clear</button>
                       </div>
                     </div>
                   </div>
                   <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" id="enter-btn" class="btn btn-success" onClick="enterAssessment(this)">Start</button>
+                    <button type="button" id="enter-btn" class="btn btn-success" onClick="enterAssessment(true)">Start</button>
                   </div>
                 </div>
               </div>
@@ -258,9 +262,6 @@
     let canvas = document.getElementById("canvas");
     const pictureBtn = $("#picture-btn");
     const clearBtn = $("#clear-btn");
-    
-    pictureBtn.prop("disabled", true);
-    clearBtn.prop("disabled", true);
 
     function stopCamera() {
       const stream = video.srcObject;
@@ -305,14 +306,13 @@
   <script>
       let form = document.getElementById("enter-form");
       const enterBtn = $("#enter-btn");
-      const resumeBtn = $("#resume-btn");
       const cameraModal = $("#camera-modal");
       
       let file = null;
       let timestamp;
       let formData;
 
-      const viewModal = (btn) => {
+      const viewModal = () => {
         cameraModal.modal("show");
         enterBtn.prop("disabled", true);
         startup();
@@ -320,13 +320,13 @@
 
       cameraModal.on("hidden.bs.modal", () => { if (streaming) stopCamera(); });
 
-      const clearPhoto = (btn) => {
+      const clearPhoto = () => {
         const context = canvas.getContext("2d");
         context.fillStyle = "#AAA";
         context.fillRect(0, 0, canvas.width, canvas.height);
       };
 
-      const takePicture = (btn) => {
+      const takePicture = () => {
         timestamp = moment().format("DD-MM-YYYY HH:mm:ss");
 
         const context = canvas.getContext("2d");
@@ -346,16 +346,21 @@
         enterBtn.prop("disabled", false);
       };
       
-      const enterAssessment = (btn) => {
+      const enterAssessment = (newAttempt) => {
+        debugger
         enterBtn.html("Loading ...");
         enterBtn.prop("disabled", true);
 
-        let attempt_number = {{ attempt_count }} + 1
         formData = new FormData(form);
-        formData.append("attempt_number", attempt_number);
-        formData.append("timestamp", timestamp);
-        formData.append("image", file);
-
+        
+        let require_webcam = {{ assessment.require_webcam|yesno:"true,false" }};
+        if (newAttempt && require_webcam) {
+          let attempt_number = {{ attempt_count }} + 1
+          formData.append("attempt_number", attempt_number);
+          formData.append("timestamp", timestamp);
+          formData.append("image", file);
+        }
+        
         $.ajax({
           type: 'POST',
           url: "{% url 'enter-assessment' assessment_id=assessment.id %}",
@@ -369,25 +374,5 @@
           console.log("An error occurred!");
         });
       };
-
-      const resumeAttempt = (btn) => {
-        resumeBtn.html("Loading ...");
-        resumeBtn.prop("disabled", true);
-
-        formData = new FormData(form);
-
-        $.ajax({
-          type: 'POST',
-          url: "{% url 'enter-assessment' assessment_id=assessment.id %}",
-          enctype: 'multipart/form-data',
-          data: formData,
-          processData: false,
-          contentType: false,
-        }).done((res) => {
-          form.submit();
-        }).fail((res) => {
-          console.log("An error occurred!");
-        });
-      }   
   </script>
 {% endblock %}

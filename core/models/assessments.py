@@ -16,6 +16,7 @@ class Assessment(models.Model):
     show_grade = models.BooleanField(default=False)
     published = models.BooleanField(default=False)
     pin = models.PositiveIntegerField(null=True, blank=True)
+    require_webcam = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.name}"

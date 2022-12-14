@@ -736,110 +736,112 @@
   </script>
 
   <!-- Webcam script -->
-  <video hidden id="video"></video>
-  <canvas hidden id="canvas"></canvas>
-  <script>
-    const width = 320; let height = 0;
-    let streaming = false;
-    let video = document.getElementById("video");
-    let canvas = document.getElementById("canvas");
+  {% if assessment_attempt.assessment.require_webcam %}
+    <video hidden id="video"></video>
+    <canvas hidden id="canvas"></canvas>
+    <script>
+      const width = 320; let height = 0;
+      let streaming = false;
+      let video = document.getElementById("video");
+      let canvas = document.getElementById("canvas");
 
-    function stopCamera() {
-      const stream = video.srcObject;
-      const tracks = stream.getTracks();
-      tracks[0].stop();
-    }
-  
-    function startup() {
-      navigator.mediaDevices
-        .getUserMedia({ video: true, audio: false })
-        .then((stream) => {
-          video.srcObject = stream;
-          video.play();
-        })
-        .catch((err) => {
-          console.error(`An error occurred: ${err}`);
-        });
-  
-      video.addEventListener(
-        "canplay",
-        ($e) => {
-          if (!streaming) {
-            height = video.videoHeight / (video.videoWidth / width);
-  
-            if (isNaN(height)) {
-              height = width / (4 / 3);
-            }
-  
-            video.setAttribute("width", width);
-            video.setAttribute("height", height);
-            canvas.setAttribute("width", width);
-            canvas.setAttribute("height", height);
-            streaming = true;
-          }
-        },
-        false
-      );
-    }
-  </script>
-
-  <!-- Capture and upload candidate snapshot -->
-  <script>
-    function randomMinutes(min, max) {
-      min = Math.ceil(min * 10);
-      max = Math.floor(max * 10);
-      return  Math.floor(Math.random() * (max - min) + 10) / 10;
-    }
-
-    function captureSnapshot() {
-      // randomise time between 10% and 20% of assessment duration
-      const min = {{ assessment_attempt.assessment.duration }} * 0.1;
-      const max = {{ assessment_attempt.assessment.duration }} * 0.2;
-      let minutes = randomMinutes(min, max);
-      console.log(`${minutes}min next`)
-      snapshotTimer = setTimeout(captureSnapshot, minutes*60000);
-
-      const current = moment();
-      const context = canvas.getContext("2d");
-      if (width && height) {
-        canvas.width = width;
-        canvas.height = height;
-        context.drawImage(video, 0, 0, width, height);
-        
-        let file = null;
-        let filename = current.format("DDMMYYYY_HHmmss");
-        let timestamp = current.format("DD-MM-YYYY HH:mm:ss");
-        let blob = canvas.toBlob(
-          (blob) => {
-            file = new File([blob], `${filename}.png`, { type: 'image/png' });
-            uploadImage(timestamp, file);
-          },
-          'image/png');
+      function stopCamera() {
+        const stream = video.srcObject;
+        const tracks = stream.getTracks();
+        tracks[0].stop();
       }
-    }
+    
+      function startup() {
+        navigator.mediaDevices
+          .getUserMedia({ video: true, audio: false })
+          .then((stream) => {
+            video.srcObject = stream;
+            video.play();
+          })
+          .catch((err) => {
+            console.error(`An error occurred: ${err}`);
+          });
+    
+        video.addEventListener(
+          "canplay",
+          ($e) => {
+            if (!streaming) {
+              height = video.videoHeight / (video.videoWidth / width);
+    
+              if (isNaN(height)) {
+                height = width / (4 / 3);
+              }
+    
+              video.setAttribute("width", width);
+              video.setAttribute("height", height);
+              canvas.setAttribute("width", width);
+              canvas.setAttribute("height", height);
+              streaming = true;
+            }
+          },
+          false
+        );
+      }
+    </script>
 
-    // ajax request to save image
-    function uploadImage(timestamp, file) {
-      let formData = new FormData();
-      formData.append("attempt_number", "{{ assessment_attempt.total_attempts }}");
-      formData.append("timestamp", timestamp);
-      formData.append("image", file);
-      formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+    <!-- Capture and upload candidate snapshot -->
+    <script>
+      function randomMinutes(min, max) {
+        min = min * 10;
+        max = max * 10;
+        return  Math.floor(Math.random() * (max - min) + min) / 10;
+      }
 
-      $.ajax({
-        type: 'POST',
-        url: "{% url 'upload-snapshot' assessment_attempt_id=assessment_attempt.id %}",
-        enctype: 'multipart/form-data',
-        data: formData,
-        processData: false,
-        contentType: false,
-      }).done((response) => {
-        console.log("Snapshot uploaded.");
-      }).fail((response) => {
-        console.log(`An error occurred while uploading! ${response.error}`)
-      });
-    }
-  </script>
+      function captureSnapshot() {
+        // randomise time between 10% and 20% of assessment duration
+        const min = {{ assessment_attempt.assessment.duration }} * 0.1;
+        const max = {{ assessment_attempt.assessment.duration }} * 0.2;
+        let minutes = randomMinutes(min, max);
+        console.log(`${minutes}min next`)
+        snapshotTimer = setTimeout(captureSnapshot, minutes*60000);
+
+        const current = moment();
+        const context = canvas.getContext("2d");
+        if (width && height) {
+          canvas.width = width;
+          canvas.height = height;
+          context.drawImage(video, 0, 0, width, height);
+          
+          let file = null;
+          let filename = current.format("DDMMYYYY_HHmmss");
+          let timestamp = current.format("DD-MM-YYYY HH:mm:ss");
+          let blob = canvas.toBlob(
+            (blob) => {
+              file = new File([blob], `${filename}.png`, { type: 'image/png' });
+              uploadImage(timestamp, file);
+            },
+            'image/png');
+        }
+      }
+
+      // ajax request to save image
+      function uploadImage(timestamp, file) {
+        let formData = new FormData();
+        formData.append("attempt_number", "{{ assessment_attempt.total_attempts }}");
+        formData.append("timestamp", timestamp);
+        formData.append("image", file);
+        formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+        $.ajax({
+          type: 'POST',
+          url: "{% url 'upload-snapshot' assessment_attempt_id=assessment_attempt.id %}",
+          enctype: 'multipart/form-data',
+          data: formData,
+          processData: false,
+          contentType: false,
+        }).done((response) => {
+          console.log("Snapshot uploaded.");
+        }).fail((response) => {
+          console.log(`An error occurred while uploading! ${response.error}`)
+        });
+      }
+    </script>
+  {% endif %}
 
   {% if assessment_attempt.assessment.duration != 0 %}
     <!-- Timer script -->
@@ -850,9 +852,13 @@
         console.log("Time started: " + startTime.format("DD/MM/YYYY HH:mm:ss"));
         console.log("End time: " + endTime.format("DD/MM/YYYY HH:mm:ss"));        
         
-        startup();
         let snapshotTimer;
-        captureSnapshot();
+        let require_webcam = {{ assessment_attempt.assessment.require_webcam|yesno:"true,false" }};
+        if (require_webcam) {
+          startup();
+          captureSnapshot();
+        }        
+        
         const timer = setInterval(() => {
             const now = moment();
             const remaining = moment.duration(endTime.diff(now));

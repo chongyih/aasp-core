@@ -20,7 +20,7 @@ def assessment_report(request, assessment_id):
 
     best_attempts = AssessmentAttempt.objects \
                     .select_related("assessment") \
-                    .filter(best_attempt=True).order_by("-score")
+                    .filter(assessment=assessment, best_attempt=True).order_by("-score")
     ongoing_ungraded_attempts = AssessmentAttempt.objects \
                                 .select_related("assessment") \
                                 .filter(Q(time_submitted__isnull=True) | Q(time_submitted__isnull=False, score__isnull=True))

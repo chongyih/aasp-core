@@ -1,6 +1,6 @@
 from django.apps import apps
 from django.db import models
-from django.db.models import Sum, Max
+from django.db.models import Sum
 
 
 class AssessmentAttempt(models.Model):
@@ -79,6 +79,28 @@ class AssessmentAttempt(models.Model):
     @property
     def total_attempts(self):
         return AssessmentAttempt.objects.filter(assessment=self.assessment, candidate=self.candidate).count()
+
+    @property
+    def multiple_faces_detected(self):
+        if self.assessment.require_webcam:
+            snapshots = CandidateSnapshot.objects.filter(assessment_attempt=self, candidate=self.candidate)
+            for snapshot in snapshots:
+                if "initial" not in snapshot.image.name and snapshot.faces_detected > 1:
+                    return True
+                else:
+                    return False
+        return None
+
+    @property
+    def no_faces_detected(self):
+        if self.assessment.require_webcam:
+            snapshots = CandidateSnapshot.objects.filter(assessment_attempt=self, candidate=self.candidate)
+            for snapshot in snapshots:
+                if snapshot.faces_detected == 0:
+                    return True
+                else:
+                    return False
+        return None
 
 
 class CodeQuestionAttempt(models.Model):

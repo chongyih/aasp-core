@@ -115,18 +115,23 @@ def detect_faces(snapshot_id):
     """
     This task is queued when candidate snapshot is uploaded.
     This task uses InsightFace to detect number of faces in the snapshot.
+    Celery worker will take some time to download model_pack_name on the first run, progress be viewed
+    in the celery container logs.
     """
-    snapshot = CandidateSnapshot.objects.get(id=snapshot_id)
-    image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
+    try:
+        snapshot = CandidateSnapshot.objects.get(id=snapshot_id)
+        image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
 
-    model_pack_name = "buffalo_l"
-    app = FaceAnalysis(name=model_pack_name)
-    app.prepare(ctx_id=0, det_size=(640, 640))
-    image = cv2.imread(image_path)
-    faces = app.get(image)
+        model_pack_name = "buffalo_l"
+        app = FaceAnalysis(name=model_pack_name)
+        app.prepare(ctx_id=0, det_size=(640, 640))
+        image = cv2.imread(image_path)
+        faces = app.get(image)
 
-    snapshot.faces_detected = len(faces)
-    snapshot.save()
+        snapshot.faces_detected = len(faces)
+        snapshot.save()
 
-    # rimg = app.draw_on(image, faces)
-    # cv2.imwrite(image_path, rimg)
+        # rimg = app.draw_on(image, faces)
+        # cv2.imwrite(image_path, rimg)
+    except:
+        pass

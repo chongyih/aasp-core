@@ -3,6 +3,7 @@ import csv
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
+from django.forms.models import model_to_dict
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
@@ -23,7 +24,7 @@ def assessment_report(request, assessment_id):
                     .filter(assessment=assessment, best_attempt=True).order_by("-score")
     ongoing_ungraded_attempts = AssessmentAttempt.objects \
                                 .select_related("assessment") \
-                                .filter(Q(time_submitted__isnull=True) | Q(time_submitted__isnull=False, score__isnull=True))
+                                .filter(Q(assessment=assessment, time_submitted__isnull=True) | Q(time_submitted__isnull=False, score__isnull=True))
 
     context = {
         "assessment": assessment,
@@ -42,15 +43,32 @@ def get_candidate_attempts(request, assessment_id):
     if not candidate_id:
         return JsonResponse({"result": "error"}, status=200)
 
+    assessment = get_object_or_404(Assessment, id=assessment_id)
     # get assessment attempts
     assessment_attempts = AssessmentAttempt.objects \
-        .filter(assessment__id=assessment_id, candidate__id=candidate_id, time_submitted__isnull=False) \
-        .values("id", "time_started", "time_submitted", "auto_submit", "score", "best_attempt").order_by("id")
-
+                        .select_related("assessment") \
+                        .filter(assessment=assessment, candidate__id=candidate_id, time_submitted__isnull=False) \
+                        .order_by("id")
+    
+    if assessment.require_webcam:
+        list_assessment_attempts = list()
+        for attempt in assessment_attempts:
+            values = { 
+                "time_started": attempt.time_started,
+                "time_submitted": attempt.time_submitted,
+                "score": attempt.score,
+                "best_attempt": attempt.best_attempt,
+                "multiple_faces_detected": attempt.multiple_faces_detected,
+                "no_faces_detected": attempt.no_faces_detected 
+            }
+            list_assessment_attempts.append(values)
+    else:
+        list_assessment_attempts = list(assessment_attempts.values())
+    
     # prepare context
     context = {
         "result": "success",
-        "assessment_attempts": list(assessment_attempts)
+        "assessment_attempts": list_assessment_attempts,
     }
     return JsonResponse(context, status=200)
 

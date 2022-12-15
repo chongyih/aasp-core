@@ -152,7 +152,24 @@ def enter_assessment(request, assessment_id):
                     attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
                 snapshot.save()
 
-                detect_faces.apply_async((snapshot.id,), countdown=1)
+                # for dev, to remove later
+                if settings.DEBUG:
+                    image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
+
+                    model_pack_name = "buffalo_l"
+                    app = FaceAnalysis(name=model_pack_name)
+                    app.prepare(ctx_id=0, det_size=(640, 640))
+                    image = cv2.imread(image_path)
+                    faces = app.get(image)
+
+                    snapshot.faces_detected = len(faces)
+                    snapshot.save()
+
+                    # rimg = app.draw_on(image, faces)
+                    # cv2.imwrite(image_path, rimg)
+                
+                else:
+                    detect_faces.delay(snapshot.id)
 
             return redirect('attempt-question', assessment_attempt_id=assessment_attempt.id, question_index=0)
 
@@ -489,7 +506,24 @@ def upload_snapshot(request, assessment_attempt_id):
                     attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
         snapshot.save()
 
-        detect_faces.apply_async((snapshot.id,), countdown=1)
+        # for dev, to remove later
+        if settings.DEBUG:
+            image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
+
+            model_pack_name = "buffalo_l"
+            app = FaceAnalysis(name=model_pack_name)
+            app.prepare(ctx_id=0, det_size=(640, 640))
+            image = cv2.imread(image_path)
+            faces = app.get(image)
+
+            snapshot.faces_detected = len(faces)
+            snapshot.save()
+
+            # rimg = app.draw_on(image, faces)
+            # cv2.imwrite(image_path, rimg)
+        
+        else:
+            detect_faces.delay(snapshot.id)
 
         return Response(status=status.HTTP_200_OK)
     
@@ -501,25 +535,19 @@ def upload_snapshot(request, assessment_attempt_id):
 @renderer_classes([JSONRenderer])
 def test(request):
     # Get image
-    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/initial.png")
-    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/13122022_191730.png")
-    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/13122022_190417.png")
-    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_2/13122022_181430.png")
-    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/front.png")
-    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/up.png")
-    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/side.png")
-    # image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/joey.png")
-    image_path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/sh_1.png")
+    # image_path = os.path.join(settings.MEDIA_ROOT, "test/front.png")
+    # image_path = os.path.join(settings.MEDIA_ROOT, "test/up.png")
+    # image_path = os.path.join(settings.MEDIA_ROOT, "test/side.png")
+    # image_path = os.path.join(settings.MEDIA_ROOT, "test/joey.png")
+    # image_path = os.path.join(settings.MEDIA_ROOT, "test/sh.png")
+    image_path = os.path.join(settings.MEDIA_ROOT, "test/sh_1.png")
 
-    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/test0.png")
-    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/test.png")
-    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/test1.png")
-    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_2/test.png")
-    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/front0.png")
-    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/up0.png")
-    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/side0.png")
-    # path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/joey0.png")
-    path = os.path.join(settings.MEDIA_ROOT, "CZ2001_(AY22-23_S1)/test_1/YRLOKE/attempt_4/sh_10.png")
+    # path = os.path.join(settings.MEDIA_ROOT, "test/front_rect.png")
+    # path = os.path.join(settings.MEDIA_ROOT, "test/up_rect.png")
+    # path = os.path.join(settings.MEDIA_ROOT, "test/side_rect.png")
+    # path = os.path.join(settings.MEDIA_ROOT, "test/joey_rect.png")
+    # path = os.path.join(settings.MEDIA_ROOT, "test/sh_rect.png")
+    path = os.path.join(settings.MEDIA_ROOT, "test/sh_1_rect.png")
 
     model_pack_name = 'buffalo_l'
     app = FaceAnalysis(name=model_pack_name)

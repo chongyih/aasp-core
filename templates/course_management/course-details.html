@@ -37,11 +37,11 @@
           </div>
           <div class="card-body">
             <div class="row">
-              <div class="col-4">
+              <div class="col-3">
                 <h6>Course Code</h6>
                 <p>{{ course.code }}</p>
               </div>
-              <div class="col-4">
+              <div class="col-5">
                 <h6>Course Name</h6>
                 <p>{{ course.name }}</p>
               </div>
@@ -50,18 +50,18 @@
                 <p>{{ course.owner.username }} ({{ course.owner.name }})</p>
               </div>
             </div>
-            <div class="row">
-              <div class="col-4">
+            <div class="row mt-3">
+              <div class="col-3">
                 <h6>Academic Year</h6>
                 <p>{{ course.year }}</p>
               </div>
-              <div class="col-4">
+              <div class="col-3">
                 <h6>Semester</h6>
                 <p>{{ course.get_semester_display }}</p>
               </div>
-              <div class="col-4">
+              <div class="col-3">
                 <h6>Students</h6>
-                <p><span id="students_count">{{ course.students_count }}</span> students enrolled</p>
+                <p><span>{{ course.students_count }}</span> students enrolled</p>
               </div>
             </div>
           </div>

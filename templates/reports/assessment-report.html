@@ -50,10 +50,13 @@
           <tr>
             <th>#</th>
             <th>Candidate</th>
-            <th>Submitted At</th>
             <th>Score ({{ assessment.total_score }})</th>
             <th>Duration</th>
             <th>Total Attempts</th>
+            {% if assessment.require_webcam %}
+              <th>Multiple Faces Detected</th>
+              <th>Missing Candidate</th>
+            {% endif %}
             <th>Actions</th>
           </tr>
           </thead>
@@ -62,10 +65,13 @@
             <tr>
               <td>{{ forloop.counter }}</td>
               <td>{{ ba.candidate }}</td>
-              <td>{{ ba.time_submitted }}</td>
               <td>{{ ba.score }}</td>
               <td>{{ ba.duration }}</td>
               <td>{{ ba.total_attempts }}</td>
+              {% if assessment.require_webcam %}
+                <td>{% if ba.multiple_faces_detected %}Yes{% else %}No{% endif %}</td>
+                <td>{% if ba.no_faces_detected %}Yes{% else %}No{% endif %}</td>
+              {% endif %}
               <td>
                 <button type="button" class="btn btn-sm btn-success" data-candidate-id="{{ ba.candidate.id }}"
                         data-candidate-username="{{ ba.candidate.username }}" onclick="viewAttemptsModal(this);"
@@ -97,16 +103,24 @@
             <th>Started At</th>
             <th>Submitted At</th>
             <th>Duration</th>
+            {% if assessment.require_webcam %}
+              <th>Multiple Faces Detected</th>
+              <th>Missing Candidate</th>
+            {% endif %}
           </tr>
           </thead>
           <tbody>
-          {% for ba in ongoing_ungraded_attempts %}
+          {% for oua in ongoing_ungraded_attempts %}
             <tr>
-              <td>{{ ba.candidate }}</td>
-              <td><span class="badge bg-secondary">{{ ba.status }}</span></td>
-              <td>{{ ba.time_started }}</td>
-              <td>{{ ba.time_submitted|default_if_none:"-" }}</td>
-              <td>{{ ba.duration|default_if_none:"-" }}</td>
+              <td>{{ oua.candidate }}</td>
+              <td><span class="badge bg-secondary">{{ oua.status }}</span></td>
+              <td>{{ oua.time_started }}</td>
+              <td>{{ oua.time_submitted|default_if_none:"-" }}</td>
+              <td>{{ oua.duration|default_if_none:"-" }}</td>
+              {% if assessment.require_webcam %}
+                <td>{% if oua.multiple_faces_detected %}Yes{% else %}No{% endif %}</td>
+                <td>{% if oua.no_faces_detected %}Yes{% else %}No{% endif %}</td>
+              {% endif %}
             </tr>
           {% endfor %}
           </tbody>
@@ -141,8 +155,12 @@
                 <th>#</th>
                 <th>Time Started</th>
                 <th>Time Submitted</th>
-                <th>Score</th>
+                <th>Score ({{ assessment.total_score }})</th>
                 <th>Best</th>
+                {% if assessment.require_webcam %}
+                  <th>Multiple Faces Detected</th>
+                  <th>Missing Candidate</th>
+                {% endif %}
                 <th>Actions</th>
               </tr>
               </thead>
@@ -198,16 +216,32 @@
                   console.log(res.assessment_attempts);
 
                   const tableData = [];
-                  res.assessment_attempts.forEach((item, idx) => {
+                  let require_webcam = {{ assessment.require_webcam|yesno:"true,false" }};
+                  if (require_webcam) {
+                    res.assessment_attempts.forEach((item, idx) => {
+                        tableData.push([
+                            idx + 1,
+                            moment(item.time_started).format("DD/MM/YYYY[<br>]h:mm A"),
+                            moment(item.time_submitted).format("DD/MM/YYYY[<br>]h:mm A"),
+                            item.score,
+                            item.best_attempt === true ? '<span class="badge bg-success">Best Score</span>' : '',
+                            item.multiple_faces_detected === true ? 'Yes' : 'No',
+                            item.no_faces_detected === true ? 'Yes' : 'No',
+                            `<a class="text-success" target="_blank" href="{% url 'assessment-attempt-details' %}?attempt_id=${item.id}"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>`
+                        ]);
+                    });
+                  } else {
+                    res.assessment_attempts.forEach((item, idx) => {
                       tableData.push([
                           idx + 1,
-                          moment(item.time_started).format("DD/MM/YYYY[<br>]H:mm A"),
+                          moment(item.time_started).format("DD/MM/YYYY[<br>]h:mm A"),
                           moment(item.time_submitted).format("DD/MM/YYYY[<br>]h:mm A"),
                           item.score,
                           item.best_attempt === true ? '<span class="badge bg-success">Best Score</span>' : '',
                           `<a class="text-success" target="_blank" href="{% url 'assessment-attempt-details' %}?attempt_id=${item.id}"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>`
                       ]);
                   });
+                  }
 
                   modalTable.clear();
                   modalTable.rows.add(tableData);

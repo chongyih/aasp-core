@@ -9,7 +9,6 @@ from django.utils import timezone
 
 from core.models import TestCaseAttempt, CodeQuestionSubmission, AssessmentAttempt, CandidateSnapshot
 
-
 @shared_task
 def update_test_case_attempt_status(tca_id: int, token: str, last_status: int = 1):
     """
@@ -78,13 +77,16 @@ def force_submit_assessment(assessment_attempt_id):
     assessment page.
     If the AssessmentAttempt was already submitted previously (i.e. by the user), nothing will be done.
     """
-    assessment_attempt = AssessmentAttempt.objects.get(id=assessment_attempt_id, time_submitted=None)
-    if assessment_attempt:
-        assessment_attempt.auto_submit = True  # set the auto_submit flag
-        assessment_attempt.time_submitted = timezone.now()
-        assessment_attempt.save()
-        # queue task to compute score for this AssessmentAttempt
-        compute_assessment_attempt_score.apply_async((assessment_attempt.id,), countdown=1)
+    try:
+        assessment_attempt = AssessmentAttempt.objects.get(id=assessment_attempt_id, time_submitted=None)
+        if assessment_attempt:
+            assessment_attempt.auto_submit = True  # set the auto_submit flag
+            assessment_attempt.time_submitted = timezone.now()
+            assessment_attempt.save()
+            # queue task to compute score for this AssessmentAttempt
+            compute_assessment_attempt_score.apply_async((assessment_attempt.id,), countdown=1)
+    except:
+        pass
 
 
 @shared_task
@@ -94,32 +96,27 @@ def compute_assessment_attempt_score(assessment_attempt_id):
     This tasks calculates the total score of the AssessmentAttempt, and determines if it is the best attempt.
     If the AssessmentAttempt contains a submission that is still being processed, the task will be delayed.
     """
-    # get the instance
-    assessment_attempt = AssessmentAttempt.objects.get(id=assessment_attempt_id)
+    try:
+        # get the instance
+        assessment_attempt = AssessmentAttempt.objects.get(id=assessment_attempt_id)
+        
+        # if all test cases are complete, proceed to compute score
+        if not assessment_attempt.has_processing_submission():
+            assessment_attempt.compute_score()
+        # if still processing, queue it again with a 5s delay
+        else:
+            compute_assessment_attempt_score.apply_async((assessment_attempt_id,), countdown=5)
+    except:
+        pass
 
-    # if all test cases are complete, proceed to compute score
-    if not assessment_attempt.has_processing_submission():
-        assessment_attempt.compute_score()
-    # if still processing, queue it again with a 5s delay
-    else:
-        compute_assessment_attempt_score.apply_async((assessment_attempt_id,), countdown=5)
-
-
-@shared_task
-def upload_candidate_snapshot(candidate, assessment_attempt, attempt_number, timestamp, image):
-    """
-    This task uploads candidate snapshots to MEDIA_ROOT/<course>/<test_name>/<username>/<attempt_number>/<filename>.
-    It is queued when candidate snapshots are:
-    1. captured as initial.png on assessment-landing page
-    2. auto-captured as <timestamp>.png at randomised intervals on code-question-attempt page
-    """
-    snapshot = CandidateSnapshot(candidate=candidate, assessment_attempt=assessment_attempt, 
-                    attempt_number=attempt_number, timestamp=timestamp, image=image)
-    snapshot.save()
-    detect_faces(snapshot)
 
 @shared_task
-def detect_faces(snapshot):
+def detect_faces(snapshot_id):
+    """
+    This task is queued when candidate snapshot is uploaded.
+    This task uses InsightFace to detect number of faces in the snapshot.
+    """
+    snapshot = CandidateSnapshot.objects.get(id=snapshot_id)
     image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
 
     model_pack_name = "buffalo_l"

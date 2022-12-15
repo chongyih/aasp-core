@@ -19,9 +19,9 @@ from rest_framework.renderers import JSONRenderer
 
 from core.decorators import groups_allowed, UserGroup
 from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, CodeQuestion, TestCase, CodeSnippet, \
-    CodeQuestionSubmission, TestCaseAttempt, Language
+    CodeQuestionSubmission, TestCaseAttempt, Language, CandidateSnapshot
 from core.tasks import update_test_case_attempt_status, force_submit_assessment, compute_assessment_attempt_score, \
-    upload_candidate_snapshot
+    detect_faces
 from core.views.utils import get_assessment_attempt_question, check_permissions_course, user_enrolled_in_course
 
 
@@ -148,7 +148,11 @@ def enter_assessment(request, assessment_id):
                 timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
                 image = request.FILES['image']
 
-                upload_candidate_snapshot(candidate, assessment_attempt, attempt_number, timestamp_tz, image)
+                snapshot = CandidateSnapshot(candidate=candidate, assessment_attempt=assessment_attempt, 
+                    attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
+                snapshot.save()
+
+                detect_faces.apply_async((snapshot.id,), countdown=1)
 
             return redirect('attempt-question', assessment_attempt_id=assessment_attempt.id, question_index=0)
 
@@ -464,6 +468,12 @@ def submit_assessment(request, assessment_attempt_id):
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.lab_assistant, UserGroup.student)
 def upload_snapshot(request, assessment_attempt_id):
+    """
+    Uploads candidate snapshots to MEDIA_ROOT/<course>/<test_name>/<username>/<attempt_number>/<filename>
+    when candidate snapshots are:
+    1. captured as initial.png on assessment-landing page
+    2. auto-captured as <timestamp>.png at randomised intervals on code-question-attempt page
+    """
     error_context = {"error": ""}
 
     if request.method == "POST":
@@ -475,7 +485,11 @@ def upload_snapshot(request, assessment_attempt_id):
         timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
         image = request.FILES['image']
 
-        upload_candidate_snapshot(candidate, assessment_attempt, attempt_number, timestamp_tz, image)
+        snapshot = CandidateSnapshot(candidate=candidate, assessment_attempt=assessment_attempt, 
+                    attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
+        snapshot.save()
+
+        detect_faces.apply_async((snapshot.id,), countdown=1)
 
         return Response(status=status.HTTP_200_OK)
     

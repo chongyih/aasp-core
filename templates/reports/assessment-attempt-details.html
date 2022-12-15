@@ -29,38 +29,39 @@
         </div>
         <div class="card-body">
           <div class="row">
-            <div class="col-4">
+            <div class="col-3">
               <h6>Candidate</h6>
-              <span>{{ assessment_attempt.candidate.username }}</span>
-              {% if assessment_attempt.assessment.require_webcam %}
-                <br>
-                <span>
-                  <a href="{% url 'candidate-snapshots' %}?attempt_id={{ assessment_attempt.id }}" target="_blank">Snapshots<i
-                    class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a>
-                </span>
-              {% endif %}
+              <p>{{ assessment_attempt.candidate.username }}</p>
             </div>
-            <div class="col-4">
+            <div class="col-6">
               <h6>Course</h6>
               <p>{{ assessment_attempt.assessment.course }}</p>
             </div>
-            <div class="col-4">
+            <div class="col-3">
               <h6>Assessment</h6>
               <p>{{ assessment_attempt.assessment.name }}</p>
             </div>
           </div>
-          <div class="row">
-            <div class="col-4">
+          <div class="row mt-3">
+            <div class="col-3">
               <h6>Time Started</h6>
               <p>{{ assessment_attempt.time_started }}</p>
             </div>
-            <div class="col-4">
+            <div class="col-3">
               <h6>Time Submitted</h6>
               <p>{{ assessment_attempt.time_submitted }} {% if assessment_attempt.auto_submit %}(Automatic){% endif %}</p>
             </div>
-            <div class="col-4">
+            <div class="col-3">
               <h6>Duration</h6>
               <p>{{ assessment_attempt.duration }}</p>
+            </div>
+            <div class="col-3">
+              {% if assessment_attempt.assessment.require_webcam %}
+                <h6>
+                  <a href="{% url 'candidate-snapshots' %}?attempt_id={{ assessment_attempt.id }}" target="_blank">Snapshots<i
+                    class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a>
+                  </h6>
+              {% endif %}
             </div>
           </div>
         </div>

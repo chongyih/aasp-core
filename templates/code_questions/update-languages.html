@@ -133,15 +133,11 @@
               const regex = RegExp(`cs-(\\d)-`, 'g');
 
               snippetsContainer.children().each((idx, tcRow) => {
-                  console.log(idx);
-                  console.log(tcRow);
                   $(tcRow).html($(tcRow).html().replaceAll(regex, `cs-${idx}-`));
               });
           };
 
           if (this.checked) { // checkbox was checked (add)
-              console.log("checked (add)");
-
               if (existing) {
                   const toShow = $("#code-snippets-container #code-snippet-row-" + langId);
                   toShow.fadeIn(300, () => {
@@ -173,7 +169,6 @@
               }
 
           } else {  // checkbox was unchecked (remove)
-              console.log("unchecked (remove)");
               const toRemove = $("#code-snippets-container #code-snippet-row-" + langId);
 
               if (existing) {

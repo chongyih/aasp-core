@@ -295,6 +295,9 @@
             canvas.setAttribute("width", width);
             canvas.setAttribute("height", height);
             streaming = true;
+
+            // detect faces
+              // only enable pictureBtn and clearBtn if background and env are ok + matric card present
             pictureBtn.prop("disabled", false);
             clearBtn.prop("disabled", false);
           }
@@ -347,7 +350,6 @@
       };
       
       const enterAssessment = (newAttempt) => {
-        debugger
         enterBtn.html("Loading ...");
         enterBtn.prop("disabled", true);
 
@@ -371,7 +373,7 @@
         }).done((res) => {
           form.submit();
         }).fail((res) => {
-          console.log("An error occurred!");
+          // console.log("An error occurred!");
         });
       };
   </script>

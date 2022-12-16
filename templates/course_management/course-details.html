@@ -357,7 +357,7 @@
           formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
 
           if (confirm("Are you sure you wish to remove the student from the course?\nThis action cannot be reversed.") === true) {
-              console.log("Remove student confirmed.");
+              
           } else {
               return false;
           }
@@ -431,7 +431,7 @@
           formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
 
           if (confirm("Are you sure you wish to reset the password?\nThis action cannot be reversed.") === true) {
-              console.log("Reset password confirmed.");
+              
           } else {
               return false;
           }

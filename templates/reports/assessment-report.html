@@ -213,8 +213,6 @@
           }).done((res) => {
               if (res.result === "success") {
                   // update datatable rows
-                  console.log(res.assessment_attempts);
-
                   const tableData = [];
                   let require_webcam = {{ assessment.require_webcam|yesno:"true,false" }};
                   if (require_webcam) {

@@ -54,6 +54,7 @@ def get_candidate_attempts(request, assessment_id):
         list_assessment_attempts = list()
         for attempt in assessment_attempts:
             values = { 
+                "id": attempt.id,
                 "time_started": attempt.time_started,
                 "time_submitted": attempt.time_submitted,
                 "score": attempt.score,

@@ -3,14 +3,16 @@ from datetime import timedelta, datetime
 import cv2
 import requests
 import os
+import numpy as np
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.http import Http404, JsonResponse
+from django.http import Http404, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators import gzip
 from insightface.app import FaceAnalysis
 from rest_framework import status
 from rest_framework.response import Response
@@ -142,34 +144,34 @@ def enter_assessment(request, assessment_id):
             assessment_attempt = generate_assessment_attempt(candidate, assessment)
             
             # upload initial candidate snapshot
-            if assessment.require_webcam:
-                attempt_number = request.POST.get('attempt_number')
-                timestamp = request.POST.get('timestamp')
-                timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
-                image = request.FILES['image']
+            # if assessment.require_webcam:
+            #     attempt_number = request.POST.get('attempt_number')
+            #     timestamp = request.POST.get('timestamp')
+            #     timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
+            #     image = request.FILES['image']
 
-                snapshot = CandidateSnapshot(candidate=candidate, assessment_attempt=assessment_attempt, 
-                    attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
-                snapshot.save()
+            #     snapshot = CandidateSnapshot(candidate=candidate, assessment_attempt=assessment_attempt, 
+            #         attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
+            #     snapshot.save()
 
-                # for dev, to remove later
-                if settings.DEBUG:
-                    image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
+            #     # for dev, to remove later
+            #     if settings.DEBUG:
+            #         image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
 
-                    model_pack_name = "buffalo_l"
-                    app = FaceAnalysis(name=model_pack_name)
-                    app.prepare(ctx_id=0, det_size=(640, 640))
-                    image = cv2.imread(image_path)
-                    faces = app.get(image)
+            #         model_pack_name = "buffalo_l"
+            #         app = FaceAnalysis(name=model_pack_name)
+            #         app.prepare(ctx_id=0, det_size=(640, 640))
+            #         image = cv2.imread(image_path)
+            #         faces = app.get(image)
 
-                    snapshot.faces_detected = len(faces)
-                    snapshot.save()
+            #         snapshot.faces_detected = len(faces)
+            #         snapshot.save()
 
                     # rimg = app.draw_on(image, faces)
                     # cv2.imwrite(image_path, rimg)
                 
-                else:
-                    detect_faces.delay(snapshot.id)
+            #     else:
+            #         detect_faces.delay(snapshot.id)
 
             return redirect('attempt-question', assessment_attempt_id=assessment_attempt.id, question_index=0)
 
@@ -491,43 +493,101 @@ def upload_snapshot(request, assessment_attempt_id):
     1. captured as initial.png on assessment-landing page
     2. auto-captured as <timestamp>.png at randomised intervals on code-question-attempt page
     """
-    error_context = {"error": ""}
 
-    if request.method == "POST":
-        assessment_attempt = get_object_or_404(AssessmentAttempt, id=assessment_attempt_id)
+    try:
+        if request.method == "POST":
+            assessment_attempt = get_object_or_404(AssessmentAttempt, id=assessment_attempt_id)
 
-        candidate = request.user
-        attempt_number = request.POST.get('attempt_number')
-        timestamp = request.POST.get('timestamp')
-        timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
-        image = request.FILES['image']
+            candidate = request.user
+            attempt_number = request.POST.get('attempt_number')
+            timestamp = request.POST.get('timestamp')
+            timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
+            image = request.FILES['image']
 
-        snapshot = CandidateSnapshot(candidate=candidate, assessment_attempt=assessment_attempt, 
-                    attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
-        snapshot.save()
-
-        # for dev, to remove later
-        if settings.DEBUG:
-            image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
-
-            model_pack_name = "buffalo_l"
-            app = FaceAnalysis(name=model_pack_name)
-            app.prepare(ctx_id=0, det_size=(640, 640))
-            image = cv2.imread(image_path)
-            faces = app.get(image)
-
-            snapshot.faces_detected = len(faces)
+            snapshot = CandidateSnapshot(candidate=candidate, assessment_attempt=assessment_attempt, 
+                        attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
             snapshot.save()
 
-            # rimg = app.draw_on(image, faces)
-            # cv2.imwrite(image_path, rimg)
-        
-        else:
-            detect_faces.delay(snapshot.id)
+            # for dev, to remove later
+            if settings.DEBUG:
+                image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
 
-        return Response(status=status.HTTP_200_OK)
-    
-    return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
+                model_pack_name = "buffalo_l"
+                app = FaceAnalysis(name=model_pack_name)
+                app.prepare(ctx_id=0, det_size=(640, 640))
+                image = cv2.imread(image_path)
+                faces = app.get(image)
+
+                snapshot.faces_detected = len(faces)
+                snapshot.save()
+
+                # rimg = app.draw_on(image, faces)
+                # cv2.imwrite(image_path, rimg)
+            
+            else:
+                detect_faces.delay(snapshot.id)
+
+            context = {
+                "faces_detected": snapshot.faces_detected,
+            }
+            return Response(context, status=status.HTTP_200_OK)
+
+    except Exception as ex:
+        error_context = { "error": ex } 
+        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
+def detect_faces(request):
+    try:
+        image = request.FILES['image']
+        model_pack_name = "buffalo_l"
+        app = FaceAnalysis(name=model_pack_name)
+        app.prepare(ctx_id=0, det_size=(640, 640))
+        image_bytes = image.read()
+        image_np = np.frombuffer(image_bytes, dtype=np.uint8)
+        img = cv2.imdecode(image_np, cv2.IMREAD_UNCHANGED)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        faces = app.get(img)
+
+        context = {
+            "faces_detected": len(faces),
+        }
+        return Response(context, status=status.HTTP_200_OK)
+
+    except Exception as ex:
+        error_context = { "error": ex }
+        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+# @gzip.gzip_page
+# def detect_faces_initial(request):
+# 	# return the response generated along with the specific media
+#     return StreamingHttpResponse(generate(), content_type="multipart/x-mixed-replace;boundary=frame")
+
+
+# def generate():
+#     video_capture = cv2.VideoCapture(0)
+#     model_pack_name = "buffalo_l"
+#     app = FaceAnalysis(name=model_pack_name)
+#     app.prepare(ctx_id=0, det_size=(640, 640))
+
+#     while True:
+#         # Capture frame-by-frame
+#         _, frame = video_capture.read()
+
+#         faces = app.get(frame)
+
+#         # _, faces = cv2.imencode(".jpg", faces)
+#         # yield(b'--frame\r\n' b'Content-Type: image/jpg\r\n\r\n' + 
+# 		# 	bytearray(faces) + b'\r\n')
+
+#         rimg = app.draw_on(frame, faces)
+#         _, rimg = cv2.imencode(".jpg", rimg)
+#         yield(b'--frame\r\n' b'Content-Type: image/jpg\r\n\r\n' + 
+# 			bytearray(rimg) + b'\r\n')
 
 
 # for testing, to remove later

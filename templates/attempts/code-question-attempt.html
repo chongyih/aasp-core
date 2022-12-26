@@ -807,24 +807,24 @@
           canvas.height = height;
           context.drawImage(video, 0, 0, width, height);
           
-          let file = null;
+          let image = null;
           let filename = current.format("DDMMYYYY_HHmmss");
           let timestamp = current.format("DD-MM-YYYY HH:mm:ss");
           let blob = canvas.toBlob(
             (blob) => {
-              file = new File([blob], `${filename}.png`, { type: 'image/png' });
-              uploadImage(timestamp, file);
+              image = new File([blob], `${filename}.jpg`, { type: 'image/jpg' });
+              uploadImage(timestamp, image);
             },
-            'image/png');
+            'image/jpg');
         }
       }
 
       // ajax request to save image
-      function uploadImage(timestamp, file) {
+      function uploadImage(timestamp, image) {
         let formData = new FormData();
         formData.append("attempt_number", "{{ assessment_attempt.total_attempts }}");
         formData.append("timestamp", timestamp);
-        formData.append("image", file);
+        formData.append("image", image);
         formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
 
         $.ajax({

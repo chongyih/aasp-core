@@ -13,6 +13,14 @@
         margin: auto;
       }
 
+      {% comment %} #img {
+        border: 1px solid black;
+        width: 320px;
+        height: 240px;
+        display: block;
+        margin: auto;
+      } {% endcomment %}
+
       #canvas {
         border: 1px solid black;
         width: 320px;
@@ -178,6 +186,7 @@
         </div>
       </div>
     </div>
+    {% comment %} <img src="{% url 'detect-faces-initial' %}"/> {% endcomment %}
   </div>
 
   <!-- Controls -->
@@ -195,7 +204,7 @@
             <div class="input-group">
               {% csrf_token %}
               {% if incomplete_attempt %}
-                <button type="button" id="enter-btn" class="btn btn-lg btn-warning" onClick="enterAssessment(false)">Resume</button>
+                <button type="submit" id="enter-btn" class="btn btn-lg btn-warning" href="#">Resume</button>
               {% elif not no_more_attempts %}
                 {% if assessment.pin %}
                   <input type="text" class="form-control" name="pin" id="id_pin" placeholder="PIN Required"/>
@@ -203,7 +212,7 @@
                 {% if assessment.require_webcam %}
                   <button type="button" id="next-btn" class="btn btn-lg btn-success" href="#" onClick="viewModal()">Next</button>
                 {% else %}
-                  <button type="button" id="enter-btn" class="btn btn-lg btn-success" onClick="enterAssessment(true)">Start</button>
+                  <button type="submit" id="enter-btn" class="btn btn-lg btn-success" href="#">Start</button>
                 {% endif %}
               {% endif %}
             </div>
@@ -217,6 +226,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" />
                   </div>
                   <div class="modal-body">
+                    <div class="alert alert-warning" id="snapshot-alert" style="display:none;"></div>
                     <div class="row">
                       <div class="text-start">Please position your face so it fills most of the window below.</div>
                       <div class="text-start">Hold your matriculation card beside your face.</div>
@@ -226,6 +236,7 @@
                     <div class="row">
                       <div class="col" id="camera">
                         <video id="video">Video stream not available.</video>
+                        {% comment %} <img id="img" src="{% url 'detect-faces-initial' %}"> {% endcomment %}
                         <button type="button" id="picture-btn" class="btn btn-sm btn-primary" onClick="takePicture()" disabled>Take Picture</button>
                       </div>
                       <div class="col" id="output">
@@ -296,10 +307,7 @@
             canvas.setAttribute("height", height);
             streaming = true;
 
-            // detect faces
-              // only enable pictureBtn and clearBtn if background and env are ok + matric card present
             pictureBtn.prop("disabled", false);
-            clearBtn.prop("disabled", false);
           }
         },
         false
@@ -310,10 +318,9 @@
       let form = document.getElementById("enter-form");
       const enterBtn = $("#enter-btn");
       const cameraModal = $("#camera-modal");
-      
-      let file = null;
-      let timestamp;
-      let formData;
+      const snapshotAlert = $("#snapshot-alert");
+
+      let image = null;
 
       const viewModal = () => {
         cameraModal.modal("show");
@@ -321,7 +328,12 @@
         startup();
       };
 
-      cameraModal.on("hidden.bs.modal", () => { if (streaming) stopCamera(); });
+      cameraModal.on("hidden.bs.modal", 
+            () => {
+              snapshotAlert.hide();
+              clearPhoto();
+              if (streaming) stopCamera();
+            });
 
       const clearPhoto = () => {
         const context = canvas.getContext("2d");
@@ -330,7 +342,7 @@
       };
 
       const takePicture = () => {
-        timestamp = moment().format("DD-MM-YYYY HH:mm:ss");
+        const timestamp = moment().format("DD-MM-YYYY HH:mm:ss");
 
         const context = canvas.getContext("2d");
         if (width && height) {
@@ -340,27 +352,77 @@
     
           let blob = canvas.toBlob(
             (blob) => {
-              file = new File([blob], 'initial.png', { type: 'image/png' });
+              image = new File([blob], 'initial.jpg', { type: 'image/jpg' });
+              uploadImage(timestamp, image); // detect faces
+                
             },
-            'image/png');
+            'image/jpg');
+            enterBtn.prop("disabled", false);
         }
-  
-        // only enable enter button after candidate takes an initial snapshot
-        enterBtn.prop("disabled", false);
       };
+
+      const uploadImage = (timestamp, image) => {
+        pictureBtn.html("Processing...");
+        pictureBtn.prop("disabled", true);
+        clearBtn.prop("disabled", true);
+
+        const attempt_number = {{ attempt_count }} + 1
+        const formData = new FormData();
+        formData.append("attempt_number", attempt_number);
+        formData.append("timestamp", timestamp);
+        formData.append("image", image);
+        formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+        $.ajax({
+          type: 'POST',
+          url: "{% url 'detect-faces' %}",
+          enctype: 'multipart/form-data',
+          data: formData,
+          processData: false,
+          contentType: false,
+        }).done((res) => {
+          pictureBtn.html("Take Picture");
+          pictureBtn.prop("disabled", false);
+          clearBtn.prop("disabled", false);
+
+          const faces_detected = res.faces_detected;
+          if (faces_detected === 2) {
+            // only enable enterBtn if candidate's surrounding is appropriate + matric card present
+            enterBtn.prop("disabled", false);
+          }
+
+          else if (faces_detected === 1) {
+            // matric card not present
+            snapshotAlert.addClass("alert-warning");
+            snapshotAlert.text("Matric card not detected! Please try again.");
+            snapshotAlert.show();
+          }
+
+          else {
+            // test environment is not appropriate
+            snapshotAlert.addClass("alert-danger");
+            snapshotAlert.text("Your environment is not appropriate for test! Please contact the administrator.");
+            snapshotAlert.show();
+          }
+          
+        }).fail((res) => {
+          console.error("An error occurred!");
+        });        
+      }
       
       const enterAssessment = (newAttempt) => {
         enterBtn.html("Loading ...");
         enterBtn.prop("disabled", true);
 
-        formData = new FormData(form);
+        const timestamp = moment().format("DD-MM-YYYY HH:mm:ss");
+        const formData = new FormData(form);
         
         let require_webcam = {{ assessment.require_webcam|yesno:"true,false" }};
         if (newAttempt && require_webcam) {
-          let attempt_number = {{ attempt_count }} + 1
+          const attempt_number = {{ attempt_count }} + 1
           formData.append("attempt_number", attempt_number);
           formData.append("timestamp", timestamp);
-          formData.append("image", file);
+          formData.append("image", image);
         }
         
         $.ajax({

@@ -58,10 +58,12 @@ urlpatterns = [
 
     # taking assessments (attempts)
     path('assessment/landing/<int:assessment_id>/', attempts.assessment_landing, name='assessment-landing'),
-    path('api/upload-snapshot/<int:assessment_attempt_id>/', attempts.upload_snapshot, name='upload-snapshot'), #ajax
     path('assessment/enter/<int:assessment_id>/', attempts.enter_assessment, name='enter-assessment'),
     path('attempt/<int:assessment_attempt_id>/question/<int:question_index>/', attempts.attempt_question, name='attempt-question'),
     path('assessment/submit/<int:assessment_attempt_id>/', attempts.submit_assessment, name='submit-assessment'),
+    path('api/upload-snapshot/<int:assessment_attempt_id>/', attempts.upload_snapshot, name='upload-snapshot'), #ajax
+    # path('detect-faces-initial', attempts.detect_faces_initial, name='detect-faces-initial'),
+    path('detect-faces', attempts.detect_faces, name='detect-faces'),
 
     # code question attempts
     path('api/submit-single-test-case/<int:test_case_id>/', attempts.submit_single_test_case, name='submit-single-test-case'),  # ajax

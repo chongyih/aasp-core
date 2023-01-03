@@ -262,6 +262,28 @@
     </div>
   </div>
 
+  <!-- Tab switching warning modal -->
+  <div class="modal fade" id="tab-modal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-exclamation-triangle-fill" style="font-size: 2em;"></i>
+            &nbsp;&nbsp;&nbsp;Tab Switching Warning
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" />
+        </div>
+        <div class="modal-body">
+          <div class="text-start">Please do not move out of the test screen.</div>
+          <div class="text-start">Your test will be automatically submitted if you leave the test environment subsequently.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   {% include 'attempts/snippets/accordion-item-template.html' %}
   {% include 'attempts/snippets/test-case-details-modal.html' %}
 {% endblock %}
@@ -276,8 +298,7 @@
   {% include "includes/js/mathjax.html" %}
   <!-- momentjs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-  <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/moment-duration-format/1.3.0/moment-duration-format.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-duration-format/1.3.0/moment-duration-format.min.js"></script>
 
   <!-- General script -->
   <script>
@@ -342,7 +363,6 @@
       themeSelect.change(function () {
           editor.setTheme("ace/theme/" + $(this).val());
       });
-
 
       const arrowCommands = ["gotoleft", "gotoright", "golineup", "golinedown"];
       let readonlyRanges = [];
@@ -734,6 +754,52 @@
           }
       }
   </script>
+
+  <!-- Tab monitoring -->
+  {% if assessment_attempt.assessment.limit_tab_switching %}
+  <script>
+    const tabModal = $("#tab-modal");
+
+    // limit tab switching (i.e. limit user moving away from assessment screen)
+    let leaving_screen_num = 0;
+    window.addEventListener('blur', (e) => {
+      leaving_screen_num++;
+      if (leaving_screen_num >= 3) {  // force submit test on third tab switch
+        submitAssessment(false);
+        window.onbeforeunload = (e) => {
+          e.preventDefault();
+        }
+      }
+      else {
+        tabModal.modal("show");
+      }
+    })
+  </script>
+  {% endif %}
+
+  <!-- Disable copying/pasting -->
+  {% if assessment_attempt.assessment.disable_copy_paste %}
+  <script>
+      // disable cut copy paste in editor
+      editor.commands.addCommand({
+        name: "breakTheEditor", 
+        bindKey: "ctrl-c|ctrl-v|ctrl-x|ctrl-shift-v|shift-del|cmd-c|cmd-v|cmd-x", 
+        exec: function() { console.log("key not allowed!"); }
+      });
+
+      // prevent mouse right click on page
+      document.addEventListener('contextmenu', (e) => {
+        e.preventDefault(); 
+      });
+
+    // log keystrokes, save to file?
+    /*const log_keystrokes_interval = 300  // 300s = 5min
+    //editor.getValue()
+    setInterval(() => {
+      console.log(editor.getValue())
+    }, 2000);*/
+  </script>
+  {% endif %}
 
   <!-- Webcam script -->
   {% if assessment_attempt.assessment.require_webcam %}

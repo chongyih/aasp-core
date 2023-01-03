@@ -226,7 +226,21 @@
                     <div class="checkbox">
                       <input type="checkbox" id="id_require_webcam" name="require_webcam" class="form-check-input me-2"
                           {% if form.require_webcam.value %}checked{% endif %}>
-                      <label for="id_require_webcam">Enable webcam snapshots</label>
+                      <label for="id_require_webcam">Enable candidate snapshots&nbsp;</label>
+                      <i class="bi bi-question-circle" data-bs-toggle="modal" data-bs-target="#webcam-modal"></i>
+                    </div>
+                    <!-- Disable mouse right click, keyboard cut, copy and paste checkbox -->
+                    <div class="checkbox">
+                      <input type="checkbox" id="id_disable_copy_paste" name="disable_copy_paste" class="form-check-input me-2"
+                          {% if form.disable_copy_paste.value %}checked{% endif %}>
+                      <label for="id_disable_copy_paste">Disable cut, copy and paste during assessment attempt</label>
+                    </div>
+                    <!-- Limit tab switching checkbox -->
+                    <div class="checkbox">
+                      <input type="checkbox" id="id_limit_tab_switch" name="limit_tab_switching" class="form-check-input me-2"
+                          {% if form.limit_tab_switching.value %}checked{% endif %}>
+                      <label for="id_limit_tab_switch">Force submit assessment on tab switching&nbsp;</label>
+                      <i class="bi bi-question-circle" data-bs-toggle="modal" data-bs-target="#tab-modal"></i>
                     </div>
                   </div>
                 </div>
@@ -263,6 +277,57 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Candidate snapshot details modal -->
+    <div class="modal fade" id="webcam-modal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Candidate Snapshots</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" />
+          </div>
+          <div class="modal-body">
+            <div class="text-start" style="font-weight: bold;">Important:</div>
+            <div class="text-start">Ensure that candidates have access to a functional webcam in order to take this assessment.</div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab switching details modal -->
+    <div class="modal fade" id="tab-modal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Force submit assessment on tab switching</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" />
+          </div>
+          <div class="modal-body">
+            <div class="text-start" style="font-weight: bold;">Important:</div>
+            <ol class="text-start">
+              <li>
+                Candidates will be given a warning if they switch tabs (i.e. clicking anywhere outside the assessment screen). 
+                This includes:
+                <ul>
+                  <li>moving to a new window/tab</li>
+                  <li>opening a new application</li>
+                  <li>clicking on system-generated popups etc.</li>
+                </ul>
+              </li>
+              <li>
+                On the third tab switch, assessment will be automatically submitted.
+              </li>
+            </ol>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           </div>
         </div>
       </div>

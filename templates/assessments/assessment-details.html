@@ -107,9 +107,17 @@
             </div>
             <hr>
             <div class="row">
-              <div class="col-3">
-                <h6>Webcam Required</h6>
+              <div class="col-4">
+                <h6>Require Webcam</h6>
                 <p>{% if assessment.require_webcam %}Yes{% else %}No{% endif %}</p>
+              </div>
+              <div class="col-4">
+                <h6>Disable Copy/Paste</h6>
+                <p>{% if assessment.disable_copy_paste %}Yes{% else %}No{% endif %}</p>
+              </div>
+              <div class="col-4">
+                <h6>Limit Tab Switching</h6>
+                <p>{% if assessment.limit_tab_switching %}Yes{% else %}No{% endif %}</p>
               </div>
             </div>
           </div>

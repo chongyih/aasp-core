@@ -144,34 +144,34 @@ def enter_assessment(request, assessment_id):
             assessment_attempt = generate_assessment_attempt(candidate, assessment)
             
             # upload initial candidate snapshot
-            # if assessment.require_webcam:
-            #     attempt_number = request.POST.get('attempt_number')
-            #     timestamp = request.POST.get('timestamp')
-            #     timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
-            #     image = request.FILES['image']
+            if assessment.require_webcam:
+                attempt_number = request.POST.get('attempt_number')
+                timestamp = request.POST.get('timestamp')
+                timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
+                image = request.FILES['image']
 
-            #     snapshot = CandidateSnapshot(candidate=candidate, assessment_attempt=assessment_attempt, 
-            #         attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
-            #     snapshot.save()
+                snapshot = CandidateSnapshot(candidate=candidate, assessment_attempt=assessment_attempt, 
+                                            attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
+                snapshot.save()
 
-            #     # for dev, to remove later
-            #     if settings.DEBUG:
-            #         image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
+                # for dev, to remove later
+                if settings.DEBUG:
+                    image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
 
-            #         model_pack_name = "buffalo_l"
-            #         app = FaceAnalysis(name=model_pack_name)
-            #         app.prepare(ctx_id=0, det_size=(640, 640))
-            #         image = cv2.imread(image_path)
-            #         faces = app.get(image)
+                    model_pack_name = "buffalo_l"
+                    app = FaceAnalysis(name=model_pack_name)
+                    app.prepare(ctx_id=0, det_size=(640, 640))
+                    image = cv2.imread(image_path)
+                    faces = app.get(image)
 
-            #         snapshot.faces_detected = len(faces)
-            #         snapshot.save()
+                    snapshot.faces_detected = len(faces)
+                    snapshot.save()
 
-                    # rimg = app.draw_on(image, faces)
-                    # cv2.imwrite(image_path, rimg)
+                    rimg = app.draw_on(image, faces)
+                    cv2.imwrite(image_path, rimg)
                 
-            #     else:
-            #         detect_faces.delay(snapshot.id)
+                else:
+                    detect_faces.delay(snapshot.id)
 
             return redirect('attempt-question', assessment_attempt_id=assessment_attempt.id, question_index=0)
 
@@ -505,7 +505,7 @@ def upload_snapshot(request, assessment_attempt_id):
             image = request.FILES['image']
 
             snapshot = CandidateSnapshot(candidate=candidate, assessment_attempt=assessment_attempt, 
-                        attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
+                                        attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
             snapshot.save()
 
             # for dev, to remove later
@@ -533,7 +533,7 @@ def upload_snapshot(request, assessment_attempt_id):
             return Response(context, status=status.HTTP_200_OK)
 
     except Exception as ex:
-        error_context = { "error": ex } 
+        error_context = { "error": f"{ex}" } 
         return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -557,7 +557,7 @@ def detect_faces(request):
         return Response(context, status=status.HTTP_200_OK)
 
     except Exception as ex:
-        error_context = { "error": ex }
+        error_context = { "error": f"{ex}" }
         return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 
 

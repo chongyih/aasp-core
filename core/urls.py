@@ -55,6 +55,8 @@ urlpatterns = [
     path('assessment/publish/<int:assessment_id>/', assessments.publish_assessment, name='publish-assessment'),
     path('assessment/delete/<int:assessment_id>/', assessments.delete_assessment, name='delete-assessment'),
     path('assessment/undo-delete/<int:assessment_id>/', assessments.undo_delete_assessment, name='undo-delete-assessment'),
+    # for testing, to remove later
+    path('send-email', assessments.send_email, name='send-email'),
 
     # taking assessments (attempts)
     path('assessment/landing/<int:assessment_id>/', attempts.assessment_landing, name='assessment-landing'),

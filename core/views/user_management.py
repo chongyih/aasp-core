@@ -6,10 +6,15 @@ from django.contrib.auth.models import Group
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.renderers import JSONRenderer
 
 from core.decorators import UserGroup, groups_allowed
 from core.forms.user_management import StudentCreationForm
-from core.models import User, Course, CourseGroup
+from core.models import User, Course, CourseGroup, Assessment
+from core.views import assessments
 from core.views.utils import clean_csv, check_permissions_course
 
 
@@ -22,17 +27,24 @@ def enrol_students(request):
     """
 
     # retrieve courses for this user
-    courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)).distinct().prefetch_related(
-        'owner', 'maintainers')
+    allowed_courses = Course.objects.filter(Q(owner=request.user) | Q(maintainers=request.user)) \
+                            .distinct() \
+                            .prefetch_related('owner', 'maintainers')
 
     if request.method == 'POST':  # POST
-        form = StudentCreationForm(courses, request.POST)
+        form = StudentCreationForm(allowed_courses, request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, "The user has been added to the Course!")
+            try:
+                form.save()
+                messages.success(request, "The user has been added to the Course!")
+                
+            except Exception as ex:
+                messages.warning(request, f"{ex}")
+
             return redirect('enrol-students')
+
     else:  # GET
-        form = StudentCreationForm(courses=courses)
+        form = StudentCreationForm(courses=allowed_courses)
 
     context = {
         'form': form
@@ -41,6 +53,8 @@ def enrol_students(request):
     return render(request, 'user_management/enrol-student.html', context)
 
 
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
 def enrol_students_bulk(request):
@@ -53,7 +67,7 @@ def enrol_students_bulk(request):
                 "result": "error",
                 "msg": "Please select a course."
             }
-            return JsonResponse(context, status=200)
+            return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
         # get course object
         course = Course.objects.filter(id=course_id).first()
@@ -63,7 +77,7 @@ def enrol_students_bulk(request):
                 "result": "error",
                 "msg": "The selected course does not exist."
             }
-            return JsonResponse(context, status=200)
+            return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
         # check if user has permissions for this course
         if check_permissions_course(course, request.user) == 0:
@@ -71,23 +85,34 @@ def enrol_students_bulk(request):
                 "result": "error",
                 "msg": "You do not have permissions for this course."
             }
-            return JsonResponse(context, status=200)
+            return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
         # retrieve the file from the request
         file = request.FILES.get('file')
 
         # if no file received, return with error
         if not file:
-            return JsonResponse({"result": "error", "msg": "No file was uploaded."}, status=200)
+            context = {
+                "result": "error",
+                "msg": "No file was uploaded."
+            }
+            return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
         # check if file is csv
         if not file.name.endswith('.csv'):
-            return JsonResponse({"result": "error", "msg": "Only csv files are accepted!"}, status=200)
+            context = {
+                "result": "error",
+                "msg": "Only csv files are accepted!"
+            }
+            return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
         # ensure file is <= 5MB
         if file.size >= 5242880:
-            return JsonResponse({"result": "error", "msg": "The uploaded file is too large! (up to 5MB allowed)"},
-                                status=200)
+            context = {
+                "result": "error",
+                "msg": "The uploaded file is too large! (up to 5MB allowed)"
+            }
+            return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
         # process uploaded file
         try:
@@ -136,6 +161,14 @@ def enrol_students_bulk(request):
             if len(removed_rows) != 0:
                 msg += " Some rows were ignored, refer to the section below for more details."
 
+            # if there are any published test(s), send email notification
+            courses_assessments = Assessment.objects.filter(course=course).all()
+            if courses_assessments:
+                for a in courses_assessments:
+                    recipient_list = [user.email for user in created_users]
+                    recipient_list += [user.email for user in existing_users]
+                    assessments.send_assessment_published_email(assessment=a, recipient_list=recipient_list)
+
             # result
             context = {
                 "result": "success",
@@ -143,10 +176,12 @@ def enrol_students_bulk(request):
                 "removed_rows": removed_rows,
                 "conflicted_rows": []
             }
+            return Response(context, status=status.HTTP_200_OK)
 
-            return JsonResponse(context, status=200)
-
-        except Exception as e:
-            print(e)
-            return JsonResponse({"result": "error", "msg": "Something went wrong while processing your file."},
-                                status=200)
+        except Exception as ex:
+            context = { 
+                "result": "error",
+                "msg": "Something went wrong while processing your file.",
+                "exception": f"{ex}"
+            }
+            return Response(context, status=status.HTTP_400_BAD_REQUEST)

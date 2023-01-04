@@ -5,7 +5,8 @@ from django.contrib.auth.models import Group
 from django.db import transaction
 from django.core.exceptions import ValidationError
 
-from core.models import User, Course, CourseGroup
+from core.models import User, Course, CourseGroup, Assessment
+from core.views import assessments
 from core.views.utils import is_student
 
 
@@ -39,14 +40,9 @@ class StudentCreationForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-
-        # get course
         course = cleaned_data.get("course")
-
-        # get user if user already exists
         user = User.objects.filter(username=cleaned_data['username']).first()
 
-        # user validation
         if user:
             # ensure user is a student
             if not is_student(user):
@@ -64,32 +60,28 @@ class StudentCreationForm(forms.Form):
 
             # create only if user does not exist
             if not user:
-                # create user instance
                 user = User(
                     first_name=self.cleaned_data['first_name'],
                     last_name=self.cleaned_data['last_name'],
                     username=self.cleaned_data['username'],
                 )
 
-                # set email automatically based on username
                 user.email = f"{user.username}@E.NTU.EDU.SG"
-
-                # set default password (configured in project settings file)
                 user.password = make_password(settings.DEFAULT_STUDENT_PASSWORD)
-
-                # save changes
                 user.save()
 
                 # add user to the student group
                 Group.objects.get(name="student").user_set.add(user)
 
-            # get course
             course = self.cleaned_data.get("course")
-
-            # get or create course group
             course_group, _ = CourseGroup.objects.get_or_create(course=course, name=self.cleaned_data.get("group"))
-
-            # add user to course group
             course_group.students.add(user)
 
+            # if there are any published test(s), send email notification
+            courses_assessments = Assessment.objects.filter(course=course).all()
+            if courses_assessments:
+                for a in courses_assessments:
+                    assessments.send_assessment_published_email(assessment=a, recipient_list=[user.email])
+
             return user
+

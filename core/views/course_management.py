@@ -117,9 +117,9 @@ def course_details(request, course_id):
 
     # get queryset of students who are enrolled in this course
     course_groups = course.coursegroup_set.all().order_by('name')
-    all_students = User.objects.filter(enrolled_groups__course=course).prefetch_related('enrolled_groups',
-                                                                                        'enrolled_groups__course').order_by(
-        'username')
+    all_students = User.objects.filter(enrolled_groups__course=course) \
+                                .prefetch_related('enrolled_groups', 'enrolled_groups__course') \
+                                .order_by('username')
     students_filter = CourseStudentFilter(course_groups, request.GET, queryset=all_students)
 
     # paginate results

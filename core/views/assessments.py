@@ -1,17 +1,24 @@
 import random
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core import mail
+from django.core.mail import EmailMultiAlternatives
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.renderers import JSONRenderer
 
 from core.decorators import groups_allowed, UserGroup
 from core.filters import CodeQuestionFilter
 from core.forms.assessments import AssessmentForm
-from core.models import Course, Assessment, CodeQuestion, TestCase, CodeSnippet, Tag, QuestionBank
+from core.models import Course, Assessment, CodeQuestion, TestCase, CodeSnippet, Tag, QuestionBank, CourseGroup, User
 from core.serializers import CodeQuestionsSerializer
 from core.views.utils import check_permissions_course, check_permissions_assessment, check_permissions_code_question
 
@@ -252,12 +259,18 @@ def publish_assessment(request, assessment_id):
                 # publish assessment
                 assessment.published = True
                 assessment.save()
+            
+            try:
+                # send email notification to students enrolled
+                send_assessment_published_email(assessment)
+                messages.success(request, "The assessment has been published!")
+            except Exception as ex:
+                messages.warning(request, f"{ex}")
 
-            messages.success(request, "The assessment has been published!")
-            return redirect("assessment-details", assessment_id=assessment_id)
         else:
-            messages.warning(request, "The assessment was already published!")
-            return redirect("assessment-details", assessment_id=assessment_id)
+            messages.warning(request, "The assessment is already published!")
+            
+        return redirect("assessment-details", assessment_id=assessment_id)
 
 
 @login_required()
@@ -298,3 +311,51 @@ def undo_delete_assessment(request, assessment_id):
                 assessment.save()
                 messages.success(request, "Undo delete successful!")
             return redirect('assessment-details', assessment_id=assessment_id)
+
+
+def send_assessment_published_email(assessment, recipient_list=None):
+    course_groups = CourseGroup.objects.filter(course=assessment.course).prefetch_related('course')
+    students_enrolled = User.objects.filter(enrolled_groups__in=course_groups)
+
+    if recipient_list is None:
+        recipient_list = list(students_enrolled.values_list('email', flat=True))
+    
+    subject = f"{assessment.course} {assessment.name} Published"
+
+    text_content = f"{assessment.name}\n{assessment.course}"
+    html_content = f"<p><b>{assessment.name}</b></p>\
+                    <p>{assessment.course}</p>"
+
+    try:
+        email = EmailMultiAlternatives(subject, text_content, settings.EMAIL_HOST_USER, recipient_list)
+        email.attach_alternative(html_content, "text/html")
+        
+        connection = mail.get_connection()
+        connection.open()
+        email.send()
+        connection.close()
+    except:
+        raise EmailException()
+
+
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
+def send_email(request):
+    try:
+        assessment_id = request.POST.get('assessment_id')
+        assessment = Assessment.objects.get(id=assessment_id)
+        send_assessment_published_email(assessment)
+
+        return Response({ "result": "success" }, status=status.HTTP_200_OK)
+
+    except Exception as ex:
+        context = { 
+            "result": "error",
+            "exception": f"{ex}"
+            }
+        return Response(context, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EmailException(Exception):
+    def __str__(self):
+        return f"An error occurred. Please try again."

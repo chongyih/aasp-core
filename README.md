@@ -33,7 +33,7 @@ uses [Judge0](https://github.com/judge0/judge0) for code compilation and executi
 
 4. With docker-compose, create and start the containers:
    ```shell
-   docker-compose -f docker-compose-dev.yml up -d
+   docker compose -f docker-compose-dev.yml up -d
    ```
 
 5. Open the project in your IDE, create a virtual environment and install the requirements.
@@ -60,7 +60,7 @@ uses [Judge0](https://github.com/judge0/judge0) for code compilation and executi
 
 #### Initial Deployment
 
-1. Clone the repository, check out the `master` branch.
+1. Clone the repository, check out the `master` branch. You may skip this step if you already have a copy of the repository (e.g. from an archive). 
    ```bash
    # via http
    git clone https://github.com/winglam209/aasp
@@ -76,12 +76,17 @@ uses [Judge0](https://github.com/judge0/judge0) for code compilation and executi
 
 3. Open `.env` and update the `SECRET_KEY` and `AASP_POSTGRES_PASSWORD` fields.
 
-4. With docker-compose, create and start the containers:
+4. If the machine is offline, you will need to first load the docker images from the `exported-images.tar` file.
    ```shell
-   sudo docker-compose -f docker-compose.yml up -d
+   sudo docker load -i exported-images.tar
    ```
 
-5. Once the containers have been created and started, the site will be accessible at `http://<host-ip>/` (port 80)
+5. With docker-compose, create and start the containers:
+   ```shell
+   sudo docker compose -f docker-compose.yml up -d
+   ```
+
+6. Once the containers have been created and started, the site will be accessible at `http://<host-ip>/` (port 80)
 
 #### Performing updates
 
@@ -91,8 +96,19 @@ Note: If changes were made to the database schema, make sure to commit the migra
 2. On the server, pull the new changes and recreate containers if necessary:
    ```shell
    git pull
-   sudo docker-compose -f docker-compose.yml up -d
+   sudo docker compose -f docker-compose.yml up -d
    ```
+
+## Initial Setup
+### Default superuser account
+By default, only a single `admin` account with superuser privileges is created. The default password for this user is `password123`. 
+
+### Creation of other accounts
+Other user accounts can be created through the Django Admin Dashboard with the `admin` account. This dashboard can be accessed by logging in as the `admin` user.
+
+To create an Educator account, create the user and add the user to the Educator group. The same applies for Lab Assistants.
+
+For Student accounts, they are created on demand when students are enrolled into courses, so there is no need to pre-create these accounts.
 
 ## Credits
 

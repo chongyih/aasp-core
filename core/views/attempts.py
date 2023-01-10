@@ -525,6 +525,7 @@ def detect_faces_initial(request):
 
     except Exception as ex:
         error_context = { "error": f"{ex}" }
+        print(f"{ex}")
         return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -555,7 +556,7 @@ def test(request):
     # rimg = app.draw_on(image, faces)
     # cv2.imwrite(path, rimg)
 
-    detect_faces.delay(15)
+    detect_faces.delay(10)
 
     context = {
         "result": "success",

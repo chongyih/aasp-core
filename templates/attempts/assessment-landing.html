@@ -353,10 +353,11 @@
           let blob = canvas.toBlob(
             (blob) => {
               image = new File([blob], 'initial.jpg', { type: 'image/jpg' });
-              uploadImage(timestamp, image); // detect faces
+              // uploadImage(timestamp, image); // detect faces
                 
             },
             'image/jpg');
+            enterBtn.prop("disabled", false);
         }
       };
 

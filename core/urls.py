@@ -56,7 +56,7 @@ urlpatterns = [
     path('assessment/delete/<int:assessment_id>/', assessments.delete_assessment, name='delete-assessment'),
     path('assessment/undo-delete/<int:assessment_id>/', assessments.undo_delete_assessment, name='undo-delete-assessment'),
     # for testing, to remove later
-    path('send-email', assessments.send_email, name='send-email'),
+    path('send-email', assessments.send_email_test_api, name='send-email'),
 
     # taking assessments (attempts)
     path('assessment/landing/<int:assessment_id>/', attempts.assessment_landing, name='assessment-landing'),
@@ -64,8 +64,7 @@ urlpatterns = [
     path('attempt/<int:assessment_attempt_id>/question/<int:question_index>/', attempts.attempt_question, name='attempt-question'),
     path('assessment/submit/<int:assessment_attempt_id>/', attempts.submit_assessment, name='submit-assessment'),
     path('api/upload-snapshot/<int:assessment_attempt_id>/', attempts.upload_snapshot, name='upload-snapshot'), #ajax
-    # path('detect-faces-initial', attempts.detect_faces_initial, name='detect-faces-initial'),
-    path('detect-faces', attempts.detect_faces, name='detect-faces'),
+    path('detect-faces', attempts.detect_faces_initial, name='detect-faces'),
 
     # code question attempts
     path('api/submit-single-test-case/<int:test_case_id>/', attempts.submit_single_test_case, name='submit-single-test-case'),  # ajax

@@ -154,24 +154,7 @@ def enter_assessment(request, assessment_id):
                                             attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
                 snapshot.save()
 
-                # for dev, to remove later
-                if settings.DEBUG:
-                    image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
-
-                    model_pack_name = "buffalo_l"
-                    app = FaceAnalysis(name=model_pack_name)
-                    app.prepare(ctx_id=0, det_size=(640, 640))
-                    image = cv2.imread(image_path)
-                    faces = app.get(image)
-
-                    snapshot.faces_detected = len(faces)
-                    snapshot.save()
-
-                    rimg = app.draw_on(image, faces)
-                    cv2.imwrite(image_path, rimg)
-                
-                else:
-                    detect_faces.delay(snapshot.id)
+                detect_faces.delay(snapshot.id)
 
             return redirect('attempt-question', assessment_attempt_id=assessment_attempt.id, question_index=0)
 
@@ -508,24 +491,8 @@ def upload_snapshot(request, assessment_attempt_id):
                                         attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
             snapshot.save()
 
-            # for dev, to remove later
-            if settings.DEBUG:
-                image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
 
-                model_pack_name = "buffalo_l"
-                app = FaceAnalysis(name=model_pack_name)
-                app.prepare(ctx_id=0, det_size=(640, 640))
-                image = cv2.imread(image_path)
-                faces = app.get(image)
-
-                snapshot.faces_detected = len(faces)
-                snapshot.save()
-
-                # rimg = app.draw_on(image, faces)
-                # cv2.imwrite(image_path, rimg)
-            
-            else:
-                detect_faces.delay(snapshot.id)
+            detect_faces.delay(snapshot.id)
 
             context = {
                 "faces_detected": snapshot.faces_detected,
@@ -539,7 +506,7 @@ def upload_snapshot(request, assessment_attempt_id):
 
 @api_view(["POST"])
 @renderer_classes([JSONRenderer])
-def detect_faces(request):
+def detect_faces_initial(request):
     try:
         image = request.FILES['image']
         model_pack_name = "buffalo_l"
@@ -561,35 +528,6 @@ def detect_faces(request):
         return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-# @gzip.gzip_page
-# def detect_faces_initial(request):
-# 	# return the response generated along with the specific media
-#     return StreamingHttpResponse(generate(), content_type="multipart/x-mixed-replace;boundary=frame")
-
-
-# def generate():
-#     video_capture = cv2.VideoCapture(0)
-#     model_pack_name = "buffalo_l"
-#     app = FaceAnalysis(name=model_pack_name)
-#     app.prepare(ctx_id=0, det_size=(640, 640))
-
-#     while True:
-#         # Capture frame-by-frame
-#         _, frame = video_capture.read()
-
-#         faces = app.get(frame)
-
-#         # _, faces = cv2.imencode(".jpg", faces)
-#         # yield(b'--frame\r\n' b'Content-Type: image/jpg\r\n\r\n' + 
-# 		# 	bytearray(faces) + b'\r\n')
-
-#         rimg = app.draw_on(frame, faces)
-#         _, rimg = cv2.imencode(".jpg", rimg)
-#         yield(b'--frame\r\n' b'Content-Type: image/jpg\r\n\r\n' + 
-# 			bytearray(rimg) + b'\r\n')
-
-
 # for testing, to remove later
 @api_view(["POST"])
 @renderer_classes([JSONRenderer])
@@ -609,17 +547,20 @@ def test(request):
     # path = os.path.join(settings.MEDIA_ROOT, "test/sh_rect.png")
     path = os.path.join(settings.MEDIA_ROOT, "test/sh_1_rect.png")
 
-    model_pack_name = 'buffalo_l'
-    app = FaceAnalysis(name=model_pack_name)
-    app.prepare(ctx_id=0, det_size=(640, 640))
-    image = cv2.imread(image_path)
-    faces = app.get(image)
-    rimg = app.draw_on(image, faces)
-    cv2.imwrite(path, rimg)
+    # model_pack_name = 'buffalo_l'
+    # app = FaceAnalysis(name=model_pack_name)
+    # app.prepare(ctx_id=0, det_size=(640, 640))
+    # image = cv2.imread(image_path)
+    # faces = app.get(image)
+    # rimg = app.draw_on(image, faces)
+    # cv2.imwrite(path, rimg)
+
+    detect_faces.delay(15)
 
     context = {
         "result": "success",
-        "faces_detected": len(faces),
+        # "faces_detected": len(faces),
     }
+
     return Response(context, status=status.HTTP_200_OK)
 

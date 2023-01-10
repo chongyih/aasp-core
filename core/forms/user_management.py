@@ -78,10 +78,10 @@ class StudentCreationForm(forms.Form):
             course_group.students.add(user)
 
             # if there are any published test(s), send email notification
-            courses_assessments = Assessment.objects.filter(course=course).all()
+            courses_assessments = Assessment.objects.filter(course=course, published=True, deleted=False).all()
             if courses_assessments:
                 for a in courses_assessments:
-                    assessments.send_assessment_published_email(assessment=a, recipient_list=[user.email])
+                    assessments.send_assessment_published_email(assessment=a, recipients=[user])
 
             return user
 

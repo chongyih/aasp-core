@@ -313,34 +313,49 @@ def undo_delete_assessment(request, assessment_id):
             return redirect('assessment-details', assessment_id=assessment_id)
 
 
-def send_assessment_published_email(assessment, recipient_list=None):
+def send_assessment_published_email(assessment, recipients=None):
     course_groups = CourseGroup.objects.filter(course=assessment.course).prefetch_related('course')
     students_enrolled = User.objects.filter(enrolled_groups__in=course_groups)
 
-    if recipient_list is None:
-        recipient_list = list(students_enrolled.values_list('email', flat=True))
+    if recipients is None and not students_enrolled.exists:
+        return
+
+    if recipients is None:
+        recipients = students_enrolled
     
     subject = f"{assessment.course} {assessment.name} Published"
 
-    text_content = f"{assessment.name}\n{assessment.course}"
-    html_content = f"<p><b>{assessment.name}</b></p>\
-                    <p>{assessment.course}</p>"
+    connection = mail.get_connection()
+    connection.open()
+    for student in recipients:
+        text_content = f"Dear {student.get_full_name()},\n {assessment.name}\n{assessment.course}"
+        html_content = f"Dear {student.get_full_name()},\
+                        <p><b>{assessment.name}</b></p>\
+                        <p>{assessment.course}</p>"
+        
+        send_email(subject, text_content, html_content, [student.email])
+    connection.close()
+    
 
+def send_email(subject, text_content, html_content, recipient):
     try:
-        email = EmailMultiAlternatives(subject, text_content, settings.EMAIL_HOST_USER, recipient_list)
+        email = EmailMultiAlternatives(subject, text_content, settings.EMAIL_HOST_USER, recipient)
         email.attach_alternative(html_content, "text/html")
         
-        connection = mail.get_connection()
-        connection.open()
         email.send()
-        connection.close()
+        
     except:
         raise EmailException()
 
 
+class EmailException(Exception):
+    def __str__(self):
+        return f"An error occurred. Please try again."
+
+
 @api_view(["POST"])
 @renderer_classes([JSONRenderer])
-def send_email(request):
+def send_email_test_api(request):
     try:
         assessment_id = request.POST.get('assessment_id')
         assessment = Assessment.objects.get(id=assessment_id)
@@ -355,7 +370,3 @@ def send_email(request):
             }
         return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
-
-class EmailException(Exception):
-    def __str__(self):
-        return f"An error occurred. Please try again."

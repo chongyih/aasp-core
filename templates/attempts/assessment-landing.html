@@ -357,7 +357,6 @@
                 
             },
             'image/jpg');
-            enterBtn.prop("disabled", false);
         }
       };
 
@@ -388,6 +387,7 @@
           const faces_detected = res.faces_detected;
           if (faces_detected === 2) {
             // only enable enterBtn if candidate's surrounding is appropriate + matric card present
+            snapshotAlert.hide();
             enterBtn.prop("disabled", false);
           }
 

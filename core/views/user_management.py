@@ -4,7 +4,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group
 from django.db.models import Q
-from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from rest_framework import status
 from rest_framework.response import Response
@@ -162,12 +161,11 @@ def enrol_students_bulk(request):
                 msg += " Some rows were ignored, refer to the section below for more details."
 
             # if there are any published test(s), send email notification
-            courses_assessments = Assessment.objects.filter(course=course).all()
+            courses_assessments = Assessment.objects.filter(course=course, published=True, deleted=False).all()
             if courses_assessments:
                 for a in courses_assessments:
-                    recipient_list = [user.email for user in created_users]
-                    recipient_list += [user.email for user in existing_users]
-                    assessments.send_assessment_published_email(assessment=a, recipient_list=recipient_list)
+                    recipients = created_users + existing_users
+                    assessments.send_assessment_published_email(assessment=a, recipients=recipients)
 
             # result
             context = {

@@ -131,7 +131,6 @@ def detect_faces(snapshot_id):
         snapshot.faces_detected = len(faces)
         snapshot.save()
 
-        # rimg = app.draw_on(image, faces)
-        # cv2.imwrite(image_path, rimg)
     except:
         pass
+

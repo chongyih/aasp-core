@@ -2,9 +2,8 @@
 .DS_STORE
 .python-version
 
-# Files saved in MEDIA_ROOT and all .png images
+# Files saved in MEDIA_ROOT
 media/
-*.png
 
 # Django static files
 /staticfiles

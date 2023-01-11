@@ -154,7 +154,21 @@ def enter_assessment(request, assessment_id):
                                             attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
                 snapshot.save()
 
-                detect_faces.delay(snapshot.id)
+                # for local development: cannot queue as task because MEDIA_ROOT is not on same server as linux machine
+                if settings.DEBUG:
+                    image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
+
+                    model_pack_name = "buffalo_l"
+                    app = FaceAnalysis(name=model_pack_name)
+                    app.prepare(ctx_id=0, det_size=(640, 640))
+                    image = cv2.imread(image_path)
+                    faces = app.get(image)
+
+                    snapshot.faces_detected = len(faces)
+                    snapshot.save()
+                
+                else:
+                    detect_faces.delay(snapshot.id)
 
             return redirect('attempt-question', assessment_attempt_id=assessment_attempt.id, question_index=0)
 
@@ -492,7 +506,21 @@ def upload_snapshot(request, assessment_attempt_id):
             snapshot.save()
 
 
-            detect_faces.delay(snapshot.id)
+            # for local development: cannot queue as task because MEDIA_ROOT is not on same server as linux machine
+            if settings.DEBUG:
+                image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
+
+                model_pack_name = "buffalo_l"
+                app = FaceAnalysis(name=model_pack_name)
+                app.prepare(ctx_id=0, det_size=(640, 640))
+                image = cv2.imread(image_path)
+                faces = app.get(image)
+
+                snapshot.faces_detected = len(faces)
+                snapshot.save()
+            
+            else:
+                detect_faces.delay(snapshot.id)
 
             context = {
                 "faces_detected": snapshot.faces_detected,
@@ -556,11 +584,30 @@ def test(request):
     # rimg = app.draw_on(image, faces)
     # cv2.imwrite(path, rimg)
 
-    detect_faces.delay(10)
+    id = request.POST.get('id')
+    
+    # for local development: cannot queue as task because MEDIA_ROOT is not on same server as linux machine
+    if settings.DEBUG:
+        snapshot = get_object_or_404(id=id)
+        image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
+
+        model_pack_name = "buffalo_l"
+        app = FaceAnalysis(name=model_pack_name)
+        app.prepare(ctx_id=0, det_size=(640, 640))
+        image = cv2.imread(image_path)
+        faces = app.get(image)
+
+        snapshot.faces_detected = len(faces)
+        snapshot.save()
+    
+    else:
+        detect_faces.delay(id)
+
+    faces_detected = snapshot.faces
 
     context = {
         "result": "success",
-        # "faces_detected": len(faces),
+        "faces_detected": faces_detected,
     }
 
     return Response(context, status=status.HTTP_200_OK)

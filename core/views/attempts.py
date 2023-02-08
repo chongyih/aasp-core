@@ -156,17 +156,7 @@ def enter_assessment(request, assessment_id):
 
                 # for local development: cannot queue as task because MEDIA_ROOT is not on same server as linux machine
                 if settings.DEBUG:
-                    image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
-
-                    model_pack_name = "buffalo_sc"
-                    app = FaceAnalysis(name=model_pack_name)
-                    app.prepare(ctx_id=0, det_size=(640, 640))
-                    image = cv2.imread(image_path)
-                    faces = app.get(image)
-
-                    snapshot.faces_detected = len(faces)
-                    snapshot.save()
-                
+                    local_detect_faces(snapshot)
                 else:
                     detect_faces.delay(snapshot.id)
 
@@ -508,17 +498,7 @@ def upload_snapshot(request, assessment_attempt_id):
 
             # for local development: cannot queue as task because MEDIA_ROOT is not on same server as linux machine
             if settings.DEBUG:
-                image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
-
-                model_pack_name = "buffalo_sc"
-                app = FaceAnalysis(name=model_pack_name)
-                app.prepare(ctx_id=0, det_size=(640, 640))
-                image = cv2.imread(image_path)
-                faces = app.get(image)
-
-                snapshot.faces_detected = len(faces)
-                snapshot.save()
-            
+                local_detect_faces(snapshot)
             else:
                 detect_faces.delay(snapshot.id)
 
@@ -530,6 +510,19 @@ def upload_snapshot(request, assessment_attempt_id):
     except Exception as ex:
         error_context = { "error": f"{ex}" } 
         return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
+
+
+def local_detect_faces(snapshot):
+    image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
+
+    model_pack_name = "buffalo_sc"
+    app = FaceAnalysis(name=model_pack_name)
+    app.prepare(ctx_id=0, det_size=(640, 640))
+    image = cv2.imread(image_path)
+    faces = app.get(image)
+
+    snapshot.faces_detected = len(faces)
+    snapshot.save()
 
 
 @api_view(["POST"])
@@ -589,17 +582,7 @@ def test(request):
     # for local development: cannot queue as task because MEDIA_ROOT is not on same server as linux machine
     if settings.DEBUG:
         snapshot = get_object_or_404(id=id)
-        image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
-
-        model_pack_name = "buffalo_sc"
-        app = FaceAnalysis(name=model_pack_name)
-        app.prepare(ctx_id=0, det_size=(640, 640))
-        image = cv2.imread(image_path)
-        faces = app.get(image)
-
-        snapshot.faces_detected = len(faces)
-        snapshot.save()
-    
+        local_detect_faces(snapshot)
     else:
         detect_faces.delay(id)
 

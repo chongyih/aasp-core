@@ -122,7 +122,7 @@ def detect_faces(snapshot_id):
         snapshot = CandidateSnapshot.objects.get(id=snapshot_id)
         image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
 
-        model_pack_name = "buffalo_l"
+        model_pack_name = "buffalo_sc"
         app = FaceAnalysis(name=model_pack_name)
         app.prepare(ctx_id=0, det_size=(640, 640))
         image = cv2.imread(image_path)

@@ -158,7 +158,7 @@ def enter_assessment(request, assessment_id):
                 if settings.DEBUG:
                     image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
 
-                    model_pack_name = "buffalo_l"
+                    model_pack_name = "buffalo_sc"
                     app = FaceAnalysis(name=model_pack_name)
                     app.prepare(ctx_id=0, det_size=(640, 640))
                     image = cv2.imread(image_path)
@@ -510,7 +510,7 @@ def upload_snapshot(request, assessment_attempt_id):
             if settings.DEBUG:
                 image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
 
-                model_pack_name = "buffalo_l"
+                model_pack_name = "buffalo_sc"
                 app = FaceAnalysis(name=model_pack_name)
                 app.prepare(ctx_id=0, det_size=(640, 640))
                 image = cv2.imread(image_path)
@@ -537,7 +537,7 @@ def upload_snapshot(request, assessment_attempt_id):
 def detect_faces_initial(request):
     try:
         image = request.FILES['image']
-        model_pack_name = "buffalo_l"
+        model_pack_name = "buffalo_sc"
         app = FaceAnalysis(name=model_pack_name)
         app.prepare(ctx_id=0, det_size=(640, 640))
         image_bytes = image.read()
@@ -576,7 +576,7 @@ def test(request):
     # path = os.path.join(settings.MEDIA_ROOT, "test/sh_rect.png")
     path = os.path.join(settings.MEDIA_ROOT, "test/sh_1_rect.png")
 
-    # model_pack_name = 'buffalo_l'
+    # model_pack_name = 'buffalo_sc'
     # app = FaceAnalysis(name=model_pack_name)
     # app.prepare(ctx_id=0, det_size=(640, 640))
     # image = cv2.imread(image_path)
@@ -591,7 +591,7 @@ def test(request):
         snapshot = get_object_or_404(id=id)
         image_path = os.path.join(settings.MEDIA_ROOT, snapshot.image.name)
 
-        model_pack_name = "buffalo_l"
+        model_pack_name = "buffalo_sc"
         app = FaceAnalysis(name=model_pack_name)
         app.prepare(ctx_id=0, det_size=(640, 640))
         image = cv2.imread(image_path)

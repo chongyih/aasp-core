@@ -22,7 +22,6 @@ class Migration(migrations.Migration):
                 ('image', models.ImageField(blank=True, null=True, upload_to=core.models.attempts.snapshots_directory_path)),
                 ('faces_detected', models.PositiveIntegerField(default=0)),
                 ('assessment_attempt', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.assessmentattempt')),
-                ('candidate', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL)),
             ],
         ),
     ]

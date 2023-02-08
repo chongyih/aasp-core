@@ -180,10 +180,10 @@ def export_assessment_results(request, assessment_id):
 def candidate_snapshots(request):
     assessment_attempt_id = request.GET.get("attempt_id")
     all_snapshots = CandidateSnapshot.objects.filter(assessment_attempt__id=assessment_attempt_id).order_by("timestamp")
-    multiple_faces = all_snapshots.filter(faces_detected__gt=1)
+    multiple_faces = all_snapshots.filter(faces_detected__gt=1).exclude(image__contains="initial")
     missing_face = all_snapshots.filter(faces_detected=0)
-    candidate = all_snapshots.first().candidate
     assessment_attempt = all_snapshots.first().assessment_attempt
+    candidate = assessment_attempt.candidate
 
     context = {
         "candidate": candidate,

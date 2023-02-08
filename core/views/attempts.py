@@ -150,7 +150,7 @@ def enter_assessment(request, assessment_id):
                 timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
                 image = request.FILES['image']
 
-                snapshot = CandidateSnapshot(candidate=candidate, assessment_attempt=assessment_attempt, 
+                snapshot = CandidateSnapshot(assessment_attempt=assessment_attempt, 
                                             attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
                 snapshot.save()
 
@@ -491,7 +491,7 @@ def upload_snapshot(request, assessment_attempt_id):
             timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
             image = request.FILES['image']
 
-            snapshot = CandidateSnapshot(candidate=candidate, assessment_attempt=assessment_attempt, 
+            snapshot = CandidateSnapshot(assessment_attempt=assessment_attempt, 
                                         attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
             snapshot.save()
 

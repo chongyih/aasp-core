@@ -59,7 +59,7 @@ class TestCaseAttemptAdmin(admin.ModelAdmin):
 
 
 class CandidateSnapshotAdmin(admin.ModelAdmin):
-    list_display = ('id', 'candidate', 'assessment_attempt', 'attempt_number', 'timestamp', 'faces_detected', 'image')
+    list_display = ('id', 'assessment_attempt', 'attempt_number', 'timestamp', 'faces_detected', 'image')
 
 
 admin.site.register(User, CustomUserAdmin)

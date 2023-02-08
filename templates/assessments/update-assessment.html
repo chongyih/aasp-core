@@ -119,7 +119,7 @@
                     <div class="form-group col-6">
                       <label for="id_duration">Duration (mins)</label>
                       <input type="number" name="duration" class="form-control {% if form.duration.errors %}is-invalid{% endif %}" min="0"
-                              value="{{ form.duration.value|default:"60" }}" id="id_duration">
+                              value="{{ form.duration.value}}" id="id_duration">
                       <small class="text-muted">(0 for unlimited)</small>
                       {# duration errors #}
                       {% if form.duration.errors %}
@@ -135,7 +135,7 @@
                     <div class="form-group col-6">
                       <label for="id_num_attempts">No. Attempts</label>
                       <input type="number" name="num_attempts" class="form-control {% if form.num_attempts.errors %}is-invalid{% endif %}" min="0"
-                              value="{{ form.num_attempts.value|default:"1" }}" id="id_num_attempts">
+                              value="{{ form.num_attempts.value }}" id="id_num_attempts">
                       <small class="text-muted">(0 for unlimited)</small>
                       {# num_attempts errors #}
                       {% if form.num_attempts.errors %}
@@ -239,7 +239,7 @@
                     <div class="checkbox">
                       <input type="checkbox" id="id_limit_tab_switch" name="limit_tab_switching" class="form-check-input me-2"
                           {% if form.limit_tab_switching.value %}checked{% endif %}>
-                      <label for="id_limit_tab_switch">Force submit assessment on tab switching&nbsp;</label>
+                      <label for="id_limit_tab_switch">Force submit assessment after multiple tab switching&nbsp;</label>
                       <i class="bi bi-question-circle" data-bs-toggle="modal" data-bs-target="#tab-modal"></i>
                     </div>
                   </div>
@@ -306,14 +306,14 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Force submit assessment on tab switching</h5>
+            <h5 class="modal-title">Force submit assessment after multiple tab switching</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" />
           </div>
           <div class="modal-body">
             <div class="text-start" style="font-weight: bold;">Important:</div>
             <ol class="text-start">
               <li>
-                Candidates will be given a warning if they switch tabs (i.e. clicking anywhere outside the assessment screen). 
+                Candidates will be given a warning if they leave the assessment browser tab (i.e. clicking anywhere outside the assessment screen). 
                 This includes:
                 <ul>
                   <li>moving to a new window/tab</li>

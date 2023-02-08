@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.forms import models
 from django import forms
-from core.models import Assessment, CandidateSnapshot
+from core.models import Assessment
 
 
 class AssessmentForm(models.ModelForm):

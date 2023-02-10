@@ -25,7 +25,7 @@
             data: formData,
             processData: false,
             contentType: false,
-        }).done((res) => {
+        }).done((res, textStatus, jqXHR) => {
             setTimeout(() => {
                 if (res.result === "success") {
                     // show success toast
@@ -41,22 +41,26 @@
                     toRemove.fadeOut('slow', () => {
                         toRemove.remove();
                     });
-                } else {
-                    Toastify({
-                        text: "Unable to remove the question, please refresh the page.",
-                        duration: 5000,
-                        position: "center",
-                        style: {"background": "#ff6961"}
-                    }).showToast();
                 }
             }, 300);
-        }).fail((res) => {
-            Toastify({
-                text: "An error has occurred. Please refresh the page.",
-                duration: 5000,
-                position: "center",
-                style: {"background": "#ff6961"}
-            }).showToast();
+        }).fail((jqXHR, textStatus, errorThrown) => {
+            // 4xx status codes
+            if (Math.floor(jqXHR.status / 100) == 4) {
+                Toastify({
+                    text: "Unable to remove the question, please refresh the page.",
+                    duration: 5000,
+                    position: "center",
+                    style: {"background": "#ff6961"}
+                }).showToast();
+            }
+            else {
+                Toastify({
+                    text: "An error has occurred. Please refresh the page.",
+                    duration: 5000,
+                    position: "center",
+                    style: {"background": "#ff6961"}
+                }).showToast();
+            }
         }).always((res) => {
             setTimeout(() => {
                 actionSpinner.hide();

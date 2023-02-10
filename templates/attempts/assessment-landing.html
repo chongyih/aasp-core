@@ -380,7 +380,7 @@
           data: formData,
           processData: false,
           contentType: false,
-        }).done((res) => {
+        }).done((res, textStatus, jqXHR) => {
           pictureBtn.html("Take Picture");
           pictureBtn.prop("disabled", false);
           clearBtn.prop("disabled", false);
@@ -402,11 +402,11 @@
           else {
             // test environment is not appropriate
             snapshotAlert.addClass("alert-danger");
-            snapshotAlert.text("Your environment is not appropriate for test! Please contact the administrator.");
+            snapshotAlert.text("Your environment is not appropriate for test! Please try again or contact the administrator.");
             snapshotAlert.show();
           }
           
-        }).fail((res) => {
+        }).fail((jqXHR, textStatus, errorThrown) => {
           console.error("An error occurred!");
         });        
       }
@@ -433,9 +433,9 @@
           data: formData,
           processData: false,
           contentType: false,
-        }).done((res) => {
+        }).done((res, textStatus, jqXHR) => {
           form.submit();
-        }).fail((res) => {
+        }).fail((jqXHR, textStatus, errorThrown) => {
           // console.log("An error occurred!");
         });
       };

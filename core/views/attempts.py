@@ -9,10 +9,9 @@ from django.core.exceptions import PermissionDenied
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.http import Http404, JsonResponse, StreamingHttpResponse
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators import gzip
 from insightface.app import FaceAnalysis
 from rest_framework import status
 from rest_framework.response import Response
@@ -242,6 +241,8 @@ def attempt_question(request, assessment_attempt_id, question_index):
         raise Exception("Unknown question type!")
 
 
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.student)
 def submit_single_test_case(request, test_case_id):
@@ -250,39 +251,65 @@ def submit_single_test_case(request, test_case_id):
     This is used for the "Compile and Run" option for users to run the sample test case.
     This submission is not stored in the database.
     """
-    if request.method == "POST":
-        # get test case instance
-        test_case = TestCase.objects.filter(id=test_case_id).first()
-        if not test_case:
-            return JsonResponse({"result": "error", "msg": "The specified Test Case does not exist."})
+    try:
+        if request.method == "POST":
+            # get test case instance
+            test_case = TestCase.objects.filter(id=test_case_id).first()
+            if not test_case:
+                error_context = {
+                    "result": "error",
+                    "message": "The specified Test Case does not exist.",
+                }
+                return Response(error_context, status=status.HTTP_404_NOT_FOUND)
 
-        # judge0 params
-        params = {
-            "source_code": request.POST.get('code'),
-            "language_id": request.POST.get('lang-id'),
-            "stdin": test_case.stdin,
-            "expected_output": test_case.stdout,
-            "cpu_time_limit": test_case.time_limit,
-            "memory_limit": test_case.memory_limit,
-        }
+            # judge0 params
+            params = {
+                "source_code": request.POST.get('code'),
+                "language_id": request.POST.get('lang-id'),
+                "stdin": test_case.stdin,
+                "expected_output": test_case.stdout,
+                "cpu_time_limit": test_case.time_limit,
+                "memory_limit": test_case.memory_limit,
+            }
 
-        # call judge0
-        try:
-            url = settings.JUDGE0_URL + "/submissions/?base64_encoded=false&wait=false"
-            res = requests.post(url, json=params)
-            data = res.json()
-        except requests.exceptions.ConnectionError:
-            return JsonResponse({"result": "error", "msg": "Judge0 API seems to be down."})
+            # call judge0
+            try:
+                url = settings.JUDGE0_URL + "/submissions/?base64_encoded=false&wait=false"
+                res = requests.post(url, json=params)
+                data = res.json()
+            except requests.exceptions.ConnectionError:
+                error_context = {
+                    "result": "error",
+                    "message": "Judge0 API seems to be down.",
+                }
+                return Response(error_context, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # return error if no token
-        token = data.get("token")
-        if not token:
-            print(data)
-            return JsonResponse({"result": "error", "msg": "Judge0 error."})
+            # return error if no token
+            token = data.get("token")
+            if not token:
+                print(data)
+                error_context = {
+                    "result": "error",
+                    "message": "Judge0 error.",
+                }
+                return Response(error_context, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        return JsonResponse({"result": "success", "token": token})
+            context = {
+                "result": "success",
+                "token": token,
+            }
+            return Response(context, status=status.HTTP_200_OK)
+    
+    except Exception as ex:
+        error_context = {
+            "result": "error",
+            "message": f"{ex}",
+        } 
+        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(["GET"])
+@renderer_classes([JSONRenderer])
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.student)
 def get_tc_details(request):
@@ -309,38 +336,56 @@ def get_tc_details(request):
         14: "Exec Format Error",
     }
 
-    if request.method == "GET":
-        # get parameters from request
-        status_only = request.GET.get('status_only') == 'true'
-        token = request.GET.get('token')
-        if not token:
-            return JsonResponse({"result": "error"})
+    try:
+        if request.method == "GET":
+            # get parameters from request
+            status_only = request.GET.get('status_only') == 'true'
+            token = request.GET.get('token')
+            if not token:
+                return Response({ "result": "error" }, status=status.HTTP_400_BAD_REQUEST)
 
-        # call judge0
-        try:
-            if status_only:
-                url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id"
-            else:
-                url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id,stdin,stdout,expected_output"
+            # call judge0
+            try:
+                if status_only:
+                    url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id"
+                else:
+                    url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id,stdin,stdout,expected_output"
 
-            res = requests.get(url)
-            data = res.json()
+                res = requests.get(url)
+                data = res.json()
 
-            # append friendly status name
-            data['status'] = judge0_statuses[int(data['status_id'])]
+                # append friendly status name
+                data['status'] = judge0_statuses[int(data['status_id'])]
 
-            # hide fields if this belongs to a hidden test case
-            if TestCase.objects.filter(hidden=True, testcaseattempt__token=token).exists():
-                data['stdin'] = "Hidden"
-                data['stdout'] = "Hidden"
-                data['expected_output'] = "Hidden"
+                # hide fields if this belongs to a hidden test case
+                if TestCase.objects.filter(hidden=True, testcaseattempt__token=token).exists():
+                    data['stdin'] = "Hidden"
+                    data['stdout'] = "Hidden"
+                    data['expected_output'] = "Hidden"
 
-            return JsonResponse({"result": "success", "data": data})
+                context = {
+                    "result": "success",
+                    "data": data,
+                }
+                return Response(context, status=status.HTTP_200_OK)
 
-        except requests.exceptions.ConnectionError:
-            return JsonResponse({"result": "error", "msg": "Judge0 API seems to be down."})
+            except requests.exceptions.ConnectionError:
+                error_context = {
+                    "result": "error",
+                    "message": "Judge0 API seems to be down.",
+                }
+                return Response(error_context, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    except Exception as ex:
+        error_context = {
+            "result": "error",
+            "message": f"{ex}",
+        } 
+        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.student)
 def code_question_submission(request, code_question_attempt_id):
@@ -352,92 +397,125 @@ def code_question_submission(request, code_question_attempt_id):
     - Calls Judge0 api to submit the test cases
     - Queues celery tasks for updating the statuses of TestCaseAttempt (by polling judge0)
     """
+    try:
+        if request.method == "POST":
+            # get cqa object
+            cqa = CodeQuestionAttempt.objects.filter(id=code_question_attempt_id).first()
+            if not cqa:
+                error_context = {
+                    "result": "error",
+                    "message": "CQA does not exist.",
+                }
+                return Response(error_context, status=status.HTTP_404_NOT_FOUND)
 
-    if request.method == "POST":
-        # get cqa object
-        cqa = CodeQuestionAttempt.objects.filter(id=code_question_attempt_id).first()
-        if not cqa:
-            return JsonResponse({"result": "error", "msg": "CQA does not exist."})
+            # cqa does not belong to the request user
+            if cqa.assessment_attempt.candidate != request.user:
+                error_context = {
+                    "result": "error",
+                    "message": "You do not have permissions to perform this action.",
+                }
+                return Response(error_context, status=status.HTTP_401_UNAUTHORIZED)
 
-        # cqa does not belong to the request user
-        if cqa.assessment_attempt.candidate != request.user:
-            return JsonResponse({"result": "error", "msg": "You do not have permissions to perform this action."})
+            # get test cases
+            test_cases = TestCase.objects.filter(code_question__codequestionattempt=cqa)
 
-        # get test cases
-        test_cases = TestCase.objects.filter(code_question__codequestionattempt=cqa)
+            # generate params for judge0 call
+            code = request.POST.get('code')
+            language_id = request.POST.get('lang-id')
+            submissions = [{
+                "source_code": code,
+                "language_id": language_id,
+                "stdin": test_case.stdin,
+                "expected_output": test_case.stdout,
+                "cpu_time_limit": test_case.time_limit,
+                "memory_limit": test_case.memory_limit,
+            } for test_case in test_cases]
+            params = {"submissions": submissions}
 
-        # generate params for judge0 call
-        code = request.POST.get('code')
-        language_id = request.POST.get('lang-id')
-        submissions = [{
-            "source_code": code,
-            "language_id": language_id,
-            "stdin": test_case.stdin,
-            "expected_output": test_case.stdout,
-            "cpu_time_limit": test_case.time_limit,
-            "memory_limit": test_case.memory_limit,
-        } for test_case in test_cases]
-        params = {"submissions": submissions}
+            # call judge0
+            try:
+                url = settings.JUDGE0_URL + "/submissions/batch?base64_encoded=false"
+                res = requests.post(url, json=params)
+                data = res.json()
+            except ConnectionError:
+                error_context = {
+                    "result": "error",
+                    "message": "Judge0 API seems to be down.",
+                }
+                return Response(error_context, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # call judge0
-        try:
-            url = settings.JUDGE0_URL + "/submissions/batch?base64_encoded=false"
-            res = requests.post(url, json=params)
-            data = res.json()
-        except ConnectionError:
-            return JsonResponse({"result": "error", "msg": "Judge0 API seems to be down."})
+            # retrieve tokens from judge0 response
+            tokens = [x['token'] for x in data]
 
-        # retrieve tokens from judge0 response
-        tokens = [x['token'] for x in data]
+            with transaction.atomic():
+                # create CodeQuestionSubmission
+                cqs = CodeQuestionSubmission.objects.create(cq_attempt=cqa, code=code,
+                                                            language=Language.objects.get(judge_language_id=language_id))
 
-        with transaction.atomic():
-            # create CodeQuestionSubmission
-            cqs = CodeQuestionSubmission.objects.create(cq_attempt=cqa, code=code,
-                                                        language=Language.objects.get(judge_language_id=language_id))
+                # create TestCaseAttempts
+                test_case_attempts = TestCaseAttempt.objects.bulk_create([
+                    TestCaseAttempt(cq_submission=cqs, test_case=tc, token=token) for tc, token in zip(test_cases, tokens)
+                ])
 
-            # create TestCaseAttempts
-            test_case_attempts = TestCaseAttempt.objects.bulk_create([
-                TestCaseAttempt(cq_submission=cqs, test_case=tc, token=token) for tc, token in zip(test_cases, tokens)
-            ])
+            # queue celery tasks
+            for tca in test_case_attempts:
+                update_test_case_attempt_status.delay(tca.id, tca.token, 1)
 
-        # queue celery tasks
-        for tca in test_case_attempts:
-            update_test_case_attempt_status.delay(tca.id, tca.token, 1)
+            context = {
+                "result": "success",
+                "cqs_id": cqs.id,
+                "time_submitted": timezone.localtime(cqs.time_submitted).strftime("%d/%m/%Y %I:%M %p"),
+                "statuses": [[tca.id, tca.status, tca.token] for tca in test_case_attempts]
+            }
+            return Response(context, status=status.HTTP_200_OK)
 
-        context = {
-            "result": "success",
-            "cqs_id": cqs.id,
-            "time_submitted": timezone.localtime(cqs.time_submitted).strftime("%d/%m/%Y %I:%M %p"),
-            "statuses": [[tca.id, tca.status, tca.token] for tca in test_case_attempts]
+    except Exception as ex:
+        error_context = { 
+            "result": "error",
+            "message": f"{ex}",
         }
-        return JsonResponse(context)
+        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(["GET"])
+@renderer_classes([JSONRenderer])
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.student)
 def get_cq_submission_status(request):
     """
     Returns the statuses of each TestCaseAttempt belonging to a CodeQuestionSubmission.
     """
-    if request.method == "GET":
-        cq_submission_id = request.GET.get("cqs_id")
+    try:
+        if request.method == "GET":
+            cq_submission_id = request.GET.get("cqs_id")
 
-        # get test case attempts
-        statuses = list(
-            TestCaseAttempt.objects.filter(cq_submission=cq_submission_id).values_list('id', 'status', 'token'))
-        cqs = CodeQuestionSubmission.objects.get(id=cq_submission_id)
+            # get test case attempts
+            statuses = list(
+                TestCaseAttempt.objects.filter(cq_submission=cq_submission_id).values_list('id', 'status', 'token'))
+            cqs = CodeQuestionSubmission.objects.get(id=cq_submission_id)
 
-        # check if the cqa belongs to the request user
-        if cqs.cq_attempt.assessment_attempt.candidate != request.user:
-            return JsonResponse({"result": "error", "msg": "You do not have permissions to perform this action."})
+            # check if the cqa belongs to the request user
+            if cqs.cq_attempt.assessment_attempt.candidate != request.user:
+                error_context = {
+                    "result": "error",
+                    "message": "You do not have permissions to perform this action.",
+                }
+                return Response(error_context, status=status.HTTP_401_UNAUTHORIZED)
 
-        context = {
-            "result": "success",
-            "cqs_id": cq_submission_id,
-            "outcome": cqs.outcome,
-            "statuses": statuses
+            context = {
+                "result": "success",
+                "cqs_id": cq_submission_id,
+                "outcome": cqs.outcome,
+                "statuses": statuses
+            }
+            return Response(context, status=status.HTTP_200_OK)
+    
+    except Exception as ex:
+        error_context = { 
+            "result": "error",
+            "message": f"{ex}"
         }
-        return JsonResponse(context)
+        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 
 
 @login_required()
@@ -485,7 +563,6 @@ def upload_snapshot(request, assessment_attempt_id):
         if request.method == "POST":
             assessment_attempt = get_object_or_404(AssessmentAttempt, id=assessment_attempt_id)
 
-            candidate = request.user
             attempt_number = request.POST.get('attempt_number')
             timestamp = request.POST.get('timestamp')
             timestamp_tz = timezone.make_aware(datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S"))
@@ -508,7 +585,10 @@ def upload_snapshot(request, assessment_attempt_id):
             return Response(context, status=status.HTTP_200_OK)
 
     except Exception as ex:
-        error_context = { "error": f"{ex}" } 
+        error_context = { 
+            "result": "error",
+            "message": f"{ex}",
+        }
         return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -545,53 +625,8 @@ def detect_faces_initial(request):
         return Response(context, status=status.HTTP_200_OK)
 
     except Exception as ex:
-        error_context = { "error": f"{ex}" }
-        print(f"{ex}")
+        error_context = {
+            "result": "error",
+            "message": f"{ex}",
+        }
         return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
-
-
-# for testing, to remove later
-@api_view(["POST"])
-@renderer_classes([JSONRenderer])
-def test(request):
-    # Get image
-    # image_path = os.path.join(settings.MEDIA_ROOT, "test/front.png")
-    # image_path = os.path.join(settings.MEDIA_ROOT, "test/up.png")
-    # image_path = os.path.join(settings.MEDIA_ROOT, "test/side.png")
-    # image_path = os.path.join(settings.MEDIA_ROOT, "test/joey.png")
-    # image_path = os.path.join(settings.MEDIA_ROOT, "test/sh.png")
-    image_path = os.path.join(settings.MEDIA_ROOT, "test/sh_1.png")
-
-    # path = os.path.join(settings.MEDIA_ROOT, "test/front_rect.png")
-    # path = os.path.join(settings.MEDIA_ROOT, "test/up_rect.png")
-    # path = os.path.join(settings.MEDIA_ROOT, "test/side_rect.png")
-    # path = os.path.join(settings.MEDIA_ROOT, "test/joey_rect.png")
-    # path = os.path.join(settings.MEDIA_ROOT, "test/sh_rect.png")
-    path = os.path.join(settings.MEDIA_ROOT, "test/sh_1_rect.png")
-
-    # model_pack_name = 'buffalo_sc'
-    # app = FaceAnalysis(name=model_pack_name)
-    # app.prepare(ctx_id=0, det_size=(640, 640))
-    # image = cv2.imread(image_path)
-    # faces = app.get(image)
-    # rimg = app.draw_on(image, faces)
-    # cv2.imwrite(path, rimg)
-
-    id = request.POST.get('id')
-    
-    # for local development: cannot queue as task because MEDIA_ROOT is not on same server as linux machine
-    if settings.DEBUG:
-        snapshot = get_object_or_404(id=id)
-        local_detect_faces(snapshot)
-    else:
-        detect_faces.delay(id)
-
-    faces_detected = snapshot.faces
-
-    context = {
-        "result": "success",
-        "faces_detected": faces_detected,
-    }
-
-    return Response(context, status=status.HTTP_200_OK)
-

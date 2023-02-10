@@ -7,8 +7,12 @@ from django.contrib.auth.hashers import make_password
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Q
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.renderers import JSONRenderer
 
 from core.decorators import groups_allowed, UserGroup
 from core.filters import CourseStudentFilter
@@ -142,58 +146,70 @@ def course_details(request, course_id):
     return render(request, 'course_management/course-details.html', context)
 
 
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
 def remove_student(request):
-    if request.method == "POST":
-        course_id = request.POST.get("course_id")
-        student_id = request.POST.get("student_id")
+    try:
+        if request.method == "POST":
+            course_id = request.POST.get("course_id")
+            student_id = request.POST.get("student_id")
 
-        # get course object
-        course = Course.objects.filter(id=course_id).prefetch_related('owner', 'maintainers').first()
-        if not course:
+            # get course object
+            course = Course.objects.filter(id=course_id).prefetch_related('owner', 'maintainers').first()
+            if not course:
+                error_context = {
+                    "result": "error",
+                    "message": "The selected course does not exist.",
+                }
+                return Response(error_context, status=status.HTTP_404_NOT_FOUND)
+
+            # check if user has permissions for this course
+            if check_permissions_course(course, request.user) == 0:
+                error_context = {
+                    "result": "error",
+                    "message": "You do not have permissions for this course.",
+                }
+                return Response(error_context, status=status.HTTP_401_UNAUTHORIZED)
+
+            # if no students selected
+            if not student_id:
+                error_context = {
+                    "result": "error",
+                    "message": "No student selected.",
+                }
+                return Response(context, status=status.HTTP_400_BAD_REQUEST)
+
+            # ensure student is enrolled in this course
+            course_group = CourseGroup.objects.filter(course=course, students=student_id).first()
+            if not course_group:
+                error_context = {
+                    "result": "error",
+                    "message": "The student is not enrolled in this course.",
+                }
+                return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
+
+            # remove the student
+            course_group.students.remove(student_id)
+
+            # result
             context = {
-                "result": "error",
-                "msg": "The selected course does not exist."
+                "result": "success",
+                "message": "Student successfully removed!"
             }
-            return JsonResponse(context, status=200)
+            return Response(context, status=status.HTTP_200_OK)
 
-        # check if user has permissions for this course
-        if check_permissions_course(course, request.user) == 0:
-            context = {
-                "result": "error",
-                "msg": "You do not have permissions for this course."
-            }
-            return JsonResponse(context, status=200)
-
-        # if no students selected
-        if not student_id:
-            context = {
-                "result": "error",
-                "msg": "No student selected."
-            }
-            return JsonResponse(context, status=200)
-
-        # ensure student is enrolled in this course
-        course_group = CourseGroup.objects.filter(course=course, students=student_id).first()
-        if not course_group:
-            context = {
-                "result": "error",
-                "msg": "The student is not enrolled in this course."
-            }
-            return JsonResponse(context, status=200)
-
-        # remove the student
-        course_group.students.remove(student_id)
-
-        # result
-        context = {
-            "result": "success",
-            "msg": "Student successfully removed!"
+    except Exception as ex:
+        error_context = { 
+            "result": "error",
+            "message": f"{ex}"
         }
-        return JsonResponse(context, status=200)
+        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
 @login_required()
 @groups_allowed(UserGroup.educator)
 def update_course_maintainer(request):
@@ -201,90 +217,108 @@ def update_course_maintainer(request):
     Function to add a maintainer to a course.
     Front-end does not display error messages for this feature, thus only the result of the operation is returned.
     """
-    if request.method == "POST":
-        # default error response
-        error_context = {"result": "error", }
+    try:
+        if request.method == "POST":
+            # default error response
+            error_context = { "result": "error", }
 
-        # get params
-        course_id = request.POST.get("course_id")
-        maintainer_id = request.POST.get("maintainer_id")
-        action = request.POST.get("action")
+            # get params
+            course_id = request.POST.get("course_id")
+            maintainer_id = request.POST.get("maintainer_id")
+            action = request.POST.get("action")
 
-        # missing params
-        if course_id is None or maintainer_id is None or action is None:
-            return JsonResponse(error_context, status=200)
+            # missing params
+            if course_id is None or maintainer_id is None or action is None:
+                return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 
-        # get course object
-        course = Course.objects.filter(id=course_id).prefetch_related('owner', 'maintainers').first()
+            # get course object
+            course = Course.objects.filter(id=course_id).prefetch_related('owner', 'maintainers').first()
 
-        # course not found
-        if not course:
-            return JsonResponse(error_context, status=200)
+            # course not found
+            if not course:
+                return Response(error_context, status=status.HTTP_404_NOT_FOUND)
 
-        # check if user has permissions for this course
-        if check_permissions_course(course, request.user) != 2:
-            return JsonResponse(error_context, status=200)
+            # check if user has permissions for this course
+            if check_permissions_course(course, request.user) != 2:
+                return Response(error_context, status=status.HTTP_401_UNAUTHORIZED)
 
-        # get maintainer object
-        maintainer = User.objects.filter(id=maintainer_id).first()
+            # get maintainer object
+            maintainer = User.objects.filter(id=maintainer_id).first()
 
-        # if maintainer not found
-        if not maintainer:
-            return JsonResponse(error_context, status=200)
+            # if maintainer not found
+            if not maintainer:
+                return Response(error_context, status=status.HTTP_404_NOT_FOUND)
 
-        # add maintainer to course
-        if action == "add":
-            course.maintainers.add(maintainer)
-        elif action == "remove":
-            course.maintainers.remove(maintainer)
-        else:
-            return JsonResponse(error_context, status=200)
+            # add maintainer to course
+            if action == "add":
+                course.maintainers.add(maintainer)
+            elif action == "remove":
+                course.maintainers.remove(maintainer)
+            else:
+                return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 
-        # return success
-        return JsonResponse({"result": "success"}, status=200)
+            # return success
+            return Response({ "result": "success" }, status=status.HTTP_200_OK)
+    
+    except Exception as ex:
+        error_context = { 
+            "result": "error",
+            "message": f"{ex}"
+        }
+        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
 def reset_student_password(request):
-    if request.method == "POST":
-        course_id = request.POST.get("course_id")
-        student_id = request.POST.get("student_id")
+    try:
+        if request.method == "POST":
+            course_id = request.POST.get("course_id")
+            student_id = request.POST.get("student_id")
 
-        # get course
-        course = Course.objects.filter(id=course_id).first()
+            # get course
+            course = Course.objects.filter(id=course_id).first()
 
-        if not course:
+            if not course:
+                error_context = {
+                    "result": "error",
+                    "message": "The course does not exist."
+                }
+                return Response(error_context, status=status.HTTP_404_NOT_FOUND)
+
+            # check if user has permissions for this course
+            if check_permissions_course(course, request.user) == 0:
+                error_context = {
+                    "result": "error",
+                    "message": "You do not have permissions for this course."
+                }
+                return Response(error_context, status=status.HTTP_401_UNAUTHORIZED)
+
+            # check if student is even in the course
+            if not CourseGroup.objects.filter(course=course, students=student_id).exists():
+                error_context = {
+                    "result": "error",
+                    "message": "Student does not exist in the course."
+                }
+                return Response(error_context, status=status.HTTP_404_NOT_FOUND)
+
+            # get student and reset password
+            student = User.objects.filter(id=student_id).first()
+            student.password = make_password(settings.DEFAULT_STUDENT_PASSWORD)
+            student.save()
+
             context = {
-                "result": "error",
-                "msg": "The course does not exist."
+                "result": "success",
+                "message": f"Password successfully reset for {student.username}."
             }
-            return JsonResponse(context, status=200)
 
-        # check if user has permissions for this course
-        if check_permissions_course(course, request.user) == 0:
-            context = {
-                "result": "error",
-                "msg": "You do not have permissions for this course."
-            }
-            return JsonResponse(context, status=200)
+            return Response(context, status=status.HTTP_200_OK)
 
-        # check if student is even in the course
-        if not CourseGroup.objects.filter(course=course, students=student_id).exists():
-            context = {
-                "result": "error",
-                "msg": "Student does not exist in the course."
-            }
-            return JsonResponse(context, status=200)
-
-        # get student and reset password
-        student = User.objects.filter(id=student_id).first()
-        student.password = make_password(settings.DEFAULT_STUDENT_PASSWORD)
-        student.save()
-
-        context = {
-            "result": "success",
-            "msg": f"Password successfully reset for {student.username}."
+    except Exception as ex:
+        error_context = { 
+            "result": "error",
+            "message": f"{ex}"
         }
-
-        return JsonResponse(context, status=200)
+        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)

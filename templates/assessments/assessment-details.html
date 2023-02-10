@@ -421,7 +421,7 @@
               data: formData,
               processData: false,
               contentType: false,
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               setTimeout(() => {
                   // hide loading
                   codeQuestionLoading(false);
@@ -430,7 +430,8 @@
                   if (res.result === "success") {
                       if (res.code_questions.length === 0) {
                           codeQuestionTableBody.html("<tr><td colspan='4' class='text-center p-5'>No code questions found! &#x1F622;</td></tr>");
-                      } else {
+                      } 
+                      else {
                           let newRows = "";
                           res.code_questions.forEach((cq) => {
                               let tags = "";
@@ -441,16 +442,21 @@
                           })
                           codeQuestionTableBody.append(newRows);
                       }
-                  } else {
-                      codeQuestionTableBody.html("<tr><td colspan='4' class='text-center p-5'>Something went wrong with your request! &#x1F622;</td></tr>");
-                      console.error("Result returned not successful.");
                   }
               }, 300);
-          }).fail((res) => {
+          }).fail((jqXHR, textStatus, errorThrown) => {
               // hide loading
               codeQuestionLoading(false);
-              codeQuestionTableBody.html("<tr><td colspan='4' class='text-center p-5'>Something went wrong with your request! &#x1F622;</td></tr>");
-              console.error("Failed to contact API.");
+
+              // 4xx status codes
+              if (Math.floor(jqXHR.status / 100) == 4) {
+                codeQuestionTableBody.html("<tr><td colspan='4' class='text-center p-5'>Something went wrong with your request! &#x1F622;</td></tr>");
+                console.error("Result returned not successful.");
+              }
+              else {
+                codeQuestionTableBody.html("<tr><td colspan='4' class='text-center p-5'>Something went wrong with your request! &#x1F622;</td></tr>");
+                console.error("Failed to contact API.");
+              }
           })
       }
 
@@ -501,29 +507,34 @@
               data: formData,
               processData: false,
               contentType: false,
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               setTimeout(() => {
                   // set message
                   if (res.result === "success") {
                       addCqResult.html("The question has been added to the assessment! &#x2705;")
                       addCqResult.addClass("text-success");
-                  } else {
-                      addCqResult.html("Something went wrong with your request! &#x1F622;")
-                      addCqResult.addClass("text-danger");
-                      console.error("Result returned not successful.");
                   }
+
                   // reset button state
                   $(btn).prop("disabled", false);
                   $(btn).html("Add");
               }, 300);
-          }).fail((res) => {
-              // set message
-              addCqResult.html("Something went wrong with your request! &#x1F622;")
-              addCqResult.addClass("text-danger");
+          }).fail((jqXHR, textStatus, errorThrown) => {
+              // 4xx status codes
+              if (Math.floor(jqXHR.status / 100) == 4) {
+                  addCqResult.html("Something went wrong with your request! &#x1F622;")
+                  addCqResult.addClass("text-danger");
+                  console.error("Result returned not successful.");
+              }
+              else {
+                  addCqResult.html("Something went wrong with your request! &#x1F622;")
+                  addCqResult.addClass("text-danger");
+                  console.error("Failed to contact API.");
+              }
+
               // reset button state
               $(btn).prop("disabled", false);
               $(btn).html("Add");
-              console.error("Failed to contact API.");
           });
       };
 

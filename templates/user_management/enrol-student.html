@@ -281,11 +281,9 @@
               data: formData,
               processData: false,
               contentType: false,
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               // set correct alert class
-              if (res.result === "error") { //error
-                  uploadResultAlert.addClass("alert-danger");
-              } else { //success
+              if (res.result === "success") {
                   uploadResultAlert.addClass("alert-success");
                   // if there are removed rows, populate textarea and show, else hide.
                   if (res.removed_rows.length !== 0) {
@@ -310,12 +308,17 @@
               }
 
               // set alert message and show
-              uploadResultAlert.text(res.msg);
+              uploadResultAlert.text(res.message);
               uploadResultAlert.show();
-          }).fail((res) => {
-              // set alert message and show
+          }).fail((jqXHR, textStatus, errorThrown) => {
               uploadResultAlert.addClass("alert-danger");
-              uploadResultAlert.text("File upload failed. Please refresh the page and try again!");
+              // 4xx status codes
+              if (Math.floor(jqXHR.status / 100) == 4) {
+                uploadResultAlert.text(jqXHR.responseJSON["message"]);
+              }
+              else {
+                uploadResultAlert.text("File upload failed. Please refresh the page and try again!");
+              }
               uploadResultAlert.show();
           }).always((res) => {
               // reset upload form

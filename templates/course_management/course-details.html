@@ -373,7 +373,7 @@
               data: formData,
               processData: false,
               contentType: false,
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               setTimeout(() => {
                   if (res.result === "success") {
                       Toastify({
@@ -390,31 +390,35 @@
                       tableRow.fadeOut('slow', () => {
                           tableRow.remove();
                       });
-                  } else {
-                      Toastify({
-                          text: res.msg,
-                          duration: -1,
-                          position: "center",
-                          style: {"background": "#ff6961"}
-                      }).showToast();
-
-                      // re-enable button
-                      $(clickedBtn).prop('disabled', false);
-                      $(clickedBtn).html('Remove');
                   }
               }, 300);
-          }).fail((res) => {
-              Toastify({
-                  text: "An error has occurred while removing the student. Please refresh the page.",
-                  duration: 5000,
-                  position: "center",
-                  style: {"background": "#ff6961"}
-              }).showToast();
+          }).fail((jqXHR, textStatus, errorThrown) => {
+            // 4xx status codes
+            if (Math.floor(jqXHR.status / 100) == 4) {
+                  Toastify({
+                    text: jqXHR.responseJSON["message"],
+                    duration: -1,
+                    position: "center",
+                    style: {"background": "#ff6961"}
+                  }).showToast();
 
-              // reset the button
-              $(clickedBtn).html('<i class="fa-solid fa-xmark"></i>');
-              $(clickedBtn).removeClass('btn-success');
-              $(clickedBtn).addClass('btn-danger');
+                  // re-enable button
+                  $(clickedBtn).prop('disabled', false);
+                  $(clickedBtn).html('Remove');
+            }
+            else {
+                  Toastify({
+                      text: "An error has occurred while removing the student. Please refresh the page.",
+                      duration: 5000,
+                      position: "center",
+                      style: {"background": "#ff6961"}
+                  }).showToast();
+
+                  // reset the button
+                  $(clickedBtn).html('<i class="fa-solid fa-xmark"></i>');
+                  $(clickedBtn).removeClass('btn-success');
+                  $(clickedBtn).addClass('btn-danger');
+            }
 
           }).always((res) => {
           });
@@ -447,11 +451,11 @@
               data: formData,
               processData: false,
               contentType: false,
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               setTimeout(() => {
                   if (res.result === "success") {
                       Toastify({
-                          text: res.msg,
+                          text: res.message,
                           duration: 2000,
                           position: "center",
                           style: {"background": "#77DD77"}
@@ -459,20 +463,23 @@
 
                       // show check mark in button
                       $(clickedBtn).html('<i class="fa-solid fa-check"></i>');
-                  } else {
-                      Toastify({
-                          text: res.msg,
-                          duration: -1,
-                          position: "center",
-                          style: {"background": "#ff6961"}
-                      }).showToast();
-
-                      // re-enable button
-                      $(clickedBtn).prop('disabled', false);
-                      $(clickedBtn).html('Reset Password');
                   }
               }, 300);
-          }).fail((res) => {
+          }).fail((jqXHR, textStatus, errorThrown) => {
+            // 4xx status codes
+            if (Math.floor(jqXHR.status / 100) == 4) {
+                Toastify({
+                  text: jqXHR.responseJSON["message"],
+                  duration: -1,
+                  position: "center",
+                  style: {"background": "#ff6961"}
+                }).showToast();
+
+                // re-enable button
+                $(clickedBtn).prop('disabled', false);
+                $(clickedBtn).html('Reset Password');
+            }
+            else {
               Toastify({
                   text: "An error has occurred. Please refresh the page.",
                   duration: 5000,
@@ -484,7 +491,7 @@
               $(clickedBtn).html('<i class="fa-solid fa-xmark"></i>');
               $(clickedBtn).removeClass('btn-success');
               $(clickedBtn).addClass('btn-warning');
-
+            }
           }).always((res) => {
           });
       }
@@ -527,7 +534,7 @@
               data: formData,
               processData: false,
               contentType: false,
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               setTimeout(() => {
                   if (res.result === "success")
                       Toastify({
@@ -536,22 +543,25 @@
                           position: "center",
                           style: {"background": "#77DD77"}
                       }).showToast();
-                  else {
-                      Toastify({
-                          text: "Unable to add maintainer to course! Please refresh the page.",
-                          duration: 5000,
-                          position: "center",
-                          style: {"background": "#ff6961"}
-                      }).showToast();
-                  }
               }, 300);
-          }).fail((res) => {
+          }).fail((jqXHR, textStatus, errorThrown) => {
+            // 4xx status codes
+            if (Math.floor(jqXHR.status / 100) == 4) {
+              Toastify({
+                text: "Unable to add maintainer to course! Please refresh the page.",
+                duration: 5000,
+                position: "center",
+                style: {"background": "#ff6961"}
+            }).showToast();
+            }
+            else {
               Toastify({
                   text: "An error has occurred while adding the maintainer. Please refresh the page.",
                   duration: 5000,
                   position: "center",
                   style: {"background": "#ff6961"}
               }).showToast();
+            }
           }).always((res) => {
               setTimeout(() => {
                   choice2.enable();
@@ -579,7 +589,7 @@
               data: formData,
               processData: false,
               contentType: false,
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               setTimeout(() => {
                   if (res.result === "success")
                       Toastify({
@@ -588,22 +598,25 @@
                           position: "center",
                           style: {"background": "#77DD77"}
                       }).showToast();
-                  else {
-                      Toastify({
-                          text: "Unable to remove maintainer from the course! Please refresh the page.",
-                          duration: 5000,
-                          position: "center",
-                          style: {"background": "#ff6961"}
-                      }).showToast();
-                  }
               }, 300);
-          }).fail((res) => {
+          }).fail((jqXHR, textStatus, errorThrown) => {
+            // 4xx status codes
+            if (Math.floor(jqXHR.status / 100) == 4) {
+              Toastify({
+                text: "Unable to remove maintainer from the course! Please refresh the page.",
+                duration: 5000,
+                position: "center",
+                style: {"background": "#ff6961"}
+            }).showToast();
+            }
+            else {
               Toastify({
                   text: "An error has occurred while removing the maintainer. Please refresh the page.",
                   duration: 5000,
                   position: "center",
                   style: {"background": "#ff6961"}
               }).showToast();
+            }
           }).always((res) => {
               setTimeout(() => {
                   choice2.enable();

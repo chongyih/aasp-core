@@ -210,7 +210,7 @@
               type: 'GET',
               url: "{% url 'get-candidate-attempts' assessment_id=assessment.id %}",
               data: {candidate_id},
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               if (res.result === "success") {
                   // update datatable rows
                   const tableData = [];
@@ -249,7 +249,10 @@
                       modalLoading.hide();
                       modalBody.show();
                   }, 500);
-              } else {
+              }
+          }).fail((jqXHR, textStatus, errorThrown) => {
+              // 4xx status codes
+              if (Math.floor(jqXHR.status / 100) == 4) {
                   console.error("Internal Error!")
                   Toastify({
                       text: "An error has occurred, please refresh the page and try again.",
@@ -258,14 +261,15 @@
                       style: {"background": "#ff6961"}
                   }).showToast();
               }
-          }).fail((res) => {
-              console.error("External API Error!");
-              Toastify({
-                  text: "An error has occurred, please refresh the page and try again.",
-                  duration: -1,
-                  position: "center",
-                  style: {"background": "#ff6961"}
-              }).showToast();
+              else {
+                  console.error("External API Error!");
+                  Toastify({
+                      text: "An error has occurred, please refresh the page and try again.",
+                      duration: -1,
+                      position: "center",
+                      style: {"background": "#ff6961"}
+                  }).showToast();
+              }
           });
 
           // show modal

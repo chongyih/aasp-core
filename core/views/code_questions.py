@@ -3,8 +3,12 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.forms import inlineformset_factory
-from django.http import Http404, JsonResponse
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.renderers import JSONRenderer
 
 from core.decorators import groups_allowed, UserGroup
 from core.forms.question_banks import CodeQuestionForm
@@ -233,30 +237,40 @@ def update_languages(request, code_question_id):
     return render(request, 'code_questions/update-languages.html', context)
 
 
+@api_view(["GET"])
+@renderer_classes([JSONRenderer])
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
 def get_cq_details(request):
-    error_context = {"result": "error", }
+    try:
+        error_context = {"result": "error", }
 
-    if request.method == "GET":
-        # get cq_id from request
-        cq_id = request.GET.get("cq_id")
+        if request.method == "GET":
+            # get cq_id from request
+            cq_id = request.GET.get("cq_id")
 
-        # get code question object
-        code_question = CodeQuestion.objects.filter(id=cq_id).first()
+            # get code question object
+            code_question = CodeQuestion.objects.filter(id=cq_id).first()
 
-        # code question not found
-        if not code_question:
-            return JsonResponse(error_context, status=200)
+            # code question not found
+            if not code_question:
+                return Response(error_context, status=status.HTTP_404_NOT_FOUND)
 
-        # check permissions
-        if check_permissions_code_question(code_question, request.user) == 0:
-            return JsonResponse(error_context, status=200)
+            # check permissions
+            if check_permissions_code_question(code_question, request.user) == 0:
+                return Response(error_context, status=status.HTTP_401_UNAUTHORIZED)
 
-        # prepare context and serialize code question
-        context = {
-            "result": "success",
-            "code_question": CodeQuestionsSerializer(code_question, many=False).data
-        }
+            # prepare context and serialize code question
+            context = {
+                "result": "success",
+                "code_question": CodeQuestionsSerializer(code_question, many=False).data
+            }
 
-        return JsonResponse(context, status=200)
+            return Response(context, status=status.HTTP_200_OK)
+
+    except Exception as ex:
+        context = { 
+            "result": "error",
+            "message": f"{ex}"
+            }
+        return Response(context, status=status.HTTP_400_BAD_REQUEST)

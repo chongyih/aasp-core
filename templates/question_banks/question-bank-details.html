@@ -251,7 +251,7 @@
               data: formData,
               processData: false,
               contentType: false,
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               setTimeout(() => {
                   if (res.result === "success")
                       Toastify({
@@ -260,22 +260,25 @@
                           position: "center",
                           style: {"background": "#77DD77"}
                       }).showToast();
-                  else {
-                      Toastify({
-                          text: "Unable to add user to the question bank! Please refresh the page.",
-                          duration: 5000,
-                          position: "center",
-                          style: {"background": "#ff6961"}
-                      }).showToast();
-                  }
               }, 300);
-          }).fail((res) => {
+          }).fail((jqXHR, textStatus, errorThrown) => {
+            // 4xx status codes
+            if (Math.floor(jqXHR.status / 100) == 4) {
+              Toastify({
+                  text: "Unable to add user to the question bank! Please refresh the page.",
+                  duration: 5000,
+                  position: "center",
+                  style: {"background": "#ff6961"}
+              }).showToast();
+            }
+            else {
               Toastify({
                   text: "An error has occurred while adding the user. Please refresh the page.",
                   duration: 5000,
                   position: "center",
                   style: {"background": "#ff6961"}
               }).showToast();
+            }
           }).always((res) => {
               setTimeout(() => {
                   choice.enable();
@@ -303,7 +306,7 @@
               data: formData,
               processData: false,
               contentType: false,
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               setTimeout(() => {
                   if (res.result === "success")
                       Toastify({
@@ -312,22 +315,25 @@
                           position: "center",
                           style: {"background": "#77DD77"}
                       }).showToast();
-                  else {
-                      Toastify({
-                          text: "Unable to remove user from the question bank! Please refresh the page.",
-                          duration: 5000,
-                          position: "center",
-                          style: {"background": "#ff6961"}
-                      }).showToast();
-                  }
               }, 300);
-          }).fail((res) => {
+          }).fail((jqXHR, textStatus, errorThrown) => {
+            // 4xx status codes
+            if (Math.floor(jqXHR.status / 100) == 4) {
+                Toastify({
+                    text: "Unable to remove user from the question bank! Please refresh the page.",
+                    duration: 5000,
+                    position: "center",
+                    style: {"background": "#ff6961"}
+                }).showToast();
+            }
+            else {
               Toastify({
                   text: "An error has occurred while removing the user. Please refresh the page.",
                   duration: 5000,
                   position: "center",
                   style: {"background": "#ff6961"}
               }).showToast();
+            }
           }).always((res) => {
               setTimeout(() => {
                   choice.enable();

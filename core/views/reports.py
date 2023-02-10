@@ -3,11 +3,14 @@ import csv
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.forms.models import model_to_dict
-from django.http import JsonResponse, HttpResponse
+from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from django.utils.text import slugify
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.renderers import JSONRenderer
 
 from core.decorators import UserGroup, groups_allowed
 from core.models import Assessment, AssessmentAttempt, CodeQuestionSubmission, TestCaseAttempt, TestCase, CandidateSnapshot
@@ -35,43 +38,53 @@ def assessment_report(request, assessment_id):
     return render(request, "reports/assessment-report.html", context)
 
 
+@api_view(["GET"])
+@renderer_classes([JSONRenderer])
 @login_required()
 @groups_allowed(UserGroup.educator)
 def get_candidate_attempts(request, assessment_id):
-    # get candidate_id
-    candidate_id = request.GET.get("candidate_id")
-    if not candidate_id:
-        return JsonResponse({"result": "error"}, status=200)
+    try:
+        # get candidate_id
+        candidate_id = request.GET.get("candidate_id")
+        if not candidate_id:
+            return Response({ "result": "error" }, status=status.HTTP_400_BAD_REQUEST)
 
-    assessment = get_object_or_404(Assessment, id=assessment_id)
-    # get assessment attempts
-    assessment_attempts = AssessmentAttempt.objects \
-                        .select_related("assessment") \
-                        .filter(assessment=assessment, candidate__id=candidate_id, time_submitted__isnull=False) \
-                        .order_by("id")
-    
-    if assessment.require_webcam:
-        list_assessment_attempts = list()
-        for attempt in assessment_attempts:
-            values = { 
-                "id": attempt.id,
-                "time_started": attempt.time_started,
-                "time_submitted": attempt.time_submitted,
-                "score": attempt.score,
-                "best_attempt": attempt.best_attempt,
-                "multiple_faces_detected": attempt.multiple_faces_detected,
-                "no_faces_detected": attempt.no_faces_detected 
-            }
-            list_assessment_attempts.append(values)
-    else:
-        list_assessment_attempts = list(assessment_attempts.values())
-    
-    # prepare context
-    context = {
-        "result": "success",
-        "assessment_attempts": list_assessment_attempts,
-    }
-    return JsonResponse(context, status=200)
+        assessment = get_object_or_404(Assessment, id=assessment_id)
+        # get assessment attempts
+        assessment_attempts = AssessmentAttempt.objects \
+                            .select_related("assessment") \
+                            .filter(assessment=assessment, candidate__id=candidate_id, time_submitted__isnull=False) \
+                            .order_by("id")
+        
+        if assessment.require_webcam:
+            list_assessment_attempts = list()
+            for attempt in assessment_attempts:
+                values = { 
+                    "id": attempt.id,
+                    "time_started": attempt.time_started,
+                    "time_submitted": attempt.time_submitted,
+                    "score": attempt.score,
+                    "best_attempt": attempt.best_attempt,
+                    "multiple_faces_detected": attempt.multiple_faces_detected,
+                    "no_faces_detected": attempt.no_faces_detected 
+                }
+                list_assessment_attempts.append(values)
+        else:
+            list_assessment_attempts = list(assessment_attempts.values())
+        
+        # prepare context
+        context = {
+            "result": "success",
+            "assessment_attempts": list_assessment_attempts,
+        }
+        return Response(context, status=status.HTTP_200_OK)
+
+    except Exception as ex:
+        error_context = { 
+            "result": "error",
+            "message": f"{ex}"
+        }
+        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 
 
 @login_required()

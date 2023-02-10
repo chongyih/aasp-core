@@ -35,7 +35,7 @@
             type: 'GET',
             url: "{% url 'get-code-question-details' %}",
             data: {cq_id},
-        }).done((res) => {
+        }).done((res, textStatus, jqXHR) => {
             if (res.result === "success") {
                 let rows = "";
                 res.code_question.testcase_set.forEach((val, idx) => {
@@ -60,11 +60,15 @@
                     modalLoading.hide();
                     modalBody.show();
                 }, 500);
-            } else {
+            }
+        }).fail((jqXHR, textStatus, errorThrown) => {
+            // 4xx status codes
+            if (Math.floor(jqXHR.status / 100) == 4) {
                 console.error("Internal Error!");
             }
-        }).fail((res) => {
-            console.error("External API Error!");
+            else {
+                console.error("External API Error!");
+            }
         });
 
         // show modal

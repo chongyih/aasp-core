@@ -506,20 +506,22 @@
               data: formData,
               processData: false,
               contentType: false,
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               if (res.result === "success") {
                   const token = res.token;
                   updateSampleStatus(token);
-              } else {
-                  window.setTimeout(() => {
+              }
+          }).fail((jqXHR, textStatus, errorThrown) => {
+              window.setTimeout(() => {
+                  // 4xx status codes
+                  if (Math.floor(jqXHR.status / 100) == 4) {
                       console.error('Internal API error!');
                       showError("Internal API Error &#x274C;");
-                  }, 1000);
-              }
-          }).fail((res) => {
-              window.setTimeout(() => {
-                  console.error('External API error!');
-                  showError("External API Error &#x274C;");
+                  }
+                  else {
+                      console.error('External API error!');
+                      showError("External API Error &#x274C;");
+                  }
               }, 1000);
           });
       };
@@ -530,7 +532,7 @@
               type: 'GET',
               url: "{% url 'get-tc-details' %}",
               data: {token, status_only: true},
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               if (res.result === "success") {
                   if (res.data.status_id === 1 || res.data.status_id === 2) {  // not finished
                       runStatus.html(res.data.status);
@@ -552,13 +554,17 @@
                       // set token
                       moreDetails.data('token', token);
                   }
-              } else {
+              }
+          }).fail((jqXHR, textStatus, errorThrown) => {
+              // 4xx status codes
+              if (Math.floor(jqXHR.status / 100) == 4) {
                   console.error("Internal API Error!");
                   showError("Internal API Error &#x274C;");
               }
-          }).fail((res) => {
-              console.error("External API Error!");
-              showError("External API Error &#x274C;");
+              else {
+                  console.error("External API Error!");
+                  showError("External API Error &#x274C;");
+              }
           });
       }
 
@@ -576,7 +582,7 @@
               type: 'GET',
               url: "{% url 'get-tc-details' %}",
               data: {token, status_only: false},
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               if (res.result === "success") {
                   // set values
                   modalToken.html(token);
@@ -589,11 +595,15 @@
                       modalLoading.hide();
                       modalBody.show();
                   }, 500);
-              } else {
-                  console.error("Internal API Error!");
               }
-          }).fail((res) => {
-              console.error("External API Error!");
+          }).fail((jqXHR, textStatus, errorThrown) => {
+              // 4xx status codes
+              if (Math.floor(jqXHR.status / 100) == 4) {
+                console.error("Internal API Error!");
+              }
+              else {
+                console.error("External API Error!");
+              }
           });
 
           // show modal
@@ -624,7 +634,7 @@
               data: formData,
               processData: false,
               contentType: false,
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               if (res.result === "success") {
                   setTimeout(() => {
                       // update status
@@ -650,12 +660,13 @@
                       // call updator function
                       updateSubmissionStatus(res.cqs_id);
                   }, 500);
-              } else {
+              }
+          }).fail((jqXHR, textStatus, errorThrown) => {
+              // 4xx status codes
+              if (Math.floor(jqXHR.status / 100) == 4) {
                   console.error("Internal API Error!");
                   showError("Internal API Error &#x274C;");
               }
-          }).fail((res) => {
-          
           })
       };
 
@@ -666,7 +677,7 @@
               type: 'GET',
               url: "{% url 'get-cq-submission-status' %}",
               data: {cqs_id},
-          }).done((res) => {
+          }).done((res, textStatus, jqXHR) => {
               if (res.result === "success") {
                   // set submission status (passed/failed/processing)
                   setSubmissionStatus(res.cqs_id, res.outcome);
@@ -681,13 +692,17 @@
                       window.setTimeout(() => {
                           updateSubmissionStatus(cqs_id);
                       }, 1000);
-              } else {
+              }
+          }).fail((jqXHR, textStatus, errorThrown) => {
+              // 4xx status codes
+              if (Math.floor(jqXHR.status / 100) == 4) {
                   console.error("Internal API Error!");
                   showError("Internal API Error &#x274C;");
               }
-          }).fail((res) => {
-              error("External API Error!");
-              showError("External API Error &#x274C;");
+              else {
+                  error("External API Error!");
+                  showError("External API Error &#x274C;");
+              }
           });
       };
 
@@ -900,10 +915,10 @@
           data: formData,
           processData: false,
           contentType: false,
-        }).done((response) => {
+        }).done((res, textStatus, jqXHR) => {
           // console.log("Snapshot uploaded.");
-        }).fail((response) => {
-          console.error(`An error occurred: ${response.error}`);
+        }).fail((jqXHR, textStatus, errorThrown) => {
+          console.error(`An error occurred: ${jqXHR.responseJSON["message"]}`);
         });
       }
     </script>

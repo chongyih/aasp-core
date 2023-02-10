@@ -777,6 +777,7 @@
 
     // limit tab switching (i.e. limit user moving away from assessment screen)
     let leaving_screen_num = 0;
+    // TODO: !!!! blur event listener is when onbeforeunload and confirmation modals are clicked
     window.addEventListener('blur', (e) => {
       leaving_screen_num++;
       if (leaving_screen_num >= 3) {  // force submit test on third tab switch
@@ -806,13 +807,6 @@
       document.addEventListener('contextmenu', (e) => {
         e.preventDefault(); 
       });
-
-    // log keystrokes, save to file?
-    /*const log_keystrokes_interval = 300  // 300s = 5min
-    //editor.getValue()
-    setInterval(() => {
-      console.log(editor.getValue())
-    }, 2000);*/
   </script>
   {% endif %}
 

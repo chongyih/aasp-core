@@ -126,7 +126,11 @@
                         <div class="thumbnail">
                           <img src="{{ snapshot.image.url }}" width="100%"/>
                           <div class="caption">
+                            {% if "initial" in snapshot.image.name %}
+                            <p>Initial snapshot: {{ snapshot.timestamp }}</p>
+                            {% else %}
                             <p>{{ snapshot.timestamp }}</p>
+                            {% endif %}
                           </div>
                         </div>
                       </div>

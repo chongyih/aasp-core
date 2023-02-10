@@ -122,3 +122,4 @@ For Student accounts, they are created on demand when students are enrolled into
 ### Others
 
 - Bootstrap 5 Template from [mazer](https://github.com/zuramai/mazer)
+- Face Detection library and model from [InsightFace](https://github.com/deepinsight/insightface)

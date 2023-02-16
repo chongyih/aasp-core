@@ -12,11 +12,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='assessment',
-            name='disable_copy_paste',
-            field=models.BooleanField(default=False),
-        ),
-        migrations.AddField(
-            model_name='assessment',
             name='limit_tab_switching',
             field=models.BooleanField(default=False),
         ),

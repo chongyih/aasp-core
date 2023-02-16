@@ -228,9 +228,9 @@
                   <div class="modal-body">
                     <div class="alert alert-warning" id="snapshot-alert" style="display:none;"></div>
                     <div class="row">
-                      <div class="text-start">Please position your face so it fills most of the window below.</div>
-                      <div class="text-start">Hold your matriculation card beside your face.</div>
-                      <div class="text-start">Look into the camera and click "Take Picture".</div>
+                      <div>Please position your face so it fills most of the window below.</div>
+                      <div>Hold your matriculation card beside your face.</div>
+                      <div>Look into the camera and click "Take Picture".</div>
                     </div>
                     <br>
                     <div class="row">
@@ -386,7 +386,7 @@
           clearBtn.prop("disabled", false);
 
           const faces_detected = res.faces_detected;
-          if (faces_detected == 2) {
+          if (faces_detected == 1) {
             // only enable enterBtn if candidate's surrounding is appropriate + matric card present
             snapshotAlert.hide();
             enterBtn.prop("disabled", false);

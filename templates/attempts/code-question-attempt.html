@@ -274,8 +274,9 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" />
         </div>
         <div class="modal-body">
-          <div class="text-start">Please do not move out of the test screen.</div>
-          <div class="text-start">Your test will be automatically submitted if you leave the test environment subsequently.</div>
+          <div>Please do not move out of the test screen.</div>
+          <div>You will lose your progress and your test will be submitted automatically.</div>
+          <div id="tab-switch-countdown"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -325,17 +326,33 @@
       });
   </script>
 
-  <!-- Unload warning -->
+  <!-- Tab monitoring -->
+  {% if assessment_attempt.assessment.limit_tab_switching %}
   <script>
-      window.onbeforeunload = function () {
-          if (validNavigation) {
-              validNavigation = false;
-              return;
-          }
+    const tabModal = $("#tab-modal");
+    let leaving_screen_num = 0;
 
-          return true;
-      };
+    function randomSeconds(min, max) {
+      return  Math.floor(Math.random() * (max - min) + min);
+    }
+
+    function handleTabSwitch() {
+      leaving_screen_num++;
+      if (leaving_screen_num >= 3) {  // force submit test on third tab switch
+        submitAssessment(false);
+        window.onbeforeunload = (e) => {
+          e.preventDefault();
+        }
+      }
+      else {
+        tabModal.modal("show");
+      }
+    }
+
+    // limit tab switching (i.e. limit user moving away from assessment screen)
+    window.onblur = () => { handleTabSwitch(); }
   </script>
+  {% endif %}
 
   <!-- Ace code editor config -->
   <script>
@@ -442,12 +459,51 @@
       });
 
       updateReadonlyRanges();
+  </script>
 
-      const resetCode = () => {
-          if (confirm("Are you sure you wish to reset?")) {
-              setLanguage();
-          }
+  <!-- Unload warning -->
+  <script>
+    window.onbeforeunload = function () {
+      if ({{ assessment_attempt.assessment.limit_tab_switching|yesno:"true,false"}}) {
+        window.onblur = () => {};
       }
+      
+      if (validNavigation) {
+          validNavigation = false;
+          if ({{ assessment_attempt.assessment.limit_tab_switching|yesno:"true,false"}}) {
+            setTimeout(() => {
+              window.onblur = () => { handleTabSwitch(); }
+            }, 1000);
+          }
+          return;
+      }
+
+      if ({{ assessment_attempt.assessment.limit_tab_switching|yesno:"true,false"}}) {
+        setTimeout(() => {
+          window.onblur = () => { handleTabSwitch(); }
+        }, 1000);
+      }
+      return true;
+    };
+  </script>
+
+  <!-- Reset code editor -->
+  <script>
+    const resetCode = () => {
+      if ({{ assessment_attempt.assessment.limit_tab_switching|yesno:"true,false"}}) {
+        window.onblur = () => {};
+      }
+      
+      if (confirm("Are you sure you wish to reset?")) {
+          setLanguage();
+      }
+
+      if ({{ assessment_attempt.assessment.limit_tab_switching|yesno:"true,false"}}) {
+        setTimeout(() => {
+          window.onblur = () => { handleTabSwitch(); }
+        }, 1000);
+      }
+    }
   </script>
 
   <!-- Code running and submission scripts -->
@@ -758,193 +814,169 @@
               runStatus.html('Processing');
           {% endif %}
       {% endfor %}
-
-      const submitAssessment = (confirmation) => {
-          if (confirmation) {
-              if (confirm("Are you sure you would like to end the assessment attempt?")) {
-                  document.getElementById("end-assessment-form").submit();
-              }
-          } else {
-              document.getElementById("end-assessment-form").submit();
-          }
-      }
   </script>
 
-  <!-- Tab monitoring -->
-  {% if assessment_attempt.assessment.limit_tab_switching %}
+  <!-- Submit assessment -->
   <script>
-    const tabModal = $("#tab-modal");
-
-    // limit tab switching (i.e. limit user moving away from assessment screen)
-    let leaving_screen_num = 0;
-    // TODO: !!!! blur event listener is when onbeforeunload and confirmation modals are clicked
-    window.addEventListener('blur', (e) => {
-      leaving_screen_num++;
-      if (leaving_screen_num >= 3) {  // force submit test on third tab switch
-        submitAssessment(false);
-        window.onbeforeunload = (e) => {
-          e.preventDefault();
+    const submitAssessment = (confirmation) => {
+      if (confirmation) {
+        if ({{ assessment_attempt.assessment.limit_tab_switching|yesno:"true,false"}}) {
+          window.onblur = () => {};
         }
+
+        if (confirm("Are you sure you would like to end the assessment attempt?")) {
+            document.getElementById("end-assessment-form").submit();
+        }
+        else {
+          if ({{ assessment_attempt.assessment.limit_tab_switching|yesno:"true,false"}}) {
+            setTimeout(() => {
+              window.onblur = () => { handleTabSwitch(); }
+            }, 1000);
+          }
+        }
+
       }
       else {
-        tabModal.modal("show");
+          document.getElementById("end-assessment-form").submit();
       }
-    })
+    }
   </script>
-  {% endif %}
-
-  <!-- Disable copying/pasting -->
-  {% if assessment_attempt.assessment.disable_copy_paste %}
-  <script>
-      // disable cut copy paste in editor
-      editor.commands.addCommand({
-        name: "breakTheEditor", 
-        bindKey: "ctrl-c|ctrl-v|ctrl-x|ctrl-shift-v|shift-del|cmd-c|cmd-v|cmd-x", 
-        exec: function() { }
-      });
-
-      // prevent mouse right click on page
-      document.addEventListener('contextmenu', (e) => {
-        e.preventDefault(); 
-      });
-  </script>
-  {% endif %}
 
   <!-- Webcam script -->
   {% if assessment_attempt.assessment.require_webcam %}
-    <video hidden id="video"></video>
-    <canvas hidden id="canvas"></canvas>
-    <script>
-      const width = 320; let height = 0;
-      let streaming = false;
-      let video = document.getElementById("video");
-      let canvas = document.getElementById("canvas");
+  <video hidden id="video"></video>
+  <canvas hidden id="canvas"></canvas>
+  <script>
+    const width = 320; let height = 0;
+    let streaming = false;
+    let video = document.getElementById("video");
+    let canvas = document.getElementById("canvas");
 
-      function stopCamera() {
-        const stream = video.srcObject;
-        const tracks = stream.getTracks();
-        tracks[0].stop();
-      }
-    
-      function startup() {
-        navigator.mediaDevices
-          .getUserMedia({ video: true, audio: false })
-          .then((stream) => {
-            video.srcObject = stream;
-            video.play();
-          })
-          .catch((err) => {
-            console.error(`An error occurred: ${err}`);
-          });
-    
-        video.addEventListener(
-          "canplay",
-          ($e) => {
-            if (!streaming) {
-              height = video.videoHeight / (video.videoWidth / width);
-    
-              if (isNaN(height)) {
-                height = width / (4 / 3);
-              }
-    
-              video.setAttribute("width", width);
-              video.setAttribute("height", height);
-              canvas.setAttribute("width", width);
-              canvas.setAttribute("height", height);
-              streaming = true;
-            }
-          },
-          false
-        );
-      }
-    </script>
-
-    <!-- Capture and upload candidate snapshot -->
-    <script>
-      function randomMinutes(min, max) {
-        min = min * 10;
-        max = max * 10;
-        return  Math.floor(Math.random() * (max - min) + min) / 10;
-      }
-
-      function captureSnapshot() {
-        // randomise time between 1 min and 10% of assessment duration
-        const min = 1;
-        const max = {{ assessment_attempt.assessment.duration }} * 0.1;
-        let minutes = randomMinutes(min, max);
-        // console.log(`${minutes}min next`)
-        snapshotTimer = setTimeout(captureSnapshot, minutes*60000);
-
-        const current = moment();
-        const context = canvas.getContext("2d");
-        if (width && height) {
-          canvas.width = width;
-          canvas.height = height;
-          context.drawImage(video, 0, 0, width, height);
-          
-          let image = null;
-          let filename = current.format("DDMMYYYY_HHmmss");
-          let timestamp = current.format("DD-MM-YYYY HH:mm:ss");
-          let blob = canvas.toBlob(
-            (blob) => {
-              image = new File([blob], `${filename}.jpg`, { type: 'image/jpg' });
-              uploadImage(timestamp, image);
-            },
-            'image/jpg');
-        }
-      }
-
-      // ajax request to save image
-      function uploadImage(timestamp, image) {
-        let formData = new FormData();
-        formData.append("attempt_number", "{{ assessment_attempt.total_attempts }}");
-        formData.append("timestamp", timestamp);
-        formData.append("image", image);
-        formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
-
-        $.ajax({
-          type: 'POST',
-          url: "{% url 'upload-snapshot' assessment_attempt_id=assessment_attempt.id %}",
-          enctype: 'multipart/form-data',
-          data: formData,
-          processData: false,
-          contentType: false,
-        }).done((res, textStatus, jqXHR) => {
-          // console.log("Snapshot uploaded.");
-        }).fail((jqXHR, textStatus, errorThrown) => {
-          console.error(`An error occurred: ${jqXHR.responseJSON["message"]}`);
+    function stopCamera() {
+      const stream = video.srcObject;
+      const tracks = stream.getTracks();
+      tracks[0].stop();
+    }
+  
+    function startup() {
+      navigator.mediaDevices
+        .getUserMedia({ video: true, audio: false })
+        .then((stream) => {
+          video.srcObject = stream;
+          video.play();
+        })
+        .catch((err) => {
+          console.error(`An error occurred: ${err}`);
         });
-      }
-    </script>
-  {% endif %}
 
-  {% if assessment_attempt.assessment.duration != 0 %}
-    <!-- Timer script -->
-    <script>
-        const startTime = moment.unix({{ assessment_attempt.time_started|date:"U" }});
-        const endTime = moment(startTime).add({{ assessment_attempt.assessment.duration }}, 'minutes');
+      video.addEventListener(
+        "canplay",
+        ($e) => {
+          if (!streaming) {
+            height = video.videoHeight / (video.videoWidth / width);
 
-        let snapshotTimer;
-        let require_webcam = {{ assessment_attempt.assessment.require_webcam|yesno:"true,false" }};
-        if (require_webcam) {
-          startup();
-          captureSnapshot();
-        }        
-        
-        const timer = setInterval(() => {
-            const now = moment();
-            const remaining = moment.duration(endTime.diff(now));
-            const formatted = remaining.format('DD:HH:mm:ss');
-            $("#countdown-timer").html(formatted);
-            
-            // check if time ended
-            if (now >= endTime) {
-                // console.log("Time end reached, assessment ended.");
-                clearInterval(timer);
-                clearInterval(snapshotTimer);
-                submitAssessment(false);
+            if (isNaN(height)) {
+              height = width / (4 / 3);
             }
-        }, 1000);
-    </script>
+
+            video.setAttribute("width", width);
+            video.setAttribute("height", height);
+            canvas.setAttribute("width", width);
+            canvas.setAttribute("height", height);
+            streaming = true;
+          }
+        },
+        false
+      );
+    }
+  </script>
+
+  <!-- Capture and upload candidate snapshot -->
+  <script>
+    function randomMinutes(min, max) {
+      min = min * 10;
+      max = max * 10;
+      return  Math.floor(Math.random() * (max - min) + min) / 10;
+    }
+
+    function captureSnapshot() {
+      // randomise time between 1 min and 10% of assessment duration
+      const min = 1;
+      const max = {{ assessment_attempt.assessment.duration }} * 0.1;
+      let minutes = randomMinutes(min, max);
+      // console.log(`${minutes}min next`)
+      snapshotTimer = setTimeout(captureSnapshot, minutes*60000);
+
+      const current = moment();
+      const context = canvas.getContext("2d");
+      if (width && height) {
+        canvas.width = width;
+        canvas.height = height;
+        context.drawImage(video, 0, 0, width, height);
+        
+        let image = null;
+        let filename = current.format("DDMMYYYY_HHmmss");
+        let timestamp = current.format("DD-MM-YYYY HH:mm:ss");
+        let blob = canvas.toBlob(
+          (blob) => {
+            image = new File([blob], `${filename}.jpg`, { type: 'image/jpg' });
+            uploadImage(timestamp, image);
+          },
+          'image/jpg');
+      }
+    }
+
+    // ajax request to save image
+    function uploadImage(timestamp, image) {
+      let formData = new FormData();
+      formData.append("attempt_number", "{{ assessment_attempt.total_attempts }}");
+      formData.append("timestamp", timestamp);
+      formData.append("image", image);
+      formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+      $.ajax({
+        type: 'POST',
+        url: "{% url 'upload-snapshot' assessment_attempt_id=assessment_attempt.id %}",
+        enctype: 'multipart/form-data',
+        data: formData,
+        processData: false,
+        contentType: false,
+      }).done((res, textStatus, jqXHR) => {
+        // console.log("Snapshot uploaded.");
+      }).fail((jqXHR, textStatus, errorThrown) => {
+        console.error(`An error occurred: ${jqXHR.responseJSON["message"]}`);
+      });
+    }
+  </script>
+  {% endif %}
+  
+  <!-- Timer script -->
+  {% if assessment_attempt.assessment.duration != 0 %}
+  <script>
+      const startTime = moment.unix({{ assessment_attempt.time_started|date:"U" }});
+      const endTime = moment(startTime).add({{ assessment_attempt.assessment.duration }}, 'minutes');
+
+      let snapshotTimer;
+      let require_webcam = {{ assessment_attempt.assessment.require_webcam|yesno:"true,false" }};
+      if (require_webcam) {
+        startup();
+        captureSnapshot();
+      }        
+      
+      const timer = setInterval(() => {
+          const now = moment();
+          const remaining = moment.duration(endTime.diff(now));
+          const formatted = remaining.format('DD:HH:mm:ss');
+          $("#countdown-timer").html(formatted);
+          
+          // check if time ended
+          if (now >= endTime) {
+              // console.log("Time end reached, assessment ended.");
+              clearInterval(timer);
+              clearInterval(snapshotTimer);
+              submitAssessment(false);
+          }
+      }, 1000);
+  </script>
   {% endif %}
 {% endblock %}

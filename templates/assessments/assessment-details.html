@@ -70,39 +70,41 @@
 
           <div class="card-body">
             <div class="row">
-              <div class="col-4">
+              <div class="col-6">
                 <h6>Course</h6>
                 <a class="fw-bold" href="{% url 'course-details' course_id=assessment.course.id %}">{{ assessment.course }}</a>
               </div>
-              <div class="col-3">
+              <div class="col-6">
                 <h6>Assessment Name</h6>
                 <p>{{ assessment.name }}</p>
               </div>
-              <div class="col-3">
+            </div>
+            <div class="row">
+              <div class="col-4">
                 <h6>Attempts Allowed</h6>
                 <p>{{ assessment.num_attempts|default:"Unlimited" }}</p>
               </div>
-              <div class="col-2">
+              <div class="col-4">
+                <h6>Show Grade</h6>
+                <p>{% if assessment.show_grade %}Yes{% else %}No{% endif %}</p>
+              </div>
+              <div class="col-4">
                 <h6>Access PIN</h6>
                 <span class="badge rounded-pill bg-light-secondary fs-6 font-monospace">{{ assessment.pin|default_if_none:"No PIN" }}</span>
               </div>
             </div>
             <div class="row mt-3">
-              <div class="col-3">
+              <div class="col-4">
                 <h6>Duration</h6>
                 <p>{% if assessment.duration %}{{ assessment.duration }} minutes{% else %}Unlimited{% endif %}</p>
               </div>
-              <div class="col-3">
+              <div class="col-4">
                 <h6>Time Start</h6>
                 <p>{{ assessment.time_start|default_if_none:"-" }}</p>
               </div>
-              <div class="col-3">
+              <div class="col-4">
                 <h6>Time End</h6>
                 <p>{{ assessment.time_end|default_if_none:"-" }}</p>
-              </div>
-              <div class="col-3">
-                <h6>Show Grade</h6>
-                <p>{% if assessment.show_grade %}Yes{% else %}No{% endif %}</p>
               </div>
             </div>
             <hr>
@@ -110,10 +112,6 @@
               <div class="col-4">
                 <h6>Require Webcam</h6>
                 <p>{% if assessment.require_webcam %}Yes{% else %}No{% endif %}</p>
-              </div>
-              <div class="col-4">
-                <h6>Disable Copy/Paste</h6>
-                <p>{% if assessment.disable_copy_paste %}Yes{% else %}No{% endif %}</p>
               </div>
               <div class="col-4">
                 <h6>Limit Tab Switching</h6>

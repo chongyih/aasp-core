@@ -17,7 +17,6 @@ class Assessment(models.Model):
     published = models.BooleanField(default=False)
     pin = models.PositiveIntegerField(null=True, blank=True)
     require_webcam = models.BooleanField(default=False)
-    disable_copy_paste = models.BooleanField(default=False)
     limit_tab_switching = models.BooleanField(default=False)
 
     def __str__(self):

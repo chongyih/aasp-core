@@ -1,13 +1,12 @@
 from django import forms
-from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group
 from django.db import transaction
 from django.core.exceptions import ValidationError
+from django.utils.crypto import get_random_string
 
 from core.models import User, Course, CourseGroup, Assessment
-from core.views import assessments
-from core.views.utils import is_student
+from core.views.utils import is_student, construct_assessment_published_email, construct_password_email
 
 
 class StudentCreationForm(forms.Form):
@@ -67,11 +66,15 @@ class StudentCreationForm(forms.Form):
                 )
 
                 user.email = f"{user.username}@E.NTU.EDU.SG"
-                user.password = make_password(settings.DEFAULT_STUDENT_PASSWORD)
+                random_initial_password = get_random_string(length=10)
+                user.password = make_password(random_initial_password)
                 user.save()
 
                 # add user to the student group
                 Group.objects.get(name="student").user_set.add(user)
+
+                # email user the initial password
+                construct_password_email(user.email, user.get_full_name(), random_initial_password)
 
             course = self.cleaned_data.get("course")
             course_group, _ = CourseGroup.objects.get_or_create(course=course, name=self.cleaned_data.get("group"))
@@ -81,7 +84,7 @@ class StudentCreationForm(forms.Form):
             courses_assessments = Assessment.objects.filter(course=course, published=True, deleted=False).all()
             if courses_assessments:
                 for a in courses_assessments:
-                    assessments.send_assessment_published_email(assessment=a, recipients=[user])
+                    construct_assessment_published_email(assessment=a, recipients=[user])
 
             return user
 

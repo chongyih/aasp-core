@@ -6,12 +6,12 @@ urlpatterns = [
     # global auth
     path('login/', auth.Login.as_view(), name='login'),
     path('logout/', auth.Logout.as_view(), name='logout'),
-    path('changepassword/', auth.change_password, name='change-password'),
+    path('change-password/', auth.change_password, name='change-password'),
 
     # dashboards
     path('dashboard/students/', dashboards.dashboard_students, name='dashboard-students'),
     path('dashboard/educators/', dashboards.dashboard_educators, name='dashboard-educators'),
-    path('dashboard/labassistants/', dashboards.dashboard_lab_assistants, name='dashboard-lab-assistants'),
+    path('dashboard/lab-assistants/', dashboards.dashboard_lab_assistants, name='dashboard-lab-assistants'),
     path('dashboard/', dashboards.dashboard, name='dashboard'),
     path('', dashboards.dashboard, name='dashboard'),
 
@@ -55,8 +55,6 @@ urlpatterns = [
     path('assessment/publish/<int:assessment_id>/', assessments.publish_assessment, name='publish-assessment'),
     path('assessment/delete/<int:assessment_id>/', assessments.delete_assessment, name='delete-assessment'),
     path('assessment/undo-delete/<int:assessment_id>/', assessments.undo_delete_assessment, name='undo-delete-assessment'),
-    # for testing, to remove later
-    path('send-email', assessments.send_email_test_api, name='send-email'),
 
     # taking assessments (attempts)
     path('assessment/landing/<int:assessment_id>/', attempts.assessment_landing, name='assessment-landing'),

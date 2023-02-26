@@ -163,8 +163,7 @@ INTERNAL_IPS = [
 ]
 SHOW_COLLAPSED = True
 
-# default password for new student accounts
-DEFAULT_STUDENT_PASSWORD = "password123"
+AASP_URL = os.environ.get("AASP_URL")
 
 # celery settings
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL")

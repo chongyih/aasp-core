@@ -101,14 +101,14 @@ Note: If changes were made to the database schema, make sure to commit the migra
 
 ## Initial Setup
 ### Default superuser account
-By default, only a single `admin` account with superuser privileges is created. The default password for this user is `password123`. 
+By default, only a single `ADMIN` account with superuser privileges is created. The default password for this user is `password123`. 
 
 ### Creation of other accounts
-Other user accounts can be created through the Django Admin Dashboard with the `admin` account. This dashboard can be accessed by logging in as the `admin` user.
-
 To create an Educator account, create the user and add the user to the Educator group. The same applies for Lab Assistants.
 
-For Student accounts, they are created on demand when students are enrolled into courses, so there is no need to pre-create these accounts.
+For Student accounts, they are created on demand when students are enrolled into courses, so there is no need to pre-create these accounts. The initial password will be sent to each student email upon account creation.
+
+Other user accounts can be created through the Django Admin Dashboard by logging in as the `ADMIN` account.
 
 ## Credits
 

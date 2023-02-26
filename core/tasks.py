@@ -5,6 +5,7 @@ import os
 from celery import shared_task
 from insightface.app import FaceAnalysis
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 from django.utils import timezone
 
 from core.models import TestCaseAttempt, CodeQuestionSubmission, AssessmentAttempt, CandidateSnapshot
@@ -134,3 +135,19 @@ def detect_faces(snapshot_id):
     except:
         pass
 
+
+@shared_task
+def send_email(subject, text_content, html_content, recipient):
+    try:
+        email = EmailMultiAlternatives(subject, text_content, settings.EMAIL_HOST_USER, recipient)
+        email.attach_alternative(html_content, "text/html")
+        
+        email.send()
+        
+    except:
+        raise EmailException()
+
+
+class EmailException(Exception):
+    def __str__(self):
+        return f"An error occurred. Please try again."

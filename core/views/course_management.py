@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
@@ -9,6 +8,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.crypto import get_random_string
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, renderer_classes
@@ -18,7 +18,7 @@ from core.decorators import groups_allowed, UserGroup
 from core.filters import CourseStudentFilter
 from core.forms.course_management import CourseForm
 from core.models import Course, User, CourseGroup
-from core.views.utils import check_permissions_course
+from core.views.utils import check_permissions_course, construct_password_email
 
 
 @login_required()
@@ -306,8 +306,12 @@ def reset_student_password(request):
 
             # get student and reset password
             student = User.objects.filter(id=student_id).first()
-            student.password = make_password(settings.DEFAULT_STUDENT_PASSWORD)
+            random_initial_password = get_random_string(length=10)
+            student.password = make_password(random_initial_password)
             student.save()
+
+            # email user the reset password
+            construct_password_email(student.email, student.get_full_name(), random_initial_password)
 
             context = {
                 "result": "success",

@@ -1,10 +1,7 @@
 import random
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core import mail
-from django.core.mail import EmailMultiAlternatives
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Q
@@ -17,9 +14,10 @@ from rest_framework.renderers import JSONRenderer
 from core.decorators import groups_allowed, UserGroup
 from core.filters import CodeQuestionFilter
 from core.forms.assessments import AssessmentForm
-from core.models import Course, Assessment, CodeQuestion, TestCase, CodeSnippet, Tag, QuestionBank, CourseGroup, User
+from core.models import Course, Assessment, CodeQuestion, TestCase, CodeSnippet, Tag, QuestionBank
 from core.serializers import CodeQuestionsSerializer
-from core.views.utils import check_permissions_course, check_permissions_assessment, check_permissions_code_question
+from core.views.utils import check_permissions_course, check_permissions_assessment, check_permissions_code_question, \
+    construct_assessment_published_email
 
 
 @login_required()
@@ -279,7 +277,7 @@ def publish_assessment(request, assessment_id):
             
             try:
                 # send email notification to students enrolled
-                send_assessment_published_email(assessment)
+                construct_assessment_published_email(assessment)
                 messages.success(request, "The assessment has been published!")
             except Exception as ex:
                 messages.warning(request, f"{ex}")
@@ -328,62 +326,4 @@ def undo_delete_assessment(request, assessment_id):
                 assessment.save()
                 messages.success(request, "Undo delete successful!")
             return redirect('assessment-details', assessment_id=assessment_id)
-
-
-def send_assessment_published_email(assessment, recipients=None):
-    course_groups = CourseGroup.objects.filter(course=assessment.course).prefetch_related('course')
-    students_enrolled = User.objects.filter(enrolled_groups__in=course_groups)
-
-    if recipients is None and not students_enrolled.exists:
-        return
-
-    if recipients is None:
-        recipients = students_enrolled
-    
-    subject = f"{assessment.course} {assessment.name} Published"
-
-    connection = mail.get_connection()
-    connection.open()
-    for student in recipients:
-        text_content = f"Dear {student.get_full_name()},\n {assessment.name}\n{assessment.course}"
-        html_content = f"Dear {student.get_full_name()},\
-                        <p><b>{assessment.name}</b></p>\
-                        <p>{assessment.course}</p>"
-        
-        send_email(subject, text_content, html_content, [student.email])
-    connection.close()
-    
-
-def send_email(subject, text_content, html_content, recipient):
-    try:
-        email = EmailMultiAlternatives(subject, text_content, settings.EMAIL_HOST_USER, recipient)
-        email.attach_alternative(html_content, "text/html")
-        
-        email.send()
-        
-    except:
-        raise EmailException()
-
-
-class EmailException(Exception):
-    def __str__(self):
-        return f"An error occurred. Please try again."
-
-
-@api_view(["POST"])
-@renderer_classes([JSONRenderer])
-def send_email_test_api(request):
-    try:
-        assessment_id = request.POST.get('assessment_id')
-        assessment = Assessment.objects.get(id=assessment_id)
-        send_assessment_published_email(assessment)
-
-        return Response({ "result": "success" }, status=status.HTTP_200_OK)
-
-    except Exception as ex:
-        error_context = { 
-            "result": "error",
-            "message": f"{ex}"
-        }
-        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
 

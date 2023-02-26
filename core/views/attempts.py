@@ -153,11 +153,14 @@ def enter_assessment(request, assessment_id):
                                             attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
                 snapshot.save()
 
-                # for local development: cannot queue as task because MEDIA_ROOT is not on same server as linux machine
-                if settings.DEBUG:
-                    local_detect_faces(snapshot)
-                else:
-                    detect_faces.delay(snapshot.id)
+                """ 
+                if celery worker container is running on a machine that's different from dev machine, use local_detect_faces instead of detect_faces.delay.
+                cannot queue as task because MEDIA_ROOT are different directories
+                """
+                # if settings.DEBUG:
+                #     local_detect_faces(snapshot)
+
+                detect_faces.delay(snapshot.id)
 
             return redirect('attempt-question', assessment_attempt_id=assessment_attempt.id, question_index=0)
 
@@ -572,12 +575,14 @@ def upload_snapshot(request, assessment_attempt_id):
                                         attempt_number=attempt_number, timestamp=timestamp_tz, image=image)
             snapshot.save()
 
+            """ 
+            if celery worker container is running on a machine that's different from dev machine, use local_detect_faces instead of detect_faces.delay.
+            cannot queue as task because MEDIA_ROOT are different directories
+            """
+            # if settings.DEBUG:
+            #     local_detect_faces(snapshot)
 
-            # for local development: cannot queue as task because MEDIA_ROOT is not on same server as linux machine
-            if settings.DEBUG:
-                local_detect_faces(snapshot)
-            else:
-                detect_faces.delay(snapshot.id)
+            detect_faces.delay(snapshot.id)
 
             context = {
                 "faces_detected": snapshot.faces_detected,

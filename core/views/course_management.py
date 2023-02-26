@@ -306,12 +306,12 @@ def reset_student_password(request):
 
             # get student and reset password
             student = User.objects.filter(id=student_id).first()
-            random_initial_password = get_random_string(length=10)
-            student.password = make_password(random_initial_password)
+            random_reset_password = get_random_string(length=10)
+            student.password = make_password(random_reset_password)
             student.save()
 
             # email user the reset password
-            construct_password_email(student.email, student.get_full_name(), random_initial_password)
+            construct_password_email(student.email, student.get_full_name(), random_reset_password)
 
             context = {
                 "result": "success",

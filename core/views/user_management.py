@@ -13,7 +13,7 @@ from rest_framework.renderers import JSONRenderer
 from core.decorators import UserGroup, groups_allowed
 from core.forms.user_management import StudentCreationForm
 from core.models import User, Course, CourseGroup, Assessment
-from core.views.utils import clean_csv, check_permissions_course, construct_assessment_published_email
+from core.views.utils import clean_csv, check_permissions_course, construct_assessment_published_email, construct_password_email
 
 
 @login_required()
@@ -63,7 +63,7 @@ def enrol_students_bulk(request):
         if not course_id:
             context = {
                 "result": "error",
-                "msg": "Please select a course."
+                "message": "Please select a course."
             }
             return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
@@ -73,7 +73,7 @@ def enrol_students_bulk(request):
         if not course:
             context = {
                 "result": "error",
-                "msg": "The selected course does not exist."
+                "message": "The selected course does not exist."
             }
             return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
@@ -81,7 +81,7 @@ def enrol_students_bulk(request):
         if check_permissions_course(course, request.user) == 0:
             context = {
                 "result": "error",
-                "msg": "You do not have permissions for this course."
+                "message": "You do not have permissions for this course."
             }
             return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
@@ -92,7 +92,7 @@ def enrol_students_bulk(request):
         if not file:
             context = {
                 "result": "error",
-                "msg": "No file was uploaded."
+                "message": "No file was uploaded."
             }
             return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
@@ -100,7 +100,7 @@ def enrol_students_bulk(request):
         if not file.name.endswith('.csv'):
             context = {
                 "result": "error",
-                "msg": "Only csv files are accepted!"
+                "message": "Only csv files are accepted!"
             }
             return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
@@ -108,7 +108,7 @@ def enrol_students_bulk(request):
         if file.size >= 5242880:
             context = {
                 "result": "error",
-                "msg": "The uploaded file is too large! (up to 5MB allowed)"
+                "message": "The uploaded file is too large! (up to 5MB allowed)"
             }
             return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
@@ -135,14 +135,15 @@ def enrol_students_bulk(request):
 
             # generate User objects from contents of the csv file
             user_objects = []  # user accounts to be created
-            random_initial_password = get_random_string(length=10)
-            reset_password = make_password(random_initial_password)
             for row in cleaned_rows:
                 # create only if account don't exist yet
                 if row[2] not in existing_usernames:
-                    user_objects.append(
-                        User(first_name=row[0], last_name=row[1], email=f"{row[2]}@E.NTU.EDU.SG", username=row[2],
-                             password=reset_password))
+                    random_initial_password = get_random_string(length=10)
+                    hashed_password = make_password(random_initial_password)
+                    new_user = User(first_name=row[0], last_name=row[1], email=f"{row[2]}@E.NTU.EDU.SG", 
+                                    username=row[2], password=hashed_password)
+                    user_objects.append(new_user)
+                    construct_password_email(new_user.email, new_user.get_full_name(), random_initial_password)
 
             # bulk create with database
             created_users = User.objects.bulk_create(user_objects, ignore_conflicts=False)
@@ -156,10 +157,10 @@ def enrol_students_bulk(request):
                 course_group.students.add(*User.objects.filter(username__in=v))
 
             # success message
-            msg = f"{len(created_users) + len(existing_users)} students enrolled successfully!"
+            message = f"{len(created_users) + len(existing_users)} student(s) enrolled successfully!"
             if len(removed_rows) != 0:
-                msg += " Some rows were ignored, refer to the section below for more details."
-
+                message += " Some rows were ignored, refer to the section below for more details."
+            
             # if there are any published test(s), send email notification
             courses_assessments = Assessment.objects.filter(course=course, published=True, deleted=False).all()
             if courses_assessments:
@@ -170,7 +171,7 @@ def enrol_students_bulk(request):
             # result
             context = {
                 "result": "success",
-                "msg": msg,
+                "message": message,
                 "removed_rows": removed_rows,
                 "conflicted_rows": []
             }
@@ -179,7 +180,7 @@ def enrol_students_bulk(request):
         except Exception as ex:
             context = { 
                 "result": "error",
-                "msg": "Something went wrong while processing your file.",
+                "message": "Something went wrong while processing your file.",
                 "exception": f"{ex}"
             }
             return Response(context, status=status.HTTP_400_BAD_REQUEST)

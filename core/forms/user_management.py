@@ -6,7 +6,8 @@ from django.core.exceptions import ValidationError
 from django.utils.crypto import get_random_string
 
 from core.models import User, Course, CourseGroup, Assessment
-from core.views.utils import is_student, construct_assessment_published_email, construct_password_email
+from core.views.utils import is_student, construct_assessment_published_email
+from core.tasks import send_password_email
 
 
 class StudentCreationForm(forms.Form):
@@ -74,7 +75,7 @@ class StudentCreationForm(forms.Form):
                 Group.objects.get(name="student").user_set.add(user)
 
                 # email user the initial password
-                construct_password_email(user.email, user.get_full_name(), random_initial_password)
+                send_password_email.delay(user.email, user.get_full_name(), random_initial_password)
 
             course = self.cleaned_data.get("course")
             course_group, _ = CourseGroup.objects.get_or_create(course=course, name=self.cleaned_data.get("group"))
@@ -84,7 +85,7 @@ class StudentCreationForm(forms.Form):
             courses_assessments = Assessment.objects.filter(course=course, published=True, deleted=False).all()
             if courses_assessments:
                 for a in courses_assessments:
-                    construct_assessment_published_email(assessment=a, recipients=[user])
+                    construct_assessment_published_email(a, recipients=[user])
 
             return user
 

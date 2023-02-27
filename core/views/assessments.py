@@ -267,18 +267,18 @@ def publish_assessment(request, assessment_id):
                 messages.warning(request, f"Not published! {msg}")
                 return redirect("assessment-details", assessment_id=assessment_id)
 
-            with transaction.atomic():
-                # delete attempts
-                assessment.assessmentattempt_set.all().delete()
-
-                # publish assessment
-                assessment.published = True
-                assessment.save()
-            
             try:
+                with transaction.atomic():
+                    # delete attempts
+                    assessment.assessmentattempt_set.all().delete()
+
+                    # publish assessment
+                    assessment.published = True
+                    assessment.save()
+            
                 # send email notification to students enrolled
                 construct_assessment_published_email(assessment)
-                messages.success(request, "The assessment has been published!")
+                messages.success(request, "The assessment is successfully published! Students have been notified of this assessment via email.")
             except Exception as ex:
                 messages.warning(request, f"{ex}")
 

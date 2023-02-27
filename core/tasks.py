@@ -5,7 +5,7 @@ import os
 from celery import shared_task
 from insightface.app import FaceAnalysis
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
+from django.core import mail
 from django.utils import timezone
 
 from core.models import TestCaseAttempt, CodeQuestionSubmission, AssessmentAttempt, CandidateSnapshot
@@ -137,13 +137,61 @@ def detect_faces(snapshot_id):
 
 
 @shared_task
-def send_email(subject, text_content, html_content, recipient):
+def send_password_email(email, full_name, random_password):
+    """
+    This task sends an email to student(s) their randomised initial/reset password.
+    """
     try:
-        email = EmailMultiAlternatives(subject, text_content, settings.EMAIL_HOST_USER, recipient)
-        email.attach_alternative(html_content, "text/html")
+        subject = "Your Password for AASP"
+        text_content = f"Dear {full_name},\nYour password is: {random_password}\nPlease change your password here. {settings.AASP_URL}/change-password/\n\
+                        This is an automated message. Please do not reply."
+        html_content = f"Dear {full_name},\
+                        <p>Your password is: {random_password}</p>\
+                        <p>Please change your password <a href='{settings.AASP_URL}/change-password/'>here</a>.</p>\
+                        <p><i>This is an automated message. Please do not reply.</i></p>"
         
-        email.send()
-        
+        mail.send_mail(subject, text_content, settings.EMAIL_HOST_USER, [email], fail_silently=False, html_message=html_content)
+    except:
+        raise EmailException()
+
+
+@shared_task
+def send_assessment_published_email(id, name, course, start, end, duration, recipients):
+    """
+    This task sends a notification email to student(s) the URL of the assessment when it is published.
+
+    Parameters:
+    -----------
+    id : int
+        assessment id
+    name : str
+        assessment name
+    course : str
+        assessment course name
+    recipients : list<dict> 
+        "email" and "name" of recipients
+    """
+    try:
+        subject = f"{name} for {course} has been Published"
+        for student in recipients:
+            text_content = f"Dear {student['name']},\n\
+                            Test: {name}\n\
+                            Course: {course}\n\
+                            Start Date/Time: {start}\n\
+                            End Date/Time: {end}\n\
+                            Duration: {duration}\n\
+                            You may view details of the assessment here. {settings.AASP_URL}/assessment/landing/{id}/\n\
+                            This is an automated message. Please do not reply."
+            html_content = f"Dear {student['name']},\
+                            <p>Test: {name}</p>\
+                            <p>Course: {course}</p>\
+                            <p>Start Date/Time: {start}</p>\
+                            <p>End Date/Time: {end}</p>\
+                            <p>Duration: {duration}</p>\
+                            <p>You may view details of the assessment <a href='{settings.AASP_URL}/assessment/landing/{id}/'>here.</a></p>\
+                            <p><i>This is an automated message. Please do not reply.</i></p>"
+            
+            mail.send_mail(subject, text_content, settings.EMAIL_HOST_USER, [student['email']], fail_silently=False, html_message=html_content)
     except:
         raise EmailException()
 

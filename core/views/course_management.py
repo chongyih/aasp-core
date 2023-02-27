@@ -18,7 +18,8 @@ from core.decorators import groups_allowed, UserGroup
 from core.filters import CourseStudentFilter
 from core.forms.course_management import CourseForm
 from core.models import Course, User, CourseGroup
-from core.views.utils import check_permissions_course, construct_password_email
+from core.tasks import send_password_email
+from core.views.utils import check_permissions_course
 
 
 @login_required()
@@ -311,7 +312,7 @@ def reset_student_password(request):
             student.save()
 
             # email user the reset password
-            construct_password_email(student.email, student.get_full_name(), random_reset_password)
+            send_password_email.delay(student.email, student.get_full_name(), random_reset_password)
 
             context = {
                 "result": "success",

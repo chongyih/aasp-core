@@ -1,8 +1,5 @@
-from django.conf import settings
-from django.core import mail
-
 from core.models import CodeQuestionAttempt, CourseGroup, User
-from core.tasks import send_email
+from core.tasks import send_assessment_published_email
 
 
 def is_student(user):
@@ -142,39 +139,33 @@ def user_enrolled_in_course(course, user) -> bool:
 
 
 def construct_assessment_published_email(assessment, recipients=None):
+    """
+    Gets the required parameters needed to send an email notification on the published assessment. The actual sending of email is queued as a Celery task.
+    
+    Parameters:
+    -----------
+    assessment : Assessment
+        the assessment object.
+    recipients : list, optional
+        list of email recipients, defaults to None. 
+        list is converted to list<dict> containing "email" and "name".
+    """
     course_groups = CourseGroup.objects.filter(course=assessment.course).prefetch_related('course')
     students_enrolled = User.objects.filter(enrolled_groups__in=course_groups)
 
     if recipients is None and not students_enrolled.exists:
         return
-
+    
     if recipients is None:
         recipients = students_enrolled
-    
-    connection = mail.get_connection()
-    connection.open()
-    subject = f"Assessment on AASP Published"
+
     for student in recipients:
-        text_content = f"Dear {student.get_full_name()},\n\
-                        Assessment {assessment.name} for {assessment.course} has been published.\
-                        You may view details of the assessment here. {settings.AASP_URL}/assessment/landing/{assessment.id}/"
-        html_content = f"Dear {student.get_full_name()},\
-                        <p>Assessment {assessment.name} for {assessment.course} has been published.</p>\
-                        <p>You may view details of the assessment <a href='{settings.AASP_URL}/assessment/landing/{assessment.id}/'>here</a></p>"
-        
-        send_email.delay(subject, text_content, html_content, [student.email])
-    connection.close()
+            recipients = [
+                {
+                    "email": student.email,
+                    "name": student.get_full_name(),
+                }
+            ]
 
-
-def construct_password_email(email, full_name, random_password):
-    connection = mail.get_connection()
-    connection.open()
-    subject = "Password for AASP"
-    text_content = f"Dear {full_name},\nYour password is: {random_password}\nPlease set a new password here. {settings.AASP_URL}/change-password/"
-    html_content = f"Dear {full_name},\
-                    <p>Your password is: {random_password}</p>\
-                    <p>Please set a new password <a href='{settings.AASP_URL}/change-password/'>here</a>.</p>"
-        
-    send_email.delay(subject, text_content, html_content, [email])
-    connection.close()
-    
+    send_assessment_published_email.delay(assessment.id, assessment.name, str(assessment.course),\
+                                          assessment.time_start, assessment.time_end, assessment.duration, recipients)

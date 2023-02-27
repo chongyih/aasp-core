@@ -13,7 +13,8 @@ from rest_framework.renderers import JSONRenderer
 from core.decorators import UserGroup, groups_allowed
 from core.forms.user_management import StudentCreationForm
 from core.models import User, Course, CourseGroup, Assessment
-from core.views.utils import clean_csv, check_permissions_course, construct_assessment_published_email, construct_password_email
+from core.tasks import send_password_email
+from core.views.utils import clean_csv, check_permissions_course, construct_assessment_published_email
 
 
 @login_required()
@@ -143,7 +144,7 @@ def enrol_students_bulk(request):
                     new_user = User(first_name=row[0], last_name=row[1], email=f"{row[2]}@E.NTU.EDU.SG", 
                                     username=row[2], password=hashed_password)
                     user_objects.append(new_user)
-                    construct_password_email(new_user.email, new_user.get_full_name(), random_initial_password)
+                    send_password_email.delay(new_user.email, new_user.get_full_name(), random_initial_password)
 
             # bulk create with database
             created_users = User.objects.bulk_create(user_objects, ignore_conflicts=False)
@@ -166,7 +167,7 @@ def enrol_students_bulk(request):
             if courses_assessments:
                 for a in courses_assessments:
                     recipients = created_users + existing_users
-                    construct_assessment_published_email(assessment=a, recipients=recipients)
+                    construct_assessment_published_email(a, recipients)
 
             # result
             context = {

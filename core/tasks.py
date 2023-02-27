@@ -143,12 +143,14 @@ def send_password_email(email, full_name, random_password):
     """
     try:
         subject = "Your Password for AASP"
-        text_content = f"Dear {full_name},\nYour password is: {random_password}\nPlease change your password here. {settings.AASP_URL}/change-password/\n\
+        text_content = f"Dear {full_name},\n\nYour password is: {random_password}\nPlease change your password here. {settings.AASP_URL}/change-password/\n\n\n\
                         This is an automated message. Please do not reply."
         html_content = f"Dear {full_name},\
+                        <br/><br/>\
                         <p>Your password is: {random_password}</p>\
                         <p>Please change your password <a href='{settings.AASP_URL}/change-password/'>here</a>.</p>\
-                        <p><i>This is an automated message. Please do not reply.</i></p>"
+                        <br/>\
+                        <p><small>This is an automated message. Please do not reply.</small></p>"
         
         mail.send_mail(subject, text_content, settings.EMAIL_HOST_USER, [email], fail_silently=False, html_message=html_content)
     except:
@@ -172,24 +174,30 @@ def send_assessment_published_email(id, name, course, start, end, duration, reci
         "email" and "name" of recipients
     """
     try:
-        subject = f"{name} for {course} has been Published"
+        datetime = '-' if start == None and end == None else f"{start} to {end}"
+        start = '-' if start == None else start
+        end = '-' if end == None else end
+        
+        duration = "Unlimited" if duration == 0 else f"{duration} min"
+        
+        subject = f"{course} {name} on AASP"
         for student in recipients:
-            text_content = f"Dear {student['name']},\n\
-                            Test: {name}\n\
+            text_content = f"Dear {student['name']},\n\n\
+                            Test Name: {name}\n\
                             Course: {course}\n\
-                            Start Date/Time: {start}\n\
-                            End Date/Time: {end}\n\
+                            Date/Time: {datetime}\n\
                             Duration: {duration}\n\
-                            You may view details of the assessment here. {settings.AASP_URL}/assessment/landing/{id}/\n\
+                            You may view details of the assessment here. {settings.AASP_URL}/assessment/landing/{id}/\n\n\n\
                             This is an automated message. Please do not reply."
             html_content = f"Dear {student['name']},\
-                            <p>Test: {name}</p>\
+                            <br/><br/>\
+                            <p>Test Name: {name}</p>\
                             <p>Course: {course}</p>\
-                            <p>Start Date/Time: {start}</p>\
-                            <p>End Date/Time: {end}</p>\
+                            <p>Date/Time: {datetime}</p>\
                             <p>Duration: {duration}</p>\
-                            <p>You may view details of the assessment <a href='{settings.AASP_URL}/assessment/landing/{id}/'>here.</a></p>\
-                            <p><i>This is an automated message. Please do not reply.</i></p>"
+                            <p>You may view details of the assessment <a href='{settings.AASP_URL}/assessment/landing/{id}/'>here</a>.</p>\
+                            <br/>\
+                            <p><small>This is an automated message. Please do not reply.</small></p>"
             
             mail.send_mail(subject, text_content, settings.EMAIL_HOST_USER, [student['email']], fail_silently=False, html_message=html_content)
     except:

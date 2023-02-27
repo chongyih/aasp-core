@@ -290,7 +290,6 @@ def submit_single_test_case(request, test_case_id):
             # return error if no token
             token = data.get("token")
             if not token:
-                print(data)
                 error_context = {
                     "result": "error",
                     "message": "Judge0 error.",

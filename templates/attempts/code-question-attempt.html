@@ -350,8 +350,7 @@
 
           if (seconds_remaining <= 0 && tabModal.is(':visible')) {
             clearInterval(timer);
-            alert('time is up');
-            //submitAssessment(false);
+            submitAssessment(false);
             window.onbeforeunload = (e) => {
               e.preventDefault();
             }
@@ -460,7 +459,6 @@
                   readonlyRange.isStart(pos.row, pos.column) ||  // cursor is at the start of the range
                   !editor.getSelection().isEmpty() && editor.getSelectionRange().intersects(readonlyRange))  // prevent selection containing readonly area but ends in editable area
               {
-                  // console.log("not allowed")
                   e.preventDefault();
                   e.stopPropagation();
               }
@@ -920,7 +918,6 @@
       const min = 1;
       const max = {{ assessment_attempt.assessment.duration }} * 0.1;
       let minutes = randomMinutes(min, max);
-      // console.log(`${minutes}min next`)
       snapshotTimer = setTimeout(captureSnapshot, minutes*60000);
 
       const current = moment();
@@ -987,7 +984,6 @@
           
           // check if time ended
           if (now >= endTime) {
-              // console.log("Time end reached, assessment ended.");
               clearInterval(timer);
               clearInterval(snapshotTimer);
               submitAssessment(false);

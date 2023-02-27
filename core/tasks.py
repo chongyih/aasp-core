@@ -137,12 +137,12 @@ def detect_faces(snapshot_id):
 
 
 @shared_task
-def send_password_email(email, full_name, random_password):
+def send_password_email(email, full_name, random_password, reset_password=False):
     """
     This task sends an email to student(s) their randomised initial/reset password.
     """
     try:
-        subject = "Your Password for AASP"
+        subject = "Your Reset Password for AASP" if reset_password else "Your New Password for AASP"
         text_content = f"Dear {full_name},\n\nYour password is: {random_password}\nPlease change your password here. {settings.AASP_URL}/change-password/\n\n\n\
                         This is an automated message. Please do not reply."
         html_content = f"Dear {full_name},\

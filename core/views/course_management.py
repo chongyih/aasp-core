@@ -312,7 +312,7 @@ def reset_student_password(request):
             student.save()
 
             # email user the reset password
-            send_password_email.delay(student.email, student.get_full_name(), random_reset_password)
+            send_password_email.delay(student.email, student.get_full_name(), random_reset_password, reset_password=True)
 
             context = {
                 "result": "success",

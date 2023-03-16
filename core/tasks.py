@@ -143,12 +143,12 @@ def send_password_email(email, full_name, random_password, reset_password=False)
     """
     try:
         subject = "Your Reset Password for AASP" if reset_password else "Your New Password for AASP"
-        text_content = f"Dear {full_name},\n\nYour password is: {random_password}\nPlease change your password here. {settings.AASP_URL}/change-password/\n\n\n\
+        text_content = f"Dear {full_name},\n\nYour password is: {random_password}\nYou may change your password here. {settings.AASP_URL}/change-password/\n\n\n\
                         This is an automated message. Please do not reply."
         html_content = f"Dear {full_name},\
                         <br/><br/>\
                         <p>Your password is: {random_password}</p>\
-                        <p>Please change your password <a href='{settings.AASP_URL}/change-password/'>here</a>.</p>\
+                        <p>You may change your password <a href='{settings.AASP_URL}/change-password/'>here</a>.</p>\
                         <br/>\
                         <p><small>This is an automated message. Please do not reply.</small></p>"
         

@@ -316,7 +316,7 @@ def reset_student_password(request):
 
             context = {
                 "result": "success",
-                "message": f"Password successfully reset for {student.username}."
+                "message": f"Password successfully reset for {student.username}!\nThe new password has been sent via email."
             }
 
             return Response(context, status=status.HTTP_200_OK)

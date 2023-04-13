@@ -1,12 +1,12 @@
 # Automatic Assessment Platform (AASP)
-This repository is forked from the initial version and is developed as part of my Final Year Project in Nanyang Technological University, Singapore.
+This application is developed as part of my Final Year Project in Nanyang Technological University, Singapore.
 
-This project includes enhancements - Test Proctoring features, and bug fixes.
+This project includes enhancements - Test Proctoring features, email automation features and bug fixes.
 
 ## About
 
 AASP is a web-based online assessment platform that allows educators to create and manage assessments for their
-students.
+students. With test proctoring features, assessments can be administered remotely while enforcing a strict and monitored test environment.
 
 The platform is built with the [Django Web Framework](https://djangoproject.com/) and
 uses [Judge0](https://github.com/judge0/judge0) for code compilation and execution.
@@ -56,6 +56,12 @@ uses [Judge0](https://github.com/judge0/judge0) for code compilation and executi
    python3 manage.py runserver
    ```
 
+#### Note
+Docker images can be exported using the following command.
+```shell
+docker save $(docker images --format '{{.Repository}}:{{.Tag}}') -o exported-images.tar
+```
+
 ### Production
 
 #### Initial Deployment
@@ -76,7 +82,7 @@ uses [Judge0](https://github.com/judge0/judge0) for code compilation and executi
 
 3. Open `.env` and update the `SECRET_KEY` and `AASP_POSTGRES_PASSWORD` fields.
 
-4. If the machine is offline, you will need to first load the docker images from the `exported-images.tar` file.
+4. If the machine is offline, you will need to load docker images from the `exported-images.tar` file (if available).
    ```shell
    sudo docker load -i exported-images.tar
    ```
@@ -117,7 +123,7 @@ Other user accounts can be created through the Django Admin Dashboard by logging
 | Contributor                                             | Period         | Links                                                                                                                                                                                                     |
 |---------------------------------------------------------|----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [Lee Jun Wei](https://www.linkedin.com/in/leejunweisg/) | Jan - Dec 2022 | [Report](./documents/leejunwei/SCSE21-0804_report.pdf) [Slides](./documents/leejunwei/final-presentation-slides.pdf) [Poster](./documents/leejunwei/fyp-poster.pdf) [Video](https://youtu.be/T0sULC8Wh7k) |
-| [Liu Wing Lam](https://www.linkedin.com/in/liuwinglam) | Aug 2022 - May 2023 | 
+| [Liu Wing Lam](https://www.linkedin.com/in/liuwinglam) | Aug 2022 - May 2023 | [Report](./documents/liuwinglam/SCSE22-0184_report.pdf) |
 
 ### Others
 

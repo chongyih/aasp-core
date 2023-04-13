@@ -33,7 +33,7 @@ uses [Judge0](https://github.com/judge0/judge0) for code compilation and executi
 
 4. With docker-compose, create and start the containers:
    ```shell
-   docker compose -f docker-compose-dev.yml up -d
+   docker-compose -f docker-compose-dev.yml up -d
    ```
 
 5. Open the project in your IDE, create a virtual environment and install the requirements.
@@ -89,7 +89,7 @@ docker save $(docker images --format '{{.Repository}}:{{.Tag}}') -o exported-ima
 
 5. With docker-compose, create and start the containers:
    ```shell
-   sudo docker compose -f docker-compose.yml up -d
+   sudo docker-compose -f docker-compose.yml up -d
    ```
 
 6. Once the containers have been created and started, the site will be accessible at `http://<host-ip>/` (port 80)
@@ -102,7 +102,7 @@ Note: If changes were made to the database schema, make sure to commit the migra
 2. On the server, pull the new changes and recreate containers if necessary:
    ```shell
    git pull
-   sudo docker compose -f docker-compose.yml up -d
+   sudo docker-compose -f docker-compose.yml up -d
    ```
 
 ## Initial Setup

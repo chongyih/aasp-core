@@ -56,8 +56,7 @@ uses [Judge0](https://github.com/judge0/judge0) for code compilation and executi
    python3 manage.py runserver
    ```
 
-#### Note
-Docker images can be exported using the following command.
+### Exporting Docker Images
 ```shell
 docker save $(docker images --format '{{.Repository}}:{{.Tag}}') -o exported-images.tar
 ```

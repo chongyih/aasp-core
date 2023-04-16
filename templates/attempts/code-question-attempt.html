@@ -341,25 +341,29 @@
       tabModal.modal("show");
       if (leaving_screen_num >= 3) {  // force submit test on third tab switch
         let seconds_allowed = randomSeconds(3, 10);
+        let seconds_passed = 0;
         $("#tab-switch-countdown").html('- seconds remaining');
-        let now = 0;
 
-        const timer = setInterval(() => {
-          let seconds_remaining = seconds_allowed - now;
+        var tabSwitchTimer = setInterval(() => {
+          let seconds_remaining = seconds_allowed - seconds_passed;
           $("#tab-switch-countdown").html(`${seconds_remaining} seconds remaining`);
-
-          if (seconds_remaining <= 0 && tabModal.is(':visible')) {
-            clearInterval(timer);
+          
+          if (seconds_remaining <= 0) {
+            clearInterval(tabSwitchTimer);
             submitAssessment(false);
             window.onbeforeunload = (e) => {
               e.preventDefault();
             }
+            return;
           }
-          else if (seconds_remaining > 0 && !tabModal.is(':visible')) {
-            clearInterval(timer);
-            leaving_screen_num--;
+          else if (seconds_remaining > 0) {
+            tabModal.on("hide.bs.modal",
+              () => {
+                clearInterval(tabSwitchTimer);
+              });
           }
-          now++;
+          
+          seconds_passed++;
         }, 1000);
       }
     }
@@ -848,10 +852,10 @@
             }, 1000);
           }
         }
-
       }
+
       else {
-          document.getElementById("end-assessment-form").submit();
+        document.getElementById("end-assessment-form").submit();
       }
     }
   </script>
@@ -976,7 +980,7 @@
         captureSnapshot();
       }        
       
-      const timer = setInterval(() => {
+      const assessmentTimer = setInterval(() => {
           const now = moment();
           const remaining = moment.duration(endTime.diff(now));
           const formatted = remaining.format('DD:HH:mm:ss');
@@ -984,7 +988,7 @@
           
           // check if time ended
           if (now >= endTime) {
-              clearInterval(timer);
+              clearInterval(assessmentTimer);
               clearInterval(snapshotTimer);
               submitAssessment(false);
           }

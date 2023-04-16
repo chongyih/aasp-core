@@ -3,7 +3,7 @@ import csv
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from django.utils.text import slugify
@@ -188,22 +188,28 @@ def export_assessment_results(request, assessment_id):
 
     return response
 
+
 @login_required()
 @groups_allowed(UserGroup.educator, UserGroup.lab_assistant)
 def candidate_snapshots(request):
     assessment_attempt_id = request.GET.get("attempt_id")
     all_snapshots = CandidateSnapshot.objects.filter(assessment_attempt__id=assessment_attempt_id).order_by("timestamp")
-    multiple_faces = all_snapshots.filter(faces_detected__gt=1).exclude(image__contains="initial")
-    missing_face = all_snapshots.filter(faces_detected=0)
-    assessment_attempt = all_snapshots.first().assessment_attempt
-    candidate = assessment_attempt.candidate
 
-    context = {
-        "candidate": candidate,
-        "assessment_attempt": assessment_attempt,
-        "all_snapshots": all_snapshots,
-        "multiple_faces": multiple_faces,
-        "missing_face": missing_face,
-    }
+    if all_snapshots.exists():
+        multiple_faces = all_snapshots.filter(faces_detected__gt=1).exclude(image__contains="initial")
+        missing_face = all_snapshots.filter(faces_detected=0)
+        assessment_attempt = all_snapshots.first().assessment_attempt
+        candidate = assessment_attempt.candidate
+
+        context = {
+            "candidate": candidate,
+            "assessment_attempt": assessment_attempt,
+            "all_snapshots": all_snapshots,
+            "multiple_faces": multiple_faces,
+            "missing_face": missing_face,
+        }
+        
+        return render(request, "reports/candidate-snapshots.html", context)
     
-    return render(request, "reports/candidate-snapshots.html", context)
+    else:
+        raise Http404()

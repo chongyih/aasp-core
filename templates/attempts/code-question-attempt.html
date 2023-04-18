@@ -303,6 +303,14 @@
 
   <!-- General script -->
   <script>
+    // prevent selection of text on attempt page (except text in code editor)
+    addEventListener("mousedown", (e) => {
+      e.preventDefault();
+    });
+    addEventListener("selectstart", (e) => {
+      e.preventDefault();
+    });
+
       Split(['#split-0', '#split-1'], {
           sizes: [40, 60],
           minSize: 400,

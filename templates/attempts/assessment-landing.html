@@ -247,7 +247,7 @@
                   </div>
                   <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" id="enter-btn" class="btn btn-success" onClick="enterAssessment(true)">Start</button>
+                    <button type="button" id="enter-btn" class="btn btn-success" onClick="enterAssessment(true)" disabled>Start</button>
                   </div>
                 </div>
               </div>
@@ -357,7 +357,6 @@
                 
             },
             'image/jpg');
-            enterBtn.prop("disabled", false);
         }
       };
 
@@ -397,6 +396,7 @@
             snapshotAlert.addClass("alert-warning");
             snapshotAlert.text("Matric card not detected! Please try again.");
             snapshotAlert.show();
+            enterBtn.prop("disabled", true);
           }
 
           else {
@@ -404,6 +404,7 @@
             snapshotAlert.addClass("alert-danger");
             snapshotAlert.text("Your environment is not appropriate for test! Please try again or contact the administrator.");
             snapshotAlert.show();
+            enterBtn.prop("disabled", true);
           }
           
         }).fail((jqXHR, textStatus, errorThrown) => {

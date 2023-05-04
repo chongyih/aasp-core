@@ -152,12 +152,12 @@ def construct_assessment_published_email(assessment, recipients=None):
     """
     course_groups = CourseGroup.objects.filter(course=assessment.course).prefetch_related('course')
     students_enrolled = User.objects.filter(enrolled_groups__in=course_groups)
-
-    if recipients is None and not students_enrolled.exists:
+    
+    if recipients is None and not students_enrolled:
         return
     
     if recipients is None:
-        recipients = students_enrolled
+        recipients = students_enrolled    
 
     for student in recipients:
             recipients = [

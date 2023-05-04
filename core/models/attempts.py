@@ -85,7 +85,10 @@ class AssessmentAttempt(models.Model):
         if self.assessment.require_webcam:
             snapshots = CandidateSnapshot.objects.filter(assessment_attempt=self, assessment_attempt__candidate=self.candidate)
             for snapshot in snapshots:
-                return "initial" not in snapshot.image.name and snapshot.faces_detected > 1
+                if "initial" not in snapshot.image.name and snapshot.faces_detected > 1:
+                    return True
+            return False
+        
         return None
 
     @property
@@ -93,7 +96,10 @@ class AssessmentAttempt(models.Model):
         if self.assessment.require_webcam:
             snapshots = CandidateSnapshot.objects.filter(assessment_attempt=self, assessment_attempt__candidate=self.candidate)
             for snapshot in snapshots:
-                return snapshot.faces_detected == 0
+                if snapshot.faces_detected == 0:
+                    return True
+            return False
+        
         return None
 
 

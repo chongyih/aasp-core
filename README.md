@@ -86,7 +86,7 @@ docker save $(docker images --format '{{.Repository}}:{{.Tag}}') -o exported-ima
    sudo docker load -i exported-images.tar
    ```
 
-5. With docker-compose, create and start the containers:
+5. With docker-compose, create and start the containers.
    ```shell
    sudo docker-compose -f docker-compose.yml up -d
    ```
@@ -98,9 +98,12 @@ docker save $(docker images --format '{{.Repository}}:{{.Tag}}') -o exported-ima
 Note: If changes were made to the database schema, make sure to commit the migration files as well.
 
 1. Push your commits to remote.
-2. On the server, pull the new changes and recreate containers if necessary:
+2. On the server, pull the new changes and restart containers:
    ```shell
    git pull
+   sudo docker-compose restart
+
+   # create new containers if necessary
    sudo docker-compose -f docker-compose.yml up -d
    ```
 
@@ -122,7 +125,7 @@ Other user accounts can be created through the Django Admin Dashboard by logging
 | Contributor                                             | Period         | Links                                                                                                                                                                                                     |
 |---------------------------------------------------------|----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [Lee Jun Wei](https://www.linkedin.com/in/leejunweisg/) | Jan - Dec 2022 | [Report](./documents/leejunwei/SCSE21-0804_report.pdf) [Slides](./documents/leejunwei/final-presentation-slides.pdf) [Poster](./documents/leejunwei/fyp-poster.pdf) [Video](https://youtu.be/T0sULC8Wh7k) |
-| [Liu Wing Lam](https://www.linkedin.com/in/liuwinglam) | Aug 2022 - May 2023 | [Report](./documents/liuwinglam/SCSE22-0184_report.pdf) |
+| [Liu Wing Lam](https://www.linkedin.com/in/liuwinglam) | Aug 2022 - May 2023 | [Report](./documents/liuwinglam/SCSE22-0184_report.pdf) [Slides](./documents/liuwinglam/presentation-slides.pdf) |
 
 ### Others
 

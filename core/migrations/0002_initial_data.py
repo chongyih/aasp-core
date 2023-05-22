@@ -66,9 +66,19 @@ class Migration(migrations.Migration):
             is_staff=False,
             is_superuser=False,
         )
+        User.objects.create(
+            username="CHUA0994",
+            first_name="CHONG YIH",
+            last_name="CHUA",
+            email='CHUA0994@E.NTU.EDU.SG',
+            password=make_password('password123'),
+            is_staff=False,
+            is_superuser=False,
+        )
         Group.objects.get(name="educator").user_set.add(User.objects.get(username='YRLOKE'))
         Group.objects.get(name="student").user_set.add(User.objects.get(username='JLEE254'))
         Group.objects.get(name="student").user_set.add(User.objects.get(username='WLIU020'))
+        Group.objects.get(name="student").user_set.add(User.objects.get(username='CHUA0994'))
         Group.objects.get(name="lab_assistant").user_set.add(User.objects.get(username='LIM287'))
 
     # default languages and corresponding code templates
@@ -76,9 +86,10 @@ class Migration(migrations.Migration):
         Language = apps.get_model('core', 'Language')
         CodeTemplate = apps.get_model('core', 'CodeTemplate')
 
-        c = Language.objects.create(name='C (GCC 9.2.0)', judge_language_id=50, ace_mode='c_cpp')
-        java = Language.objects.create(name='Java (OpenJDK 13.0.1)', judge_language_id=62, ace_mode='java')
-        python3 = Language.objects.create(name='Python 3.8.1', judge_language_id=71, ace_mode='python')
+        c = Language.objects.create(name='C (GCC 9.2.0)', judge_language_id=75, ace_mode='c_cpp')
+        java = Language.objects.create(name='Java (OpenJDK 13.0.1)', judge_language_id=79, ace_mode='java')
+        python3 = Language.objects.create(name='Python 3.8.1', judge_language_id=83, ace_mode='python')
+        verilog = Language.objects.create(name='Verilog (Icarus Verilog 11.0.0)', judge_language_id=90, ace_mode='verilog')
 
         # create code templates
         ct1 = CodeTemplate(language=c, name="Default",
@@ -87,8 +98,9 @@ class Migration(migrations.Migration):
                            code="// ro-start\npublic class Main {\n    public static void main(String [] args) {\n// ro-end\n        // enter your solution here...\n\n// ro-start\n    }\n}\n// ro-end\n")
         ct3 = CodeTemplate(language=python3, name="Default",
                            code='# // ro-start\ndef main():\n# // ro-end\n	# enter your solution here...\n\n\n# // ro-start\nif __name__ == "__main__":\n	main()\n# // ro-end\n')
-
-        CodeTemplate.objects.bulk_create([ct1, ct2, ct3])
+        ct4 = CodeTemplate(language=verilog, name="Default",
+                           code="module main (\n  out,\n  clk,\n  reset\n);\n  output out;\n  input clk, reset;\n// ro-start\n  always @ (posedge clk)// ro-end\n    //  enter your solution here...\n\nendmodule")
+        CodeTemplate.objects.bulk_create([ct1, ct2, ct3, ct4])
 
 
     dependencies = [

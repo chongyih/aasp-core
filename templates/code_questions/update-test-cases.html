@@ -1,208 +1,227 @@
-{% extends 'layouts/master-nav.html' %}
-{% load static %}
+{% extends 'layouts/master-nav.html' %} {% load static %} {% block title %}Test
+Cases{% endblock %} {% block styles %} {% endblock %} {% block content %}
+<div class="page-heading">
+	<div class="page-title">
+		<div class="row">
+			<div class="col-12 col-md-12 order-md-1 order-last pb-3">
+				<h2>Update Test Cases</h2>
+				{% if code_question.question_bank != None %}
+				<h5 class="text-muted">
+					For {{ code_question.name }} in question bank: {{
+					code_question.question_bank.name }}
+				</h5>
+				{% else %}
+				<h5 class="text-muted">
+					For {{ code_question.name }} in assessment: {{
+					code_question.assessment.name }}
+				</h5>
+				{% endif %}
+			</div>
+		</div>
+	</div>
 
-{% block title %}Test Cases{% endblock %}
+	<!-- Tab group row -->
+	<div class="row">
+		<div class="col-10 m-2">
+			{# Attempts deletion warning #} {% if code_question.assessment and
+			code_question.assessment.published == False and
+			code_question.assessment.assessmentattempt_set.count != 0 %}
+			<div class="alert alert-warning">
+				<p class="text-danger fw-bold">
+					Warning! Updating test cases will delete all existing assessment
+					attempts!
+				</p>
+			</div>
+			{% endif %}
 
-{% block styles %}
-{% endblock %}
+			<div class="card">
+				<div class="card-body">
+					<!-- Tabs (Not clickable) -->
+					{% if creation %}
+					<ul class="nav nav-pills mb-3">
+						<li class="nav-item">
+							<p class="nav-link">Step 1: Description</p>
+						</li>
+						<li class="nav-item">
+							<p class="nav-link" id="pill-languages-tab">Step 2: Languages</p>
+						</li>
+						<li class="nav-item">
+							<p class="nav-link active">Step 3: Test Cases</p>
+						</li>
+					</ul>
+					{% endif %}
 
-{% block content %}
-  <div class="page-heading">
-    <div class="page-title">
-      <div class="row">
-        <div class="col-12 col-md-12 order-md-1 order-last pb-3">
-          <h2>Update Test Cases</h2>
-          {% if code_question.question_bank != None %}
-            <h5 class="text-muted">For {{ code_question.name }} in question bank: {{ code_question.question_bank.name }}</h5>
-          {% else %}
-            <h5 class="text-muted">For {{ code_question.name }} in assessment: {{ code_question.assessment.name }}</h5>
-          {% endif %}
-        </div>
-      </div>
-    </div>
+					<!-- Tab contents -->
+					<form method="POST">
+						{% csrf_token %}
+						<div>
+							{% if testcase_formset.errors %}
+							<div class="alert alert-danger">
+								Please rectify the issues below
+							</div>
+							{% endif %} {% if %}
+							<h4 class="pb-2">Test Cases</h4>
+							<!-- test cases & code snippet management forms -->
+							{{ testcase_formset.management_form }}
 
-    <!-- Tab group row -->
-    <div class="row">
-      <div class="col-10 m-2">
-        {# Attempts deletion warning #}
-        {% if code_question.assessment and code_question.assessment.published == False and code_question.assessment.assessmentattempt_set.count != 0 %}
-          <div class="alert alert-warning">
-            <p class="text-danger fw-bold">Warning! Updating test cases will delete all existing assessment attempts!</p>
-          </div>
-        {% endif %}
+							<!-- Sample Test case -->
+							<h5>Sample Test Case</h5>
+							{% include 'code_questions/snippets/test-case-row.html' with
+							sample=True prefix="0" form=testcase_formset.0 %}
 
-        <div class="card">
-          <div class="card-body">
+							<!-- this div holds all internal test case rows -->
+							<h5>Internal Test Cases</h5>
+							<div id="test-cases-container" class="mt-4">
+								{% for f in testcase_formset|slice:"1:" %} {% include
+								'code_questions/snippets/test-case-row.html' with
+								prefix=forloop.counter form=f %} {% endfor %}
+							</div>
 
-            <!-- Tabs (Not clickable) -->
-            {% if creation %}
-              <ul class="nav nav-pills mb-3">
-                <li class="nav-item">
-                  <p class="nav-link">Step 1: Description</p>
-                </li>
-                <li class="nav-item">
-                  <p class="nav-link active">Step 2: Test Cases</p>
-                </li>
-                <li class="nav-item">
-                  <p class="nav-link" id="pill-languages-tab">Step 3: Languages</p>
-                </li>
-              </ul>
-            {% endif %}
+							<!-- buttons -->
+							<div>
+								<button
+									type="button"
+									class="btn btn-sm btn-warning"
+									id="addTestCase-btn"
+								>
+									Add Test Case
+								</button>
+								<button
+									type="submit"
+									class="btn btn-sm btn-success float-end"
+									onclick=""
+								>
+									Save and Continue
+								</button>
+							</div>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
 
-            <!-- Tab contents -->
-            <form method="POST">
-              {% csrf_token %}
-              <div>
-                {% if testcase_formset.errors %}
-                  <div class="alert alert-danger">Please rectify the issues below</div>
-                {% endif %}
+	<!-- hidden test-case-row -->
+	{% include 'code_questions/snippets/test-case-row.html' with
+	form=testcase_formset.empty_form hidden=True %}
+</div>
+{% endblock %} {% block js %}
+<script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
 
-                <h4 class="pb-2">Test Cases</h4>
-                <!-- test cases & code snippet management forms -->
-                {{ testcase_formset.management_form }}
+<!-- TestCase dynamic formset management script -->
+<script>
+	const testCasesContainer = $("#test-cases-container")
+	const emptyTestCaseRow = $("#empty-test-case-row")
+	const totalFormsInput = $("#id_tc-TOTAL_FORMS")
+	let totalForms = totalFormsInput.val()
 
-                <!-- Sample Test case -->
-                <h5>Sample Test Case</h5>
-                {% include 'code_questions/snippets/test-case-row.html' with sample=True prefix="0" form=testcase_formset.0 %}
+	// function to update all prefixes (internal test cases only as sample test case is always 0)
+	const updatePrefixes = () => {
+		const regex = RegExp(`tc-(\\d)-`, "g")
+		testCasesContainer.children().each((idx, tcRow) => {
+			// store current stdin, stdout values of this test case row
+			let textAreas = $(tcRow).find("textarea")
+			const stdin = $(textAreas.get(0)).val()
+			const stdout = $(textAreas.get(1)).val()
 
-                <!-- this div holds all internal test case rows -->
-                <h5>Internal Test Cases</h5>
-                <div id="test-cases-container" class="mt-4">
-                  {% for f in testcase_formset|slice:"1:" %}
-                    {% include 'code_questions/snippets/test-case-row.html' with prefix=forloop.counter form=f %}
-                  {% endfor %}
-                </div>
+			// replace html with one with updated prefixes
+			$(tcRow).html(
+				$(tcRow)
+					.html()
+					.replaceAll(regex, `tc-${idx + 1}-`)
+			)
+			$("#tc-" + (idx + 1) + "-label").html(idx + 1) // update label
 
-                <!-- buttons -->
-                <div>
-                  <button type="button" class="btn btn-sm btn-warning" id="addTestCase-btn">Add Test Case</button>
-                  <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save and Continue</button>
-                </div>
-              </div>
+			// need to .find() again as previous references are no longer valid
+			textAreas = $(tcRow).find("textarea")
 
-            </form>
+			// restore the previously stored stdin, stdout values
+			$(textAreas.get(0)).val(stdin)
+			$(textAreas.get(1)).val(stdout)
+		})
+	}
 
-          </div>
-        </div>
-      </div>
-    </div>
+	// add test case row button clicked
+	$("#addTestCase-btn").click(() => {
+		// increment totalForms
+		totalForms++
+		totalFormsInput.val(totalForms)
 
-    <!-- hidden test-case-row -->
-    {% include 'code_questions/snippets/test-case-row.html' with form=testcase_formset.empty_form hidden=True %}
+		// clone empty test-case-row
+		const cloned = emptyTestCaseRow.clone()
 
-  </div>
-{% endblock %}
+		// remove id, style
+		cloned.removeAttr("id style")
 
-{% block js %}
-  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+		// update prefix
+		$(cloned).html(
+			$(cloned)
+				.html()
+				.replaceAll("__prefix__", `${totalForms - 1}`)
+		)
 
-  <!-- TestCase dynamic formset management script -->
-  <script>
-      const testCasesContainer = $("#test-cases-container");
-      const emptyTestCaseRow = $("#empty-test-case-row");
-      const totalFormsInput = $("#id_tc-TOTAL_FORMS");
-      let totalForms = totalFormsInput.val();
+		// append to container
+		testCasesContainer.append(cloned)
+	})
 
-      // function to update all prefixes (internal test cases only as sample test case is always 0)
-      const updatePrefixes = () => {
-          const regex = RegExp(`tc-(\\d)-`, 'g');
-          testCasesContainer.children().each((idx, tcRow) => {
-              // store current stdin, stdout values of this test case row
-              let textAreas = $(tcRow).find("textarea");
-              const stdin = $(textAreas.get(0)).val();
-              const stdout = $(textAreas.get(1)).val();
+	// remove new row
+	const removeClicked = (btn, in_db) => {
+		// get the parent div
+		const toRemove = $(btn).parent().parent()
 
-              // replace html with one with updated prefixes
-              $(tcRow).html($(tcRow).html().replaceAll(regex, `tc-${idx + 1}-`));
-              $("#tc-" + (idx + 1) + "-label").html(idx + 1); // update label
+		if (in_db) {
+			// simply check the checkbox and hide the row
+			toRemove.fadeOut("slow", () => {
+				const delete_checkbox = $(toRemove).children(".delete-checkbox").first()
+				$(delete_checkbox).prop("checked", true)
+			})
+		} else {
+			// decrement totalForms
+			totalForms--
+			totalFormsInput.val(totalForms)
 
-              // need to .find() again as previous references are no longer valid
-              textAreas = $(tcRow).find("textarea");
+			// remove and update prefixes
+			toRemove.fadeOut("slow", () => {
+				toRemove.remove()
+				updatePrefixes()
+			})
+			return false
+		}
+	}
+</script>
 
-              // restore the previously stored stdin, stdout values
-              $(textAreas.get(0)).val(stdin);
-              $(textAreas.get(1)).val(stdout);
-          });
-      };
+<!-- Load from file -->
+<script>
+	const loadFromFile = (elem) => {
+		// get the corresponding text area
+		const textArea = $(elem).siblings("textarea").first()
 
-      // add test case row button clicked
-      $("#addTestCase-btn").click(() => {
-          // increment totalForms
-          totalForms++;
-          totalFormsInput.val(totalForms);
+		// create input element in DOM
+		let input = document.createElement("input")
+		input.type = "file"
+		input.accept = ".txt"
 
-          // clone empty test-case-row
-          const cloned = emptyTestCaseRow.clone();
+		// define onchange event
+		input.onchange = (e) => {
+			// get the selected file
+			let file = e.target.files[0]
 
-          // remove id, style
-          cloned.removeAttr('id style');
+			// setting up the reader
+			let reader = new FileReader()
+			reader.readAsText(file, "UTF-8")
 
-          // update prefix
-          $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+			// set text area value
+			reader.onload = (readerEvent) => {
+				textArea.val(readerEvent.target.result)
+			}
+		}
 
-          // append to container
-          testCasesContainer.append(cloned);
-      });
+		// trigger the file picker
+		input.click()
 
-      // remove new row
-      const removeClicked = (btn, in_db) => {
-          // get the parent div
-          const toRemove = $(btn).parent().parent();
-
-          if (in_db) {
-              // simply check the checkbox and hide the row
-              toRemove.fadeOut('slow', () => {
-                  const delete_checkbox = $(toRemove).children(".delete-checkbox").first();
-                  $(delete_checkbox).prop('checked', true);
-              });
-          } else {
-              // decrement totalForms
-              totalForms--;
-              totalFormsInput.val(totalForms);
-
-              // remove and update prefixes
-              toRemove.fadeOut('slow', () => {
-                  toRemove.remove();
-                  updatePrefixes();
-              });
-              return false;
-          }
-      }
-
-  </script>
-
-  <!-- Load from file -->
-  <script>
-      const loadFromFile = (elem) => {
-          // get the corresponding text area
-          const textArea = $(elem).siblings("textarea").first();
-
-          // create input element in DOM
-          let input = document.createElement('input');
-          input.type = 'file';
-          input.accept = '.txt';
-
-          // define onchange event
-          input.onchange = e => {
-              // get the selected file
-              let file = e.target.files[0];
-
-              // setting up the reader
-              let reader = new FileReader();
-              reader.readAsText(file, 'UTF-8');
-
-              // set text area value
-              reader.onload = readerEvent => {
-                  textArea.val(readerEvent.target.result);
-              }
-          }
-
-          // trigger the file picker
-          input.click();
-
-          // clean up
-          input.remove()
-      }
-  </script>
+		// clean up
+		input.remove()
+	}
+</script>
 
 {% endblock %}

@@ -1,227 +1,406 @@
-{% extends 'layouts/master-nav.html' %} {% load static %} {% block title %}Test
-Cases{% endblock %} {% block styles %} {% endblock %} {% block content %}
-<div class="page-heading">
-	<div class="page-title">
-		<div class="row">
-			<div class="col-12 col-md-12 order-md-1 order-last pb-3">
-				<h2>Update Test Cases</h2>
-				{% if code_question.question_bank != None %}
-				<h5 class="text-muted">
-					For {{ code_question.name }} in question bank: {{
-					code_question.question_bank.name }}
-				</h5>
-				{% else %}
-				<h5 class="text-muted">
-					For {{ code_question.name }} in assessment: {{
-					code_question.assessment.name }}
-				</h5>
-				{% endif %}
-			</div>
-		</div>
-	</div>
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
 
-	<!-- Tab group row -->
-	<div class="row">
-		<div class="col-10 m-2">
-			{# Attempts deletion warning #} {% if code_question.assessment and
-			code_question.assessment.published == False and
-			code_question.assessment.assessmentattempt_set.count != 0 %}
-			<div class="alert alert-warning">
-				<p class="text-danger fw-bold">
-					Warning! Updating test cases will delete all existing assessment
-					attempts!
-				</p>
-			</div>
-			{% endif %}
+{% block title %}Test Cases{% endblock %}
 
-			<div class="card">
-				<div class="card-body">
-					<!-- Tabs (Not clickable) -->
-					{% if creation %}
-					<ul class="nav nav-pills mb-3">
-						<li class="nav-item">
-							<p class="nav-link">Step 1: Description</p>
-						</li>
-						<li class="nav-item">
-							<p class="nav-link" id="pill-languages-tab">Step 2: Languages</p>
-						</li>
-						<li class="nav-item">
-							<p class="nav-link active">Step 3: Test Cases</p>
-						</li>
-					</ul>
-					{% endif %}
+{% block styles %}
+  <!-- Split.js, ace editor css -->
+  <style>
+      .split {
+          display: flex;
+          flex-direction: row;
+      }
 
-					<!-- Tab contents -->
-					<form method="POST">
-						{% csrf_token %}
-						<div>
-							{% if testcase_formset.errors %}
-							<div class="alert alert-danger">
-								Please rectify the issues below
-							</div>
-							{% endif %} {% if %}
-							<h4 class="pb-2">Test Cases</h4>
-							<!-- test cases & code snippet management forms -->
-							{{ testcase_formset.management_form }}
+      .gutter {
+          background-color: #eee;
+          background-repeat: no-repeat;
+          background-position: 50%;
+      }
 
-							<!-- Sample Test case -->
-							<h5>Sample Test Case</h5>
-							{% include 'code_questions/snippets/test-case-row.html' with
-							sample=True prefix="0" form=testcase_formset.0 %}
+      .gutter.gutter-horizontal {
+          background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+          cursor: col-resize;
+      }
 
-							<!-- this div holds all internal test case rows -->
-							<h5>Internal Test Cases</h5>
-							<div id="test-cases-container" class="mt-4">
-								{% for f in testcase_formset|slice:"1:" %} {% include
-								'code_questions/snippets/test-case-row.html' with
-								prefix=forloop.counter form=f %} {% endfor %}
-							</div>
+      @font-face {
+          font-family: 'JetBrains Mono';
+          src: url('{% static 'fonts/JetBrainsMono-Regular.ttf' %}') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+      }
 
-							<!-- buttons -->
-							<div>
-								<button
-									type="button"
-									class="btn btn-sm btn-warning"
-									id="addTestCase-btn"
-								>
-									Add Test Case
-								</button>
-								<button
-									type="submit"
-									class="btn btn-sm btn-success float-end"
-									onclick=""
-								>
-									Save and Continue
-								</button>
-							</div>
-						</div>
-					</form>
-				</div>
-			</div>
-		</div>
-	</div>
+      /* for ace editor */
+      .readonly-highlight {
+          position: absolute;
+          background-color: red;
+          opacity: 0.1;
+      }
+  </style>
+  <link rel="stylesheet" href="{% static 'vendors/highlight.js/styles/night-owl.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
 
-	<!-- hidden test-case-row -->
-	{% include 'code_questions/snippets/test-case-row.html' with
-	form=testcase_formset.empty_form hidden=True %}
-</div>
-{% endblock %} {% block js %}
-<script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+{% endblock %}
 
-<!-- TestCase dynamic formset management script -->
-<script>
-	const testCasesContainer = $("#test-cases-container")
-	const emptyTestCaseRow = $("#empty-test-case-row")
-	const totalFormsInput = $("#id_tc-TOTAL_FORMS")
-	let totalForms = totalFormsInput.val()
+{% block content %}
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-12 order-md-1 order-last pb-3">
+          <h2>Update Test Cases</h2>
+          {% if code_question.question_bank != None %}
+            <h5 class="text-muted">For {{ code_question.name }} in question bank: {{ code_question.question_bank.name }}</h5>
+          {% else %}
+            <h5 class="text-muted">For {{ code_question.name }} in assessment: {{ code_question.assessment.name }}</h5>
+          {% endif %}
+        </div>
+      </div>
+    </div>
 
-	// function to update all prefixes (internal test cases only as sample test case is always 0)
-	const updatePrefixes = () => {
-		const regex = RegExp(`tc-(\\d)-`, "g")
-		testCasesContainer.children().each((idx, tcRow) => {
-			// store current stdin, stdout values of this test case row
-			let textAreas = $(tcRow).find("textarea")
-			const stdin = $(textAreas.get(0)).val()
-			const stdout = $(textAreas.get(1)).val()
+    <!-- Tab group row -->
+    <div class="row">
+      <div class="col-10 m-2">
+        {# Attempts deletion warning #}
+        {% if code_question.assessment and code_question.assessment.published == False and code_question.assessment.assessmentattempt_set.count != 0 %}
+          <div class="alert alert-warning">
+            <p class="text-danger fw-bold">Warning! Updating test cases will delete all existing assessment attempts!</p>
+          </div>
+        {% endif %}
 
-			// replace html with one with updated prefixes
-			$(tcRow).html(
-				$(tcRow)
-					.html()
-					.replaceAll(regex, `tc-${idx + 1}-`)
-			)
-			$("#tc-" + (idx + 1) + "-label").html(idx + 1) // update label
+        <div class="card">
+          <div class="card-body">
 
-			// need to .find() again as previous references are no longer valid
-			textAreas = $(tcRow).find("textarea")
+            <!-- Tabs (Not clickable) -->
+            {% if creation %}
+              <ul class="nav nav-pills mb-3">
+                <li class="nav-item">
+                  <p class="nav-link">Step 1: Description</p>
+                </li>
+                <li class="nav-item">
+                  <p class="nav-link" id="pill-languages-tab">Step 2: Languages</p>
+                </li>
+                <li class="nav-item">
+                  <p class="nav-link active">Step 3: Test Cases</p>
+                </li>
+              </ul>
+            {% endif %}
 
-			// restore the previously stored stdin, stdout values
-			$(textAreas.get(0)).val(stdin)
-			$(textAreas.get(1)).val(stdout)
-		})
-	}
+            <!-- Tab contents -->
+            <form method="POST">
+              {% csrf_token %}
+              <div>
+                {% if testcase_formset.errors %}
+                  <div class="alert alert-danger">Please rectify the issues below</div>
+                  <div class="alert alert-danger">
+                    {% for error in testcase_formset.errors %}
+                      {{ error }}
+                    {% endfor %}
+                {% endif %}
+                
+                {% if is_software_language %}
+                  <h4 class="pb-2">Test Cases</h4>
+                  <!-- test cases & code snippet management forms -->
+                  {{ testcase_formset.management_form }}
 
-	// add test case row button clicked
-	$("#addTestCase-btn").click(() => {
-		// increment totalForms
-		totalForms++
-		totalFormsInput.val(totalForms)
+                  <!-- Sample Test case -->
+                  <h5>Sample Test Case</h5>
+                  {% include 'code_questions/snippets/test-case-row.html' with sample=True prefix="0" form=testcase_formset.0 %}
 
-		// clone empty test-case-row
-		const cloned = emptyTestCaseRow.clone()
+                  <!-- this div holds all internal test case rows -->
+                  <h5>Internal Test Cases</h5>
+                  <div id="test-cases-container" class="mt-4">
+                    {% for f in testcase_formset|slice:"1:" %}
+                      {% include 'code_questions/snippets/test-case-row.html' with prefix=forloop.counter form=f %}
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <!-- test cases & code snippet management forms -->
+                  {{ testcase_formset.management_form }}
+                  
+                  <h4 class="pb-2">Solution</h4>
+                  <div class="mb-3">
+                    <label for="solution" class="form-label">To auto-generate testbenches and output, it is recommeded to provide a sample solution so that a testbench can be generated for you. This is also required if you want to execute the program with the testbench to generate the output.</label>
+                    
+                    <div class="row">
+                      <!-- Language selection -->
+                      <div class="col-6">
+                        <label for="lang-select">Language</label>
+                        <select class="form-select" id="lang-select">
+                          {% for cs in code_snippet%}
+                            <option data-code="{{ cs.code }}" data-judgeid="{{ cs.language.judge_language_id }}"
+                                    data-ace-mode="{{ cs.language.ace_mode }}">{{ cs.language.name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
 
-		// remove id, style
-		cloned.removeAttr("id style")
+                      <!-- theme selection -->
+                      <div class="col-4">
+                        <label for="theme-select">Theme</label>
+                        <select class="form-select" id="theme-select">
+                          <option value="cloud9_day">Light (Cloud9 Day)</option>
+                          <option value="one_dark">Dark (One Dark)</option>
+                        </select>
+                      </div>
 
-		// update prefix
-		$(cloned).html(
-			$(cloned)
-				.html()
-				.replaceAll("__prefix__", `${totalForms - 1}`)
-		)
+                      <div class="col-2">
+                        <label></label><br>
+                        <button class="btn btn-warning btn-block" type="button" onclick="resetCode()">Reset</button>
+                      </div>
+                    </div>
 
-		// append to container
-		testCasesContainer.append(cloned)
-	})
+                    <!-- Ace Code Editor -->
+                    <div class="row p-2">
+                      <pre id="editor" class="inner rounded" style="height: 500px;"></pre>
+                    </div>
+                  </div>
 
-	// remove new row
-	const removeClicked = (btn, in_db) => {
-		// get the parent div
-		const toRemove = $(btn).parent().parent()
+                  <hr>
 
-		if (in_db) {
-			// simply check the checkbox and hide the row
-			toRemove.fadeOut("slow", () => {
-				const delete_checkbox = $(toRemove).children(".delete-checkbox").first()
-				$(delete_checkbox).prop("checked", true)
-			})
-		} else {
-			// decrement totalForms
-			totalForms--
-			totalFormsInput.val(totalForms)
+                  <!-- Sample Test case -->
+                  <h5>Sample Test Case</h5>
+                  <!-- Ace Code Editor -->
+                  <div class="row p-2">
+                    <pre id="testbench_editor" class="inner rounded" style="height: 500px;"></pre>
+                    <button type="button" class="btn btn-sm btn-warning" id="addTestCase-btn" onClick="generateTestbench()">Generate Testbench</button>
+                  </div>
+                  {% include 'code_questions/snippets/test-case-row.html' with sample=True prefix="0" form=testcase_formset.0 %}
+                  <!-- this div holds all internal test case rows -->
+                  <h5>Internal Test Cases</h5>
+                  <div id="test-cases-container" class="mt-4">
+                    {% for f in testcase_formset|slice:"1:" %}
+                      {% include 'code_questions/snippets/test-case-row.html' with prefix=forloop.counter form=f %}
+                    {% endfor %}
+                  </div>
 
-			// remove and update prefixes
-			toRemove.fadeOut("slow", () => {
-				toRemove.remove()
-				updatePrefixes()
-			})
-			return false
-		}
-	}
-</script>
+                {% endif %}
 
-<!-- Load from file -->
-<script>
-	const loadFromFile = (elem) => {
-		// get the corresponding text area
-		const textArea = $(elem).siblings("textarea").first()
+                <!-- buttons -->
+                <div>
+                  {% comment %} <button type="button" class="btn btn-sm btn-warning" id="addTestCase-btn">Add Test Case</button> {% endcomment %}
+                  <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save and Continue</button>
+                </div>
+              </div>
 
-		// create input element in DOM
-		let input = document.createElement("input")
-		input.type = "file"
-		input.accept = ".txt"
+            </form>
 
-		// define onchange event
-		input.onchange = (e) => {
-			// get the selected file
-			let file = e.target.files[0]
+          </div>
+        </div>
+      </div>
+    </div>
 
-			// setting up the reader
-			let reader = new FileReader()
-			reader.readAsText(file, "UTF-8")
+    <!-- hidden test-case-row -->
+    {% include 'code_questions/snippets/test-case-row.html' with form=testcase_formset.empty_form hidden=True %}
 
-			// set text area value
-			reader.onload = (readerEvent) => {
-				textArea.val(readerEvent.target.result)
-			}
-		}
+  </div>
+{% endblock %}
 
-		// trigger the file picker
-		input.click()
+{% block js %}
+  <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="{% static 'vendors/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
 
-		// clean up
-		input.remove()
-	}
-</script>
+  <!-- TestCase dynamic formset management script -->
+  <script>
+      const testCasesContainer = $("#test-cases-container");
+      const emptyTestCaseRow = $("#empty-test-case-row");
+      const totalFormsInput = $("#id_tc-TOTAL_FORMS");
+      let totalForms = totalFormsInput.val();
+
+      // function to update all prefixes (internal test cases only as sample test case is always 0)
+      const updatePrefixes = () => {
+          const regex = RegExp(`tc-(\\d)-`, 'g');
+          testCasesContainer.children().each((idx, tcRow) => {
+              // store current stdin, stdout values of this test case row
+              let textAreas = $(tcRow).find("textarea");
+              const stdin = $(textAreas.get(0)).val();
+              const stdout = $(textAreas.get(1)).val();
+
+              // replace html with one with updated prefixes
+              $(tcRow).html($(tcRow).html().replaceAll(regex, `tc-${idx + 1}-`));
+              $("#tc-" + (idx + 1) + "-label").html(idx + 1); // update label
+
+              // need to .find() again as previous references are no longer valid
+              textAreas = $(tcRow).find("textarea");
+
+              // restore the previously stored stdin, stdout values
+              $(textAreas.get(0)).val(stdin);
+              $(textAreas.get(1)).val(stdout);
+          });
+      };
+
+      // add test case row button clicked
+      $("#addTestCase-btn").click(() => {
+          // increment totalForms
+          totalForms++;
+          totalFormsInput.val(totalForms);
+
+          // clone empty test-case-row
+          const cloned = emptyTestCaseRow.clone();
+
+          // remove id, style
+          cloned.removeAttr('id style');
+
+          // update prefix
+          $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+
+          // append to container
+          testCasesContainer.append(cloned);
+      });
+
+      // remove new row
+      const removeClicked = (btn, in_db) => {
+          // get the parent div
+          const toRemove = $(btn).parent().parent();
+
+          if (in_db) {
+              // simply check the checkbox and hide the row
+              toRemove.fadeOut('slow', () => {
+                  const delete_checkbox = $(toRemove).children(".delete-checkbox").first();
+                  $(delete_checkbox).prop('checked', true);
+              });
+          } else {
+              // decrement totalForms
+              totalForms--;
+              totalFormsInput.val(totalForms);
+
+              // remove and update prefixes
+              toRemove.fadeOut('slow', () => {
+                  toRemove.remove();
+                  updatePrefixes();
+              });
+              return false;
+          }
+      }
+
+  </script>
+
+  <!-- Generate Testbench -->
+  <script>
+    const generateTestbench = () => {
+      let editor = ace.edit("editor");
+      const module_code = editor.getValue();
+
+      $(document).ready(function() {
+        $.ajax({
+          type: "POST",
+          url: "/testbench/generate/",
+          data: {
+            csrfmiddlewaretoken: "{{ csrf_token }}",
+            module_code: module_code,
+          },
+          success: function(data) {
+            let testbench_editor = ace.edit("testbench_editor");
+            testbench_editor.setValue(data);
+          },
+          error: function(data) {
+            console.log(data);
+          }
+        })
+      })
+    }
+  </script>
+
+  <!-- Load from file -->
+  <script>
+      const loadFromFile = (elem) => {
+          // get the corresponding text area
+          const textArea = $(elem).siblings("textarea").first();
+
+          // create input element in DOM
+          let input = document.createElement('input');
+          input.type = 'file';
+          input.accept = '.txt';
+
+          // define onchange event
+          input.onchange = e => {
+              // get the selected file
+              let file = e.target.files[0];
+
+              // setting up the reader
+              let reader = new FileReader();
+              reader.readAsText(file, 'UTF-8');
+
+              // set text area value
+              reader.onload = readerEvent => {
+                  textArea.val(readerEvent.target.result);
+              }
+          }
+
+          // trigger the file picker
+          input.click();
+
+          // clean up
+          input.remove()
+      }
+  </script>
+
+  <!-- Ace code editor config -->
+  <script>
+    const Range = ace.require("ace/range").Range;
+
+    // language and theme selections
+    const langSelect = $("#lang-select");
+    const themeSelect = $("#theme-select");
+
+    // initialize ace editor
+    let editor = ace.edit("editor");
+    editor.renderer.setScrollMargin(10);
+    editor.setOptions({
+        fontFamily: "JetBrains Mono",
+        fontSize: "16px",
+        theme: "ace/theme/cloud9_day",
+        showPrintMargin: false,
+        highlightActiveLine: false,
+        wrap: true,
+        tabSize: 4,
+    });
+    editor.setOption("dragEnabled", false);
+
+    // initialize testbench ace editor
+    let testbench_editor = ace.edit("testbench_editor");
+    testbench_editor.renderer.setScrollMargin(10);
+    testbench_editor.setOptions({
+        fontFamily: "JetBrains Mono",
+        fontSize: "16px",
+        theme: "ace/theme/cloud9_day",
+        showPrintMargin: false,
+        highlightActiveLine: false,
+        wrap: true,
+        tabSize: 4,
+    });
+    testbench_editor.setOption("dragEnabled", false);
+
+    // when theme dropdown changed
+    themeSelect.change(function () {
+        editor.setTheme("ace/theme/" + $(this).val());
+    });
+
+    const arrowCommands = ["gotoleft", "gotoright", "golineup", "golinedown"];
+    let markers = [];
+
+    // function that sets the language and code snippet
+    const setLanguage = () => {
+        // get the selected option
+        const selected = langSelect.find("option:selected");
+        // set the code snippet
+        editor.session.setValue(selected.data('code'));
+        // set ace mode
+        editor.session.setMode("ace/mode/" + selected.data('ace-mode'));
+        testbench_editor.session.setMode("ace/mode/" + selected.data('ace-mode'));
+    };
+
+    // set language on first load
+    setLanguage();
+
+    // when language dropdown changed
+    langSelect.change(function () {
+        setLanguage();
+    });
+
+    editor.commands.on("afterExec", function (e) {
+        // ignore arrow keys commands
+        if (arrowCommands.includes(e.command.name))
+            return;
+    });
+  </script>
 
 {% endblock %}

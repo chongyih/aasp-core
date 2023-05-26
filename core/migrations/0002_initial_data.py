@@ -99,7 +99,7 @@ class Migration(migrations.Migration):
         ct3 = CodeTemplate(language=python3, name="Default",
                            code='# // ro-start\ndef main():\n# // ro-end\n	# enter your solution here...\n\n\n# // ro-start\nif __name__ == "__main__":\n	main()\n# // ro-end\n')
         ct4 = CodeTemplate(language=verilog, name="Default",
-                           code="module main (\n  out,\n  clk,\n  reset\n);\n  output out;\n  input clk, reset;\n// ro-start\n  always @ (posedge clk)// ro-end\n    //  enter your solution here...\n\nendmodule")
+                           code="module main (\n\tout,\n\tclk,\n\treset\n);\n\n\toutput out;\n\tinput clk, reset;\n\talways @ (posedge clk)\n\tbegin\n\t\t//  enter your solution here...\n\n\n\tend\n\nendmodule")
         CodeTemplate.objects.bulk_create([ct1, ct2, ct3, ct4])
 
 

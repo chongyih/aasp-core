@@ -284,7 +284,7 @@ def submit_single_test_case(request, test_case_id):
                     zip_file.writestr('main.v', request.POST.get('code'))
                     zip_file.writestr('testbench.v', test_case.stdin)
                     zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
-                    zip_file.writestr('run', 'vvp -n a.out')
+                    zip_file.writestr('run', "if vvp -n a.out | head -n 1 | grep -q 'VCD info:'; then vvp -n a.out | tail -n +2; else vvp -n a.out; fi")
                 
                 # encode zip file
                 with open('submission.zip', 'rb') as f:

@@ -4,6 +4,8 @@ import cv2
 import requests
 import os
 import numpy as np
+import zipfile
+import base64
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.contrib import messages
@@ -265,15 +267,38 @@ def submit_single_test_case(request, test_case_id):
                 }
                 return Response(error_context, status=status.HTTP_404_NOT_FOUND)
 
-            # judge0 params
-            params = {
-                "source_code": request.POST.get('code'),
-                "language_id": request.POST.get('lang-id'),
-                "stdin": test_case.stdin,
-                "expected_output": test_case.stdout,
-                "cpu_time_limit": test_case.time_limit,
-                "memory_limit": test_case.memory_limit,
-            }
+            # check if language is not verilog
+            if request.POST.get('lang-id') != '90':
+                # judge0 params
+                params = {
+                    "source_code": request.POST.get('code'),
+                    "language_id": request.POST.get('lang-id'),
+                    "stdin": test_case.stdin,
+                    "expected_output": test_case.stdout,
+                    "cpu_time_limit": test_case.time_limit,
+                    "memory_limit": test_case.memory_limit,
+                }
+            else:
+                # create zip file
+                with zipfile.ZipFile('submission.zip', 'w') as zip_file:
+                    zip_file.writestr('main.v', request.POST.get('code'))
+                    zip_file.writestr('testbench.v', test_case.stdin)
+                    zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
+                    zip_file.writestr('run', "if vvp -n a.out | head -n 1 | grep -q 'VCD info:'; then vvp -n a.out | tail -n +2; else vvp -n a.out; fi")
+                
+                # encode zip file
+                with open('submission.zip', 'rb') as f:
+                    encoded = base64.b64encode(f.read()).decode('utf-8')
+
+                # judge0 params
+                params = {
+                    "additional_files": encoded,
+                    "language_id": request.POST.get('lang-id'),
+                    "stdin": test_case.stdin,
+                    "expected_output": test_case.stdout,
+                    "cpu_time_limit": test_case.time_limit,
+                    "memory_limit": test_case.memory_limit,
+                }
 
             # call judge0
             try:
@@ -281,6 +306,7 @@ def submit_single_test_case(request, test_case_id):
                 res = requests.post(url, json=params)
                 data = res.json()
             except requests.exceptions.ConnectionError:
+                os.remove('submission.zip')
                 error_context = {
                     "result": "error",
                     "message": "Judge0 API seems to be down.",
@@ -288,8 +314,10 @@ def submit_single_test_case(request, test_case_id):
                 return Response(error_context, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # return error if no token
+            print(data)
             token = data.get("token")
             if not token:
+                os.remove('submission.zip')
                 error_context = {
                     "result": "error",
                     "message": "Judge0 error.",
@@ -300,6 +328,7 @@ def submit_single_test_case(request, test_case_id):
                 "result": "success",
                 "token": token,
             }
+            os.remove('submission.zip')
             return Response(context, status=status.HTTP_200_OK)
     
     except Exception as ex:

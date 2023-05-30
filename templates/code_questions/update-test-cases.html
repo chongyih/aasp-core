@@ -4,6 +4,41 @@
 {% block title %}Test Cases{% endblock %}
 
 {% block styles %}
+  <!-- Split.js, ace editor css -->
+  <style>
+      .split {
+          display: flex;
+          flex-direction: row;
+      }
+
+      .gutter {
+          background-color: #eee;
+          background-repeat: no-repeat;
+          background-position: 50%;
+      }
+
+      .gutter.gutter-horizontal {
+          background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+          cursor: col-resize;
+      }
+
+      @font-face {
+          font-family: 'JetBrains Mono';
+          src: url('{% static 'fonts/JetBrainsMono-Regular.ttf' %}') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+      }
+
+      /* for ace editor */
+      .readonly-highlight {
+          position: absolute;
+          background-color: red;
+          opacity: 0.1;
+      }
+  </style>
+  <link rel="stylesheet" href="{% static 'vendors/highlight.js/styles/night-owl.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
+
 {% endblock %}
 
 {% block content %}
@@ -41,10 +76,10 @@
                   <p class="nav-link">Step 1: Description</p>
                 </li>
                 <li class="nav-item">
-                  <p class="nav-link active">Step 2: Test Cases</p>
+                  <p class="nav-link" id="pill-languages-tab">Step 2: Languages</p>
                 </li>
                 <li class="nav-item">
-                  <p class="nav-link" id="pill-languages-tab">Step 3: Languages</p>
+                  <p class="nav-link active">Step 3: Test Cases</p>
                 </li>
               </ul>
             {% endif %}
@@ -55,23 +90,48 @@
               <div>
                 {% if testcase_formset.errors %}
                   <div class="alert alert-danger">Please rectify the issues below</div>
+                  <div class="alert alert-danger">
+                    {% for error in testcase_formset.errors %}
+                      {{ error }}
+                    {% endfor %}
                 {% endif %}
+                
+                {% if is_software_language %}
+                  <h4 class="pb-2">Test Cases</h4>
+                  <!-- test cases & code snippet management forms -->
+                  {{ testcase_formset.management_form }}
 
-                <h4 class="pb-2">Test Cases</h4>
-                <!-- test cases & code snippet management forms -->
-                {{ testcase_formset.management_form }}
+                  <!-- Sample Test case -->
+                  <h5>Sample Test Case</h5>
+                  {% include 'code_questions/snippets/test-case-row.html' with sample=True prefix="0" form=testcase_formset.0 %}
 
-                <!-- Sample Test case -->
-                <h5>Sample Test Case</h5>
-                {% include 'code_questions/snippets/test-case-row.html' with sample=True prefix="0" form=testcase_formset.0 %}
+                  <!-- this div holds all internal test case rows -->
+                  <h5>Internal Test Cases</h5>
+                  <div id="test-cases-container" class="mt-4">
+                    {% for f in testcase_formset|slice:"1:" %}
+                      {% include 'code_questions/snippets/test-case-row.html' with prefix=forloop.counter form=f %}
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <!-- test cases & code snippet management forms -->
+                  {{ testcase_formset.management_form }}
 
-                <!-- this div holds all internal test case rows -->
-                <h5>Internal Test Cases</h5>
-                <div id="test-cases-container" class="mt-4">
-                  {% for f in testcase_formset|slice:"1:" %}
-                    {% include 'code_questions/snippets/test-case-row.html' with prefix=forloop.counter form=f %}
-                  {% endfor %}
-                </div>
+                  {% include 'code_questions/snippets/solution-row.html' with form=testcase_formset.0 %}
+
+                  <hr>
+
+                  <!-- Sample Test case -->
+                  <h5>Sample Test Case</h5>
+                  {% include 'code_questions/snippets/test-case-row.html' with sample=True code=True prefix="0" form=testcase_formset.0 %}
+                  <!-- this div holds all internal test case rows -->
+                  <h5>Internal Test Cases</h5>
+                  <div id="test-cases-container" class="mt-4">
+                    {% for f in testcase_formset|slice:"1:" %}
+                      {% include 'code_questions/snippets/test-case-row.html' with code=True prefix=forloop.counter form=f %}
+                    {% endfor %}
+                  </div>
+
+                {% endif %}
 
                 <!-- buttons -->
                 <div>
@@ -88,13 +148,19 @@
     </div>
 
     <!-- hidden test-case-row -->
-    {% include 'code_questions/snippets/test-case-row.html' with form=testcase_formset.empty_form hidden=True %}
+    {% if is_software_language %}
+      {% include 'code_questions/snippets/solution-row.html' with form=testcase_formset.empty_form hidden=True %}
+    {% else %}
+      {% include 'code_questions/snippets/test-case-row.html' with code=True form=testcase_formset.empty_form hidden=True %}
+    {% endif %}
 
   </div>
 {% endblock %}
 
 {% block js %}
   <script src="{% static 'vendors/jquery/jquery.min.js' %}"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="{% static 'vendors/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
 
   <!-- TestCase dynamic formset management script -->
   <script>
@@ -142,6 +208,36 @@
 
           // append to container
           testCasesContainer.append(cloned);
+
+          // initialize ace editor for code
+          let row_editor_{{totalForms}} = ace.edit(`id_tc-${totalForms - 1}-stdin-editor`);
+
+          console.log(`id_tc-${totalForms - 1}-stdin-editor`)
+          row_editor_{{totalForms}}.renderer.setScrollMargin(10);
+          row_editor_{{totalForms}}.setOptions({
+              fontFamily: "JetBrains Mono",
+              fontSize: "16px",
+              theme: "ace/theme/cloud9_day",
+              showPrintMargin: false,
+              highlightActiveLine: false,
+              wrap: true,
+              tabSize: 4,
+          });
+          row_editor_{{totalForms}}.setOption("dragEnabled", false);
+
+          row_editor_{{totalForms}}.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
+
+          // Synchronize Ace editor content with the hidden input field
+          row_editor_{{totalForms}}.getSession().on('change', function(){
+            var code = row_editor_{{totalForms}}.getValue();
+            document.getElementById(`id_tc-${totalForms - 1}-stdin`).value = code;
+          });
+
+          row_editor_{{totalForms}}.commands.on("afterExec", function (e) {
+              // ignore arrow keys commands
+              if (arrowCommands.includes(e.command.name))
+                  return;
+          });
       });
 
       // remove new row

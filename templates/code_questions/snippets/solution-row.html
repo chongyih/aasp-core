@@ -1,0 +1,213 @@
+{% load static %}
+
+{% block styles %}
+  <!-- Split.js, ace editor css -->
+  <style>
+      .split {
+          display: flex;
+          flex-direction: row;
+      }
+
+      .gutter {
+          background-color: #eee;
+          background-repeat: no-repeat;
+          background-position: 50%;
+      }
+
+      .gutter.gutter-horizontal {
+          background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+          cursor: col-resize;
+      }
+
+      @font-face {
+          font-family: 'JetBrains Mono';
+          src: url('{% static 'fonts/JetBrainsMono-Regular.ttf' %}') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+      }
+
+      /* for ace editor */
+      .readonly-highlight {
+          position: absolute;
+          background-color: red;
+          opacity: 0.1;
+      }
+  </style>
+  <link rel="stylesheet" href="{% static 'vendors/highlight.js/styles/night-owl.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
+
+{% endblock %}
+
+<div class="row test-case-row"
+     {% if hidden %}id="empty-test-case-row" style="display:none"{% endif %}
+     {% if form.DELETE.value %}style="display:none"{% endif %}
+>
+    <h4 class="pb-2">Solution</h4>
+    <div class="mb-3">
+    <label for="solution" class="form-label">To auto-generate testbenches and output, it is recommeded to provide a sample solution so that a testbench can be generated for you. This is also required if you want to execute the program with the testbench to generate the output.</label>
+    
+    <div class="row">
+        <!-- Language selection -->
+        <div class="col-4">
+        <label for="lang-select">Language</label>
+        <select class="form-select" id="lang-select">
+            {% for cs in code_snippet%}
+            <option data-code="{{ cs.code }}" data-judgeid="{{ cs.language.judge_language_id }}"
+                    data-ace-mode="{{ cs.language.ace_mode }}">{{ cs.language.name }}</option>
+            {% endfor %}
+        </select>
+        </div>
+
+        <!-- theme selection -->
+        <div class="col-4">
+        <label for="theme-select">Theme</label>
+        <select class="form-select" id="theme-select">
+            <option value="cloud9_day">Light (Cloud9 Day)</option>
+            <option value="one_dark">Dark (One Dark)</option>
+        </select>
+        </div>
+
+        <div class="col-2">
+        <label></label><br>
+        <button class="btn btn-warning btn-block" type="button" id="generateTestbench-btn" onclick="generateTestbench()">Generate Testbench</button>
+        </div>
+
+        <div class="col-2">
+        <label></label><br>
+        <button class="btn btn-warning btn-block" type="button" onclick="applyToAll()">Apply to All</button>
+        </div>
+
+    </div>
+
+    <div class="row">
+        <!-- Ace Code Editor -->
+        <div class="col p-2">
+            <label>Module Definition</label>
+            <pre id="sol_editor" class="inner rounded" style="height: 500px;"></pre>
+        </div>
+
+        <!-- Ace Code Editor -->
+        <div class="col p-2">
+            <label>Testbench</label>
+            <pre id="testbench_editor" class="inner rounded" style="height: 500px;"></pre>
+        </div>
+    </div>
+</div>
+
+{% block js %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="{% static 'vendors/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
+
+    <!-- Ace code editor config -->
+    <script>
+        const Range = ace.require("ace/range").Range;
+
+        // language and theme selections
+        const langSelect = $("#lang-select");
+        const themeSelect = $("#theme-select");
+
+        // initialize solution ace editor
+        let editor = ace.edit("sol_editor");
+        editor.renderer.setScrollMargin(10);
+        editor.setOptions({
+            fontFamily: "JetBrains Mono",
+            fontSize: "16px",
+            theme: "ace/theme/cloud9_day",
+            showPrintMargin: false,
+            highlightActiveLine: false,
+            wrap: true,
+            tabSize: 4,
+        });
+        editor.setOption("dragEnabled", false);
+
+        // initialize testbench ace editor
+        let testbench_editor = ace.edit("testbench_editor");
+        testbench_editor.renderer.setScrollMargin(10);
+        testbench_editor.setOptions({
+            fontFamily: "JetBrains Mono",
+            fontSize: "16px",
+            theme: "ace/theme/cloud9_day",
+            showPrintMargin: false,
+            highlightActiveLine: false,
+            wrap: true,
+            tabSize: 4,
+        });
+        testbench_editor.setOption("dragEnabled", false);
+
+        // when theme dropdown changed
+        themeSelect.change(function () {
+            editor.setTheme("ace/theme/" + $(this).val());
+        });
+
+        const arrowCommands = ["gotoleft", "gotoright", "golineup", "golinedown"];
+        let markers = [];
+
+        // function that sets the language and code snippet
+        const setLanguage = () => {
+            // get the selected option
+            const selected = langSelect.find("option:selected");
+            // set the code snippet
+            editor.session.setValue(selected.data('code'));
+            // set ace mode
+            editor.session.setMode("ace/mode/" + selected.data('ace-mode'));
+            testbench_editor.session.setMode("ace/mode/" + selected.data('ace-mode'));
+        };
+
+        // set language on first load
+        setLanguage();
+
+        // when language dropdown changed
+        langSelect.change(function () {
+            setLanguage();
+        });
+
+        editor.commands.on("afterExec", function (e) {
+            // ignore arrow keys commands
+            if (arrowCommands.includes(e.command.name))
+                return;
+        });
+    </script>
+
+    <!-- Generate Testbench -->
+    <script>
+        const generateTestbench = () => {
+            let editor = ace.edit("sol_editor");
+            const module_code = editor.getValue();
+
+            $(document).ready(function() {
+                    $.ajax({
+                    type: "POST",
+                    url: "/testbench/generate/",
+                    data: {
+                        csrfmiddlewaretoken: "{{ csrf_token }}",
+                        module_code: module_code,
+                    },
+                    success: function(data) {
+                        let testbench_editor = ace.edit("testbench_editor");
+                        testbench_editor.setValue(data);
+                    },
+                    error: function(data) {
+                        console.log(data);
+                    }
+                })
+            })
+        }
+    </script>
+
+    <!-- Apply testbench to all existing test cases -->
+    <script>
+        const applyToAll = () => {
+            // find all testbench editors"id_tc-{{ prefix|default:"__prefix__" }}-stdin"
+            const testbench_editors = document.querySelectorAll("[id^='id_tc-'][id$='-stdin-editor']");
+            // get the current testbench
+            let testbench_editor = ace.edit("testbench_editor");
+            const testbench_code = testbench_editor.getValue();
+
+            // loop through all testbench editors
+            testbench_editors.forEach((editor) => {
+                // set the testbench code
+                ace.edit(editor).setValue(testbench_code);
+            });
+        }
+    </script>
+{% endblock %}

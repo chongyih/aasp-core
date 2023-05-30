@@ -1,3 +1,43 @@
+{% load static %}
+
+{% block styles %}
+  <!-- Split.js, ace editor css -->
+  <style>
+      .split {
+          display: flex;
+          flex-direction: row;
+      }
+
+      .gutter {
+          background-color: #eee;
+          background-repeat: no-repeat;
+          background-position: 50%;
+      }
+
+      .gutter.gutter-horizontal {
+          background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+          cursor: col-resize;
+      }
+
+      @font-face {
+          font-family: 'JetBrains Mono';
+          src: url('{% static 'fonts/JetBrainsMono-Regular.ttf' %}') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+      }
+
+      /* for ace editor */
+      .readonly-highlight {
+          position: absolute;
+          background-color: red;
+          opacity: 0.1;
+      }
+  </style>
+  <link rel="stylesheet" href="{% static 'vendors/highlight.js/styles/night-owl.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
+
+{% endblock %}
+
 <div class="row test-case-row"
      {% if hidden %}id="empty-test-case-row" style="display:none"{% endif %}
      {% if form.DELETE.value %}style="display:none"{% endif %}
@@ -24,28 +64,51 @@
               class="fa-solid fa-xmark"></i></button>
     </div>
   {% endif %}
-
-  <!-- stdin input -->
-  <div class="col-3">
-    <div class="form-group">
-      <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdin">Input</label>
-      <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdin"
-                id="id_tc-{{ prefix|default:"__prefix__" }}-stdin" rows="4"
-                class="form-control font-monospace">{{ form.stdin.value|default:"" }}</textarea>
-      <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
-      {# stdin errors #}
-      {% for e in form.stdin.errors %}
-        <p class="text-danger">{{ e }}</p>
-      {% endfor %}
+  
+  <!-- Input -->
+  {% if code %}
+  <!-- Ace Code Editor -->
+    <div class="col-8">
+      <div class="form-group">
+        <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdin">Testbench</label>
+        <pre name="tc-{{ prefix|default:"__prefix__" }}-stdin" 
+             id="id_tc-{{ prefix|default:"__prefix__" }}-stdin-editor" 
+             class="inner rounded" style="height: 500px;" >{{ form.stdin.value|default:"" }}</pre>
+        <input type="hidden" name="tc-{{ prefix|default:"__prefix__" }}-stdin" 
+               id="id_tc-{{ prefix|default:"__prefix__" }}-stdin" 
+               value="{{ form.stdin.value|default:"" }}">
+        <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
+        {% for e in form.stdin.errors %}
+          <p class="text-danger">{{ e }}</p>
+        {% endfor %}
+      </div>
     </div>
-  </div>
 
-  <!-- stdout input -->
-  <div class="col-3">
-    <div class="form-group">
+  {% else %}
+    <!-- stdin input -->
+    <div class="col-3">
+      <div class="form-group">
+        <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdin">Input</label>
+        <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdin"
+                  id="id_tc-{{ prefix|default:"__prefix__" }}-stdin" rows="4"
+                  class="form-control font-monospace">{{ form.stdin.value|default:"" }}</textarea>
+        <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
+        {# stdin errors #}
+        {% for e in form.stdin.errors %}
+          <p class="text-danger">{{ e }}</p>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+  
+  {% if code %}
+  <div class="form-group col-4">
+  {% endif %}
+    <!-- stdout output -->
+    <div class="form-group {% if code %}row{% else %}col-3{% endif %}">
       <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdout">Output</label>
       <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdout"
-                id="id_tc-{{ prefix|default:"__prefix__" }}-stdout" rows="4"
+                id="id_tc-{{ prefix|default:"__prefix__" }}-stdout" rows={% if code %}15{% else %}5{% endif %}
                 class="form-control font-monospace">{{ form.stdout.value|default:"" }}</textarea>
       <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
       {# stdout errors #}
@@ -54,64 +117,63 @@
       {% endfor %}
     </div>
 
-  </div>
-
-  <!-- time and memory limit inputs -->
-  <div class="col-3">
-    <div class="form-group">
-      <label for="id_tc-{{ prefix|default:"__prefix__" }}-time_limit">Time Limit (s)</label>
-      <input name="tc-{{ prefix|default:"__prefix__" }}-time_limit"
-             id="id_tc-{{ prefix|default:"__prefix__" }}-time_limit" type="number"
-             class="form-control" min="0" value="{{ form.time_limit.value }}">
-      {# time_limit errors #}
-      {% for e in form.time_limit.errors %}
-        <p class="text-danger">{{ e }}</p>
-      {% endfor %}
-    </div>
-    <div class="form-group">
-      <label for="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit">Memory Limit (KB)</label>
-      <input name="tc-{{ prefix|default:"__prefix__" }}-memory_limit"
-             id="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit" type="number"
-             class="form-control" min="0" value="{{ form.memory_limit.value }}">
-      {# memory_limit errors #}
-      {% for e in form.memory_limit.errors %}
-        <p class="text-danger">{{ e }}</p>
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- score and sample/hidden checkboxes input -->
-  <div class="col-3">
-    <div class="form-group">
-      <label for="id_tc-{{ prefix|default:"__prefix__" }}-score">Score</label>
-      <input name="tc-{{ prefix|default:"__prefix__" }}-score" id="id_tc-{{ prefix|default:"__prefix__" }}-score"
-             type="number" class="form-control"
-             min="0"
-              {% if sample %}
-             value="{{ form.score.value|default:0 }}"
-              {% else %}
-             value="{{ form.score.value|default:5 }}"
-              {% endif %}>
-      {# score errors #}
-      {% for e in form.score.errors %}
-        <p class="text-danger">{{ e }}</p>
-      {% endfor %}
+    <!-- time and memory limit inputs -->
+    <div class="{% if code %}row{% else %}col-3{% endif %}">
+      <div class="form-group">
+        <label for="id_tc-{{ prefix|default:"__prefix__" }}-time_limit">Time Limit (s)</label>
+        <input name="tc-{{ prefix|default:"__prefix__" }}-time_limit"
+              id="id_tc-{{ prefix|default:"__prefix__" }}-time_limit" type="number"
+              class="form-control" min="0" value="{{ form.time_limit.value }}">
+        {# time_limit errors #}
+        {% for e in form.time_limit.errors %}
+          <p class="text-danger">{{ e }}</p>
+        {% endfor %}
+      </div>
+      <div class="form-group">
+        <label for="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit">Memory Limit (KB)</label>
+        <input name="tc-{{ prefix|default:"__prefix__" }}-memory_limit"
+              id="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit" type="number"
+              class="form-control" min="0" value="{{ form.memory_limit.value }}">
+        {# memory_limit errors #}
+        {% for e in form.memory_limit.errors %}
+          <p class="text-danger">{{ e }}</p>
+        {% endfor %}
+      </div>
     </div>
 
-    <div class="form-group" {% if sample %} style="visibility:hidden"{% endif %}>
-      <label>Options</label>
-      <div class="form-check">
-        <div class="checkbox">
-          <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-hidden"
-                 id="id_tc-{{ prefix|default:"__prefix__" }}-hidden"
-                 class="form-check-input" {% if form.hidden.value and not sample %}checked{% endif %}>
-          <label for="id_tc-{{ prefix|default:"__prefix__" }}-hidden">Hidden</label>
-        </div>
-        <div class="checkbox" style="visibility:hidden">
-          <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-sample"
-                 id="id_tc-{{ prefix|default:"__prefix__" }}-sample"
-                 class="form-check-input" {% if sample %}checked{% endif %}>
-          <label for="id_tc-{{ prefix|default:"__prefix__" }}-sample">Sample</label>
+    <!-- score and sample/hidden checkboxes input -->
+    <div class="{% if code %}row{% else %}col-3{% endif %}">
+      <div class="form-group">
+        <label for="id_tc-{{ prefix|default:"__prefix__" }}-score">Score</label>
+        <input name="tc-{{ prefix|default:"__prefix__" }}-score" id="id_tc-{{ prefix|default:"__prefix__" }}-score"
+              type="number" class="form-control"
+              min="0"
+                {% if sample %}
+              value="{{ form.score.value|default:0 }}"
+                {% else %}
+              value="{{ form.score.value|default:5 }}"
+                {% endif %}>
+        {# score errors #}
+        {% for e in form.score.errors %}
+          <p class="text-danger">{{ e }}</p>
+        {% endfor %}
+      </div>
+
+      <div class="form-group" {% if sample %} style="visibility:hidden"{% endif %}>
+        <label>Options</label>
+        <div class="form-check">
+          <div class="checkbox">
+            <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-hidden"
+                  id="id_tc-{{ prefix|default:"__prefix__" }}-hidden"
+                  class="form-check-input" {% if form.hidden.value and not sample %}checked{% endif %}>
+            <label for="id_tc-{{ prefix|default:"__prefix__" }}-hidden">Hidden</label>
+          </div>
+          <div class="checkbox" style="visibility:hidden">
+            <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-sample"
+                  id="id_tc-{{ prefix|default:"__prefix__" }}-sample"
+                  class="form-check-input" {% if sample %}checked{% endif %}>
+            <label for="id_tc-{{ prefix|default:"__prefix__" }}-sample">Sample</label>
+          </div>
         </div>
       </div>
     </div>
@@ -121,3 +183,41 @@
   </div>
 
 </div>
+
+{% block js %}
+    <script src="{% static 'vendors/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
+
+    <!-- Ace code editor config -->
+    <script>
+        // initialize testbench ace editor
+        let row_editor_{{prefix}} = ace.edit(`id_tc-${"{{prefix}}"|"__prefix__"}-stdin-editor`);
+
+        row_editor_{{prefix}}.renderer.setScrollMargin(10);
+        row_editor_{{prefix}}.setOptions({
+            fontFamily: "JetBrains Mono",
+            fontSize: "16px",
+            theme: "ace/theme/cloud9_day",
+            showPrintMargin: false,
+            highlightActiveLine: false,
+            wrap: true,
+            tabSize: 4,
+        });
+        row_editor_{{prefix}}.setOption("dragEnabled", false);
+
+        row_editor_{{prefix}}.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
+
+        // Synchronize Ace editor content with the hidden input field
+        row_editor_{{prefix}}.getSession().on('change', function(){
+          var code = row_editor_{{prefix}}.getValue();
+          document.getElementById("id_tc-{{ prefix|default:"__prefix__" }}-stdin").value = code;
+        });
+
+        row_editor_{{prefix}}.commands.on("afterExec", function (e) {
+            // ignore arrow keys commands
+            if (arrowCommands.includes(e.command.name))
+                return;
+        });
+        
+    </script>
+
+{% endblock %}

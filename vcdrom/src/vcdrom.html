@@ -6,6 +6,9 @@
     <title>VCDrom</title>
     <link rel="preload" as="font" href="{% static 'vcdrom/iosevka-term-light.woff2' %}" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{% static 'vcdrom/styles.css' %}">
+    <!-- Icons -->
+    <link rel="stylesheet" href="{% static 'vendors/bootstrap-icons/bootstrap-icons.css' %}">
+    <link rel="stylesheet" href="{% static 'vendors/fontawesome/all.min.css' %}">
     <script src="{% static 'vcdrom/vcdrom.js' %}"></script>
   </head>
   <body onload="VCDrom('waveform1', '{{ vcd|escapejs }}')">
@@ -19,4 +22,6 @@
     ga('create', 'UA-67058225-1', 'auto');
     ga('send', 'pageview');
     </script>
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'vendors/fontawesome/all.min.js' %}"></script>
 </html>

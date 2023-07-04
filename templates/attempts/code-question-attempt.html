@@ -572,6 +572,16 @@
           }).showToast();
       };
 
+      // display error Toast only
+      const showErrorToast = (msg) => {
+          Toastify({
+              text: msg,
+              duration: 3000,
+              position: "center",
+              style: {"background": "#ff6961"}
+          }).showToast();
+      };
+
       // "compile and run" clicked
       const compileAndRun = () => {
           // disable buttons
@@ -619,12 +629,17 @@
 
       // "view waveform" clicked
       const viewWaveform = () => {
+        const vcd = waveformBtn.data('vcd');
+        if (!vcd) {
+          showErrorToast("An error has occurred. Please check that you have successfully compiled your code and try again.");
+          return;
+        }
+
         // disable buttons
         sampleBtn.prop("disabled", true);
         submitBtn.prop("disabled", true);
         waveformBtn.prop("disabled", true);
 
-        const vcd = waveformBtn.data('vcd');
         $.ajax({
           type: 'POST',
           url: "{% url 'vcdrom' %}",

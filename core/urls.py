@@ -1,4 +1,6 @@
 from django.urls import path
+from django.views.static import serve
+from django.conf import settings
 
 from .views import auth, user_management, dashboards, course_management, question_banks, code_questions, assessments, attempts, reports
 
@@ -85,4 +87,11 @@ urlpatterns = [
 
     # testbench generation
     path('testbench/generate/', code_questions.testbench_generation, name='testbench-generation'),   # ajax
+
+    # vcdrom
+    path('vcdrom/', attempts.vcdrom, name='vcdrom'),
+    path('attempt/<int:assessment_attempt_id>/question/<int:question_index>/iosevka-term-light.woff2', serve, {
+        'document_root': settings.STATICFILES_DIRS[0],
+        'path': 'vcdrom/iosevka-term-light.woff2',
+    })
 ]

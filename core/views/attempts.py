@@ -222,6 +222,7 @@ def attempt_question(request, assessment_attempt_id, question_index):
         'assessment_attempt': assessment_attempt,
         'question_attempt': question_attempt,
         'question_statuses': question_statuses,
+        'is_software_language': question_attempt.code_question.is_software_language(),
     }
 
     # render different template depending on question type (currently only CodeQuestion)
@@ -371,6 +372,7 @@ def get_tc_details(request):
         if request.method == "GET":
             # get parameters from request
             status_only = request.GET.get('status_only') == 'true'
+            vcd = request.GET.get('vcd') == 'true'
             token = request.GET.get('token')
             if not token:
                 return Response({ "result": "error" }, status=status.HTTP_400_BAD_REQUEST)
@@ -379,6 +381,8 @@ def get_tc_details(request):
             try:
                 if status_only:
                     url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id"
+                elif vcd:
+                    url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id,stdout,stderr,expected_output,vcd_output"
                 else:
                     url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id,stdin,stdout,expected_output"
 
@@ -661,5 +665,20 @@ def detect_faces_initial(request):
         error_context = {
             "result": "error",
             "message": f"{ex}",
+        }
+        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
+@login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant, UserGroup.student)
+def vcdrom(request):
+    vcd = request.POST.get('vcd')
+    if vcd:
+        return render(request, 'vcdrom/vcdrom.html', {'vcd': vcd})
+    else:
+        error_context = {
+            "result": "error",
+            "message": "No vcd found.",
         }
         return Response(error_context, status=status.HTTP_400_BAD_REQUEST)

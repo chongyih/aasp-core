@@ -186,6 +186,9 @@
                   Run<i
                       class="fa-solid fa-play ms-2"></i></button>
                 <button type="button" id="submit-btn" onclick="submit();" class="btn btn-success">Submit</button>
+                {% if not is_software_language %}
+                  <button type="button" id="waveform-btn" class="btn btn-info" onclick="viewWaveform()">View Waveform</button>
+                {% endif %}
               </div>
               <div>
                 <span class="h5" id="run-status">Ready</span>
@@ -287,6 +290,7 @@
 
   {% include 'attempts/snippets/accordion-item-template.html' %}
   {% include 'attempts/snippets/test-case-details-modal.html' %}
+  {% include 'attempts/snippets/vcd-viewer-modal.html' %}
 {% endblock %}
 
 {% block js %}
@@ -540,8 +544,9 @@
       const mainLoading = $("#main-loading");
       const sampleBtn = $("#sample-btn");
       const submitBtn = $("#submit-btn");
+      const waveformBtn = $("#waveform-btn");
 
-      // modal elements
+      // test case details modal elements
       const modalToken = $("#m-token");
       const modalLoading = $("#m-loading");
       const modalBody = $("#m-body");
@@ -549,6 +554,9 @@
       const modalStdout = $("#m-stdout");
       const modalExpectedOutput = $("#m-expected-output");
       const modalOutcome = $("#m-outcome");
+
+      // vcdrom modal elements
+      const vcdromModal = $("#vcdromModal");
 
       // display error Toast and set status text
       const showError = (msg) => {
@@ -591,6 +599,7 @@
           }).done((res, textStatus, jqXHR) => {
               if (res.result === "success") {
                   const token = res.token;
+                  const vcd = res.vcd_output;
                   updateSampleStatus(token);
               }
           }).fail((jqXHR, textStatus, errorThrown) => {
@@ -607,6 +616,63 @@
               }, 1000);
           });
       };
+
+      // "view waveform" clicked
+      const viewWaveform = () => {
+        // disable buttons
+        sampleBtn.prop("disabled", true);
+        submitBtn.prop("disabled", true);
+        waveformBtn.prop("disabled", true);
+
+        // get token
+        const token = moreDetails.data('token');
+
+        // get vcd output
+        $.ajax({
+          type: 'GET',
+          url: "{% url 'get-tc-details' %}",
+          data: {token, status_only: false, vcd: true},
+        }).done((res, textStatus, jqXHR) => {
+            if (res.result === "success") {
+              const vcd = res.data.vcd_output;
+              showVCDrom(vcd);
+            }
+        }).fail((jqXHR, textStatus, errorThrown) => {
+            // 4xx status codes
+            if (Math.floor(jqXHR.status / 100) == 4) {
+                console.error("Internal API Error!");
+                showError("Internal API Error &#x274C;");
+            }
+            else {
+                console.error("External API Error!");
+                showError("External API Error &#x274C;");
+            }
+        });
+      }
+
+      const showVCDrom = (vcd) => {
+        $.ajax({
+          type: 'POST',
+          url: "{% url 'vcdrom' %}",
+          data: {vcd: vcd, csrfmiddlewaretoken: "{{ csrf_token }}"},
+        }).done((res, textStatus, jqXHR) => {
+          var iframeDocument = modalIframe.contentDocument || modalIframe.contentWindow.document;
+          iframeDocument.open();
+          iframeDocument.write(res);
+          iframeDocument.close();
+          vcdromModal.modal('show');
+        }).fail((jqXHR, textStatus, errorThrown) => {
+          // 4xx status codes
+          if (Math.floor(jqXHR.status / 100) == 4) {
+              console.error("Internal API Error!");
+              showError("Internal API Error &#x274C;");
+          }
+          else {
+              console.error("External API Error!");
+              showError("External API Error &#x274C;");
+          }
+        });
+      }
 
       // updates sample status by polling
       const updateSampleStatus = (token) => {

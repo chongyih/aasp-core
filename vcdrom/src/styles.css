@@ -1,0 +1,38 @@
+.wd-time {
+    position: absolute;
+}
+
+.wd-view {
+    z-index: 3;
+}
+
+.wd-menu {
+    z-index: 5;
+}
+
+.wd-waveql {
+    z-index: 4;
+    width: 320px;
+}
+
+.wd-selectvalue {
+    position: absolute;
+    top: 24px;
+    bottom: 24px;
+    width: 320px;
+    z-index: 3;
+    background-color: #111111;
+}
+
+.wd-valuecol {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.5;
+    padding: 4px 0;
+    align-items: flex-end;
+    padding-right: 10px;
+}
+
+.wd-value-hidden {
+    visibility: hidden;
+}

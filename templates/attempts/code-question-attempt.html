@@ -577,6 +577,7 @@
           // disable buttons
           sampleBtn.prop("disabled", true);
           submitBtn.prop("disabled", true);
+          waveformBtn.prop("disabled", true);
 
           // hide more details link
           mainLoading.show();
@@ -599,7 +600,6 @@
           }).done((res, textStatus, jqXHR) => {
               if (res.result === "success") {
                   const token = res.token;
-                  const vcd = res.vcd_output;
                   updateSampleStatus(token);
               }
           }).fail((jqXHR, textStatus, errorThrown) => {
@@ -624,33 +624,7 @@
         submitBtn.prop("disabled", true);
         waveformBtn.prop("disabled", true);
 
-        // get token
-        const token = moreDetails.data('token');
-
-        // get vcd output
-        $.ajax({
-          type: 'GET',
-          url: "{% url 'get-tc-details' %}",
-          data: {token, status_only: false, vcd: true},
-        }).done((res, textStatus, jqXHR) => {
-            if (res.result === "success") {
-              const vcd = res.data.vcd_output;
-              showVCDrom(vcd);
-            }
-        }).fail((jqXHR, textStatus, errorThrown) => {
-            // 4xx status codes
-            if (Math.floor(jqXHR.status / 100) == 4) {
-                console.error("Internal API Error!");
-                showError("Internal API Error &#x274C;");
-            }
-            else {
-                console.error("External API Error!");
-                showError("External API Error &#x274C;");
-            }
-        });
-      }
-
-      const showVCDrom = (vcd) => {
+        const vcd = waveformBtn.data('vcd');
         $.ajax({
           type: 'POST',
           url: "{% url 'vcdrom' %}",
@@ -672,6 +646,13 @@
               showError("External API Error &#x274C;");
           }
         });
+
+        // enable buttons when modal close
+        vcdromModal.on('hidden.bs.modal', () => {
+          sampleBtn.prop("disabled", false);
+          submitBtn.prop("disabled", false);
+          waveformBtn.prop("disabled", false);
+        });
       }
 
       // updates sample status by polling
@@ -679,7 +660,7 @@
           $.ajax({
               type: 'GET',
               url: "{% url 'get-tc-details' %}",
-              data: {token, status_only: true},
+              data: {token, status_only: false, vcd: '{{ is_software_language }}' === 'False'},
           }).done((res, textStatus, jqXHR) => {
               if (res.result === "success") {
                   if (res.data.status_id === 1 || res.data.status_id === 2) {  // not finished
@@ -696,11 +677,16 @@
                       // enable buttons
                       sampleBtn.prop("disabled", false);
                       submitBtn.prop("disabled", false);
+                      waveformBtn.prop("disabled", false);
                       // hide loading, show more details link
                       mainLoading.hide();
                       moreDetails.show();
                       // set token
                       moreDetails.data('token', token);
+                      // set waveform button
+                      if ('{{ is_software_language }}' === 'False')
+                        waveformBtn.data('vcd', res.data.vcd_output);
+                      
                   }
               }
           }).fail((jqXHR, textStatus, errorThrown) => {

@@ -224,10 +224,10 @@
                             <div class="dropdown-menu">
                               <a class="dropdown-item" href="{% url 'update-code-question' code_question_id=q.id %}">Description</a>
                               {% if not assessment.published %}
+                                <a class="dropdown-item"
+                                  href="{% url 'update-languages' code_question_id=q.id %}?next={{ request.path }}">Languages</a>
                                 <a class="dropdown-item" href="{% url 'update-test-cases' code_question_id=q.id %}?next={{ request.path }}">Test
                                   Cases</a>
-                                <a class="dropdown-item"
-                                   href="{% url 'update-languages' code_question_id=q.id %}?next={{ request.path }}">Languages</a>
                               {% endif %}
                             </div>
                           </div>

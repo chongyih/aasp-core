@@ -188,8 +188,6 @@ def construct_judge0_params(request, test_case) -> dict:
             "cpu_time_limit": test_case.time_limit,
             "memory_limit": test_case.memory_limit,
         }
-
-        return params
     else:
         # create zip file
         with zipfile.ZipFile('submission.zip', 'w') as zip_file:
@@ -211,5 +209,5 @@ def construct_judge0_params(request, test_case) -> dict:
             "cpu_time_limit": test_case.time_limit,
             "memory_limit": test_case.memory_limit,
         }
-
-        return params
+    
+    return params

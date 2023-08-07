@@ -279,29 +279,36 @@
             const langName = $(checkbox).data("lang-name");
             const langTemplate = $(checkbox).data("lang-template");
             
-            if (!existing) {
+            if (existing) {
+              // uncheck the checkbox
+              const toShow = $("#code-snippets-container #code-snippet-row-" + langId);
+              toShow.fadeIn(300, () => {
+                  const delete_checkbox = $(toShow).children(".delete-checkbox").first();
+                  $(delete_checkbox).prop('checked', false);
+              });
+            } else {
               // increment totalForms
               totalForms++;
               totalFormsInput.val(totalForms);
+
+              // clone empty snippet row
+              const cloned = emptySnippetRow.clone();
+
+              // remove id, style
+              cloned.removeAttr('id style');
+
+              // set id, label and language-id
+              cloned.attr("id", `code-snippet-row-${langId}`);
+              cloned.find(".lang-label").first().html(langName);
+              cloned.find(".lang-id").first().val(langId);
+              cloned.find("textarea").first().text(langTemplate);
+
+              // update prefix
+              $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+
+              // append to container
+              snippetsContainer.append(cloned);
             }
-
-            // clone empty snippet row
-            const cloned = emptySnippetRow.clone();
-
-            // remove id, style
-            cloned.removeAttr('id style');
-
-            // set id, label and language-id
-            cloned.attr("id", `code-snippet-row-${langId}`);
-            cloned.find(".lang-label").first().html(langName);
-            cloned.find(".lang-id").first().val(langId);
-            cloned.find("textarea").first().text(langTemplate);
-
-            // update prefix
-            $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
-
-            // append to container
-            snippetsContainer.append(cloned);
         };
       })
       } else if (id == 'hardware-tab') { // hardware tab was selected
@@ -339,29 +346,36 @@
             const langName = $(radio).data("lang-name");
             const langTemplate = $(radio).data("lang-template");
 
-            if (!existing) {
+            if (existing) {
+              // uncheck the checkbox
+              const toShow = $("#code-snippets-container #code-snippet-row-" + langId);
+              toShow.fadeIn(300, () => {
+                  const delete_checkbox = $(toShow).children(".delete-checkbox").first();
+                  $(delete_checkbox).prop('checked', false);
+              });
+            } else {
               // increment totalForms
               totalForms++;
               totalFormsInput.val(totalForms);
+
+              // clone empty snippet row
+              const cloned = emptySnippetRow.clone();
+
+              // remove id, style
+              cloned.removeAttr('id style');
+
+              // set id, label and language-id
+              cloned.attr("id", `code-snippet-row-${langId}`);
+              cloned.find(".lang-label").first().html(langName);
+              cloned.find(".lang-id").first().val(langId);
+              cloned.find("textarea").first().text(langTemplate);
+
+              // update prefix
+              $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+
+              // append to container
+              snippetsContainer.append(cloned);
             }
-
-            // clone empty snippet row
-            const cloned = emptySnippetRow.clone();
-
-            // remove id, style
-            cloned.removeAttr('id style');
-
-            // set id, label and language-id
-            cloned.attr("id", `code-snippet-row-${langId}`);
-            cloned.find(".lang-label").first().html(langName);
-            cloned.find(".lang-id").first().val(langId);
-            cloned.find("textarea").first().text(langTemplate);
-
-            // update prefix
-            $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
-
-            // append to container
-            snippetsContainer.append(cloned);
           }
         })
       }

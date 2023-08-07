@@ -110,7 +110,10 @@
       <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdout"
                 id="id_tc-{{ prefix|default:"__prefix__" }}-stdout" rows={% if code %}15{% else %}5{% endif %}
                 class="form-control font-monospace">{{ form.stdout.value|default:"" }}</textarea>
-      <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
+      <div>
+        <button type="button" class="btn btn-link m-0 p-0" onclick="loadFromFile(this)">Generate Output</button>
+        <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
+      </div>
       {# stdout errors #}
       {% for e in form.stdout.errors %}
         <p class="text-danger">{{ e }}</p>

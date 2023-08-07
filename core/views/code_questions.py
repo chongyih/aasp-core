@@ -451,13 +451,6 @@ def testbench_generation(request):
 
     test_bench += "\t);"
 
-    ############ wave dump ############
-    test_bench += "\n\n\t// Wave Dump (DO NOT REMOVE)\n"
-    test_bench += "\tinitial begin\n"
-    test_bench += "\t\t$dumpfile(\"vcd_dump.vcd\");\n"
-    test_bench += "\t\t$dumpvars(0);\n"
-    test_bench += "\tend"
-
     ############ clock generator block ############
     if clk_signal:
         test_bench += "\n\n\t// clock signal\n"

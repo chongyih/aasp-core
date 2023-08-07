@@ -53,23 +53,12 @@
 
               <h4>Allowed Languages</h4>
               <p>
-                Select the programming languages in which candidates can write their code for a programming question.
+                Select the programming languages in which candidates can write their code for a programming question. You may select multiple software languages but only one hardware language.
               </p>
 
-              <!-- Languages checkboxes -->
+              <!-- Languages navbar -->
               <div class="form-group row">
-                {% for lang in languages %}
-                  <div class="checkbox col-4">
-                    <input type="checkbox" id="lang-{{ lang.id }}" data-lang-id="{{ lang.id }}" data-lang-name="{{ lang.name }}"
-                           class="form-check-input language-checkbox" data-lang-template="{{ lang.default_template.code }}"
-                           {% if lang.id in existing_languages %}checked data-existing="true"
-                           {% else %}
-                           data-existing="false"
-                           {% endif %}
-                    >
-                    <label for="lang-{{ lang.id }}">{{ lang.name }}</label>
-                  </div>
-                {% endfor %}
+                {% include 'code_questions/snippets/language-navbar-template.html' %}
               </div>
 
               {% for error in code_snippet_formset.errors %}
@@ -190,5 +179,192 @@
               }
           }
       });
+  </script>
+
+  <!-- Radio button script-->
+  <script>
+    $(".language-radio").on('change', function () {
+      const radio = $(this);
+      const existing = radio.data("existing");
+      const langId = radio.data("lang-id");
+      const langName = radio.data("lang-name");
+      const langTemplate = radio.data("lang-template");
+
+      // remove existing row
+      $(".language-radio").each((idx, radio) => {
+        if ($(radio).data("lang-id") !== langId) {
+          const langId = $(radio).data("lang-id");
+          const toRemove = $("#code-snippets-container #code-snippet-row-" + langId);
+          toRemove.fadeOut('300', () => {
+            toRemove.remove();
+          });
+
+          // decrement totalForms
+          totalForms--;
+          totalFormsInput.val(totalForms);
+        }
+      })
+
+      // increment totalForms
+      totalForms++;
+      totalFormsInput.val(totalForms);
+
+      // clone empty snippet row
+      const cloned = emptySnippetRow.clone();
+
+      // remove id, style
+      cloned.removeAttr('id style');
+
+      // set id, label and language-id
+      cloned.attr("id", `code-snippet-row-${langId}`);
+      cloned.find(".lang-label").first().html(langName);
+      cloned.find(".lang-id").first().val(langId);
+      cloned.find("textarea").first().text(langTemplate);
+
+      // update prefix
+      $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+
+      // append to container
+      snippetsContainer.append(cloned);
+    });
+  </script>
+
+  <!-- Language tab script-->
+  <script>
+    $(".languageTab").on('shown.bs.tab', function () {
+      const tab = $(this);
+      const id = tab.attr('id');
+
+      const updatePrefixes = () => {
+        const regex = RegExp(`cs-(\\d)-`, 'g');
+
+        snippetsContainer.children().each((idx, tcRow) => {
+          $(tcRow).html($(tcRow).html().replaceAll(regex, `cs-${idx}-`));
+        });
+      };
+
+      if (id == "software-tab") { // software tab was selected
+        $(".language-radio").each((idx, radio) => {
+          if ($(radio).prop("checked")) {
+            const langId = $(radio).data("lang-id");
+            const existing = $(radio).data("existing");
+            const toRemove = $("#code-snippets-container #code-snippet-row-" + langId);
+
+            if (existing) {
+                // simply check the checkbox and hide the row
+                toRemove.fadeOut(300, () => {
+                    const delete_checkbox = $(toRemove).children(".delete-checkbox").first();
+                    $(delete_checkbox).prop('checked', true);
+                });
+            } else {
+                // decrement totalForms
+                totalForms--;
+                totalFormsInput.val(totalForms);
+
+                // remove and update prefixes
+                toRemove.fadeOut('slow', () => {
+                    toRemove.remove();
+                    updatePrefixes();
+                });
+            }
+          }
+        })
+
+        // show the row with the selected language
+        $(".language-checkbox").each((idx, checkbox) => {
+          const existing = $(checkbox).data("existing");
+
+          if ($(checkbox).prop("checked")) {
+            const langId = $(checkbox).data("lang-id");
+            const langName = $(checkbox).data("lang-name");
+            const langTemplate = $(checkbox).data("lang-template");
+            
+            if (!existing) {
+              // increment totalForms
+              totalForms++;
+              totalFormsInput.val(totalForms);
+            }
+
+            // clone empty snippet row
+            const cloned = emptySnippetRow.clone();
+
+            // remove id, style
+            cloned.removeAttr('id style');
+
+            // set id, label and language-id
+            cloned.attr("id", `code-snippet-row-${langId}`);
+            cloned.find(".lang-label").first().html(langName);
+            cloned.find(".lang-id").first().val(langId);
+            cloned.find("textarea").first().text(langTemplate);
+
+            // update prefix
+            $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+
+            // append to container
+            snippetsContainer.append(cloned);
+        };
+      })
+      } else if (id == 'hardware-tab') { // hardware tab was selected
+        $(".language-checkbox").each((idx, checkbox) => {
+          if ($(checkbox).prop("checked")) {
+            const langId = $(checkbox).data("lang-id");
+            const existing = $(checkbox).data("existing");
+            const toRemove = $("#code-snippets-container #code-snippet-row-" + langId);
+
+            if (existing) {
+                // simply check the checkbox and hide the row
+                toRemove.fadeOut(300, () => {
+                    const delete_checkbox = $(toRemove).children(".delete-checkbox").first();
+                    $(delete_checkbox).prop('checked', true);
+                });
+            } else {
+                // decrement totalForms
+                totalForms--;
+                totalFormsInput.val(totalForms);
+
+                // remove and update prefixes
+                toRemove.fadeOut('slow', () => {
+                    toRemove.remove();
+                    updatePrefixes();
+                });
+            }
+          }
+        })
+
+        $(".language-radio").each((idx, radio) => {
+          const existing = $(radio).data("existing");
+          
+          if (radio.checked) {
+            const langId = $(radio).data("lang-id");
+            const langName = $(radio).data("lang-name");
+            const langTemplate = $(radio).data("lang-template");
+
+            if (!existing) {
+              // increment totalForms
+              totalForms++;
+              totalFormsInput.val(totalForms);
+            }
+
+            // clone empty snippet row
+            const cloned = emptySnippetRow.clone();
+
+            // remove id, style
+            cloned.removeAttr('id style');
+
+            // set id, label and language-id
+            cloned.attr("id", `code-snippet-row-${langId}`);
+            cloned.find(".lang-label").first().html(langName);
+            cloned.find(".lang-id").first().val(langId);
+            cloned.find("textarea").first().text(langTemplate);
+
+            // update prefix
+            $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+
+            // append to container
+            snippetsContainer.append(cloned);
+          }
+        })
+      }
+    })
   </script>
 {% endblock %}

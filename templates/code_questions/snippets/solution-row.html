@@ -48,7 +48,7 @@
     
     <div class="row">
         <!-- Language selection -->
-        <div class="col-4">
+        <div class="col-4 d-none">
         <label for="lang-select">Language</label>
         <select class="form-select" id="lang-select">
             {% for cs in code_snippet%}
@@ -58,39 +58,25 @@
         </select>
         </div>
 
-        <!-- theme selection -->
-        <div class="col-4">
-        <label for="theme-select">Theme</label>
-        <select class="form-select" id="theme-select">
-            <option value="cloud9_day">Light (Cloud9 Day)</option>
-            <option value="one_dark">Dark (One Dark)</option>
-        </select>
-        </div>
-
-        <div class="col-2">
-        <label></label><br>
-        <button class="btn btn-warning btn-block" type="button" id="generateTestbench-btn" onclick="generateTestbench()">Generate Testbench</button>
-        </div>
-
-        <div class="col-2">
-        <label></label><br>
-        <button class="btn btn-warning btn-block" type="button" onclick="applyToAll()">Apply to All</button>
-        </div>
-
     </div>
 
     <div class="row">
         <!-- Ace Code Editor -->
-        <div class="col p-2">
+        <div class="col">
             <label>Module Definition</label>
             <pre id="sol_editor" class="inner rounded" style="height: 500px;"></pre>
         </div>
 
         <!-- Ace Code Editor -->
-        <div class="col p-2">
+        <div class="col">
             <label>Testbench</label>
             <pre id="testbench_editor" class="inner rounded" style="height: 500px;"></pre>
         </div>
+    </div>
+
+    <div>
+        <button class="btn btn-warning btn-sm" type="button" id="generateTestbench-btn" onclick="generateTestbench()">Generate Testbench</button>
+        <button class="btn btn-primary btn-sm float-end" type="button" onclick="applyToAll()">Apply to All</button>
     </div>
 </div>
 
@@ -197,8 +183,9 @@
     <!-- Apply testbench to all existing test cases -->
     <script>
         const applyToAll = () => {
-            // find all testbench editors"id_tc-{{ prefix|default:"__prefix__" }}-stdin"
-            const testbench_editors = document.querySelectorAll("[id^='id_tc-'][id$='-stdin-editor']");
+            // find all testbench editors excluding hidden ones"
+            const testbench_editors = document.querySelectorAll("[id^='id_tc-'][id$='-stdin-editor']:not([id='id_tc-{{ prefix|default:'__prefix__' }}-stdin-editor'])");
+            
             // get the current testbench
             let testbench_editor = ace.edit("testbench_editor");
             const testbench_code = testbench_editor.getValue();
@@ -208,6 +195,10 @@
                 // set the testbench code
                 ace.edit(editor).setValue(testbench_code);
             });
+
+            // store testbench to apply to new test cases
+            const testbench = document.getElementById("testbench_editor");
+            testbench.dataset.code = testbench_code;
         }
     </script>
 {% endblock %}

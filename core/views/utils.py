@@ -1,4 +1,8 @@
+import zipfile
+import base64
+
 from core.models import CodeQuestionAttempt, CourseGroup, User
+from core.models.questions import Language
 from core.tasks import send_assessment_published_email
 
 
@@ -169,3 +173,57 @@ def construct_assessment_published_email(assessment, recipients=None):
 
     send_assessment_published_email.delay(assessment.id, assessment.name, str(assessment.course),\
                                           assessment.time_start, assessment.time_end, assessment.duration, recipients)
+
+def construct_judge0_params(request, test_case) -> dict:
+    """
+    Constructs the parameters needed to send to Judge0 API.
+    Hardware description languages require a different set up, where the code is zipped and sent to Judge0.
+    """
+    if test_case.code_question.is_software_language() == True:
+        # judge0 params
+        params = {
+            "source_code": request.POST.get('code'),
+            "language_id": request.POST.get('lang-id'),
+            "stdin": test_case.stdin,
+            "expected_output": test_case.stdout,
+            "cpu_time_limit": test_case.time_limit,
+            "memory_limit": test_case.memory_limit,
+        }
+    else:
+        # check if language is verilog
+        language = Language.objects.get(judge_language_id=request.POST.get('lang-id'))
+        if language.name.find('Verilog') != -1:
+            if request.POST.get('code').find('$dumpfile') == -1 and test_case.stdin.find('$dumpfile') == -1:
+                # add wave dump to testbench
+                # find testbench file
+                if request.POST.get('code').find('initial') != -1:
+                    # add wave dump to last line before endmodule
+                    testbench = request.POST.get('code').replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
+                    main = test_case.stdin
+                elif test_case.stdin.find('initial') != -1:
+                    # add wave dump to last line before endmodule
+                    testbench = request.POST.get('code')
+                    main = test_case.stdin.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
+    
+        # create zip file
+        with zipfile.ZipFile('submission.zip', 'w') as zip_file:
+            zip_file.writestr('main.v', main)
+            zip_file.writestr('testbench.v', testbench)
+            zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
+            zip_file.writestr('run', "if vvp -n a.out | head -n 1 | grep -q 'VCD info:'; then vvp -n a.out | tail -n +2; else vvp -n a.out; fi")
+        
+        # encode zip file
+        with open('submission.zip', 'rb') as f:
+            encoded = base64.b64encode(f.read()).decode('utf-8')
+
+        # judge0 params
+        params = {
+            "additional_files": encoded,
+            "language_id": request.POST.get('lang-id'),
+            "stdin": test_case.stdin,
+            "expected_output": test_case.stdout,
+            "cpu_time_limit": test_case.time_limit,
+            "memory_limit": test_case.memory_limit,
+        }
+    
+    return params

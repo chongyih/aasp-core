@@ -149,10 +149,12 @@
 
     <!-- hidden test-case-row -->
     {% if is_software_language %}
-      {% include 'code_questions/snippets/solution-row.html' with form=testcase_formset.empty_form hidden=True %}
+      {% include 'code_questions/snippets/test-case-row.html' with code=False form=testcase_formset.empty_form hidden=True %}
     {% else %}
       {% include 'code_questions/snippets/test-case-row.html' with code=True form=testcase_formset.empty_form hidden=True %}
     {% endif %}
+
+
 
   </div>
 {% endblock %}
@@ -212,7 +214,6 @@
           // initialize ace editor for code
           let row_editor_{{totalForms}} = ace.edit(`id_tc-${totalForms - 1}-stdin-editor`);
 
-          console.log(`id_tc-${totalForms - 1}-stdin-editor`)
           row_editor_{{totalForms}}.renderer.setScrollMargin(10);
           row_editor_{{totalForms}}.setOptions({
               fontFamily: "JetBrains Mono",
@@ -224,8 +225,12 @@
               tabSize: 4,
           });
           row_editor_{{totalForms}}.setOption("dragEnabled", false);
-
           row_editor_{{totalForms}}.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
+
+          // set the value of the editor if it exists
+          const code = document.getElementById("testbench_editor").dataset.code;
+          if (code)
+              row_editor_{{totalForms}}.setValue(code);
 
           // Synchronize Ace editor content with the hidden input field
           row_editor_{{totalForms}}.getSession().on('change', function(){

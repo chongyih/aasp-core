@@ -1,0 +1,52 @@
+{
+  "name": "aasp-vcdrom",
+  "version": "1.0.0",
+  "description": "Standalone VCD viewer PWA application",
+  "main": "index.js",
+  "scripts": {
+    "test": "eslint lib",
+    "browserify": "browserify ./lib/vcdrom.js > app/vcdrom.js",
+    "build": "browserify ./lib/vcdrom.js | terser --compress -o app/vcdrom.js",
+    "watch": "watchify ./lib/vcdrom.js -o app/vcdrom.js -v"
+  },
+  "files": [
+    "app/*.html",
+    "app/*.ico",
+    "app/*.woff2",
+    "app/*.wasm",
+    "app/*.css",
+    "app/*.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chongyih/aasp-vcdrom"
+  },
+  "author": "chuachongyih@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chongyih/aasp-vcdrom/issues"
+  },
+  "homepage": "https://github.com/chongyih/aasp-vcdrom#readme",
+  "devDependencies": {
+    "@drom/eslint-config": "^0.10.0",
+    "@wavedrom/doppler": "^1.7.0",
+    "browserify": "^17.0.0",
+    "eslint": "^8.37.0",
+    "http-server": "^14.1.0",
+    "onml": "^2.1.0",
+    "style-mod": "^4.0.2",
+    "terser": "^5.16.8",
+    "vcd-stream": "^1.4.0",
+    "watchify": "^4.0.0",
+    "waveql": "^1.6.0"
+  },
+  "eslintConfig": {
+    "extends": "@drom/eslint-config/eslint4/node8",
+    "env": {
+      "es2020": true
+    },
+    "parserOptions": {
+      "ecmaVersion": 2020
+    }
+  }
+}

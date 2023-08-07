@@ -4,8 +4,6 @@ import cv2
 import requests
 import os
 import numpy as np
-import zipfile
-import base64
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.contrib import messages
@@ -25,7 +23,7 @@ from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, Code
     CodeQuestionSubmission, TestCaseAttempt, Language, CandidateSnapshot
 from core.tasks import update_test_case_attempt_status, force_submit_assessment, compute_assessment_attempt_score, \
     detect_faces
-from core.views.utils import get_assessment_attempt_question, check_permissions_course, user_enrolled_in_course
+from core.views.utils import get_assessment_attempt_question, check_permissions_course, user_enrolled_in_course, construct_judge0_params
 
 
 @login_required()
@@ -222,6 +220,7 @@ def attempt_question(request, assessment_attempt_id, question_index):
         'assessment_attempt': assessment_attempt,
         'question_attempt': question_attempt,
         'question_statuses': question_statuses,
+        'is_software_language': question_attempt.code_question.is_software_language(),
     }
 
     # render different template depending on question type (currently only CodeQuestion)
@@ -267,38 +266,7 @@ def submit_single_test_case(request, test_case_id):
                 }
                 return Response(error_context, status=status.HTTP_404_NOT_FOUND)
 
-            # check if language is not verilog
-            if request.POST.get('lang-id') != '90':
-                # judge0 params
-                params = {
-                    "source_code": request.POST.get('code'),
-                    "language_id": request.POST.get('lang-id'),
-                    "stdin": test_case.stdin,
-                    "expected_output": test_case.stdout,
-                    "cpu_time_limit": test_case.time_limit,
-                    "memory_limit": test_case.memory_limit,
-                }
-            else:
-                # create zip file
-                with zipfile.ZipFile('submission.zip', 'w') as zip_file:
-                    zip_file.writestr('main.v', request.POST.get('code'))
-                    zip_file.writestr('testbench.v', test_case.stdin)
-                    zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
-                    zip_file.writestr('run', "if vvp -n a.out | head -n 1 | grep -q 'VCD info:'; then vvp -n a.out | tail -n +2; else vvp -n a.out; fi")
-                
-                # encode zip file
-                with open('submission.zip', 'rb') as f:
-                    encoded = base64.b64encode(f.read()).decode('utf-8')
-
-                # judge0 params
-                params = {
-                    "additional_files": encoded,
-                    "language_id": request.POST.get('lang-id'),
-                    "stdin": test_case.stdin,
-                    "expected_output": test_case.stdout,
-                    "cpu_time_limit": test_case.time_limit,
-                    "memory_limit": test_case.memory_limit,
-                }
+            params = construct_judge0_params(request, test_case)
 
             # call judge0
             try:
@@ -371,6 +339,7 @@ def get_tc_details(request):
         if request.method == "GET":
             # get parameters from request
             status_only = request.GET.get('status_only') == 'true'
+            vcd = request.GET.get('vcd') == 'true'
             token = request.GET.get('token')
             if not token:
                 return Response({ "result": "error" }, status=status.HTTP_400_BAD_REQUEST)
@@ -379,6 +348,8 @@ def get_tc_details(request):
             try:
                 if status_only:
                     url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id"
+                elif vcd:
+                    url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id,stdout,stderr,expected_output,vcd_output"
                 else:
                     url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id,stdin,stdout,expected_output"
 
@@ -453,14 +424,7 @@ def code_question_submission(request, code_question_attempt_id):
             # generate params for judge0 call
             code = request.POST.get('code')
             language_id = request.POST.get('lang-id')
-            submissions = [{
-                "source_code": code,
-                "language_id": language_id,
-                "stdin": test_case.stdin,
-                "expected_output": test_case.stdout,
-                "cpu_time_limit": test_case.time_limit,
-                "memory_limit": test_case.memory_limit,
-            } for test_case in test_cases]
+            submissions = [construct_judge0_params(request, test_case) for test_case in test_cases]
             params = {"submissions": submissions}
 
             # call judge0
@@ -468,13 +432,15 @@ def code_question_submission(request, code_question_attempt_id):
                 url = settings.JUDGE0_URL + "/submissions/batch?base64_encoded=false"
                 res = requests.post(url, json=params)
                 data = res.json()
+                os.remove('submission.zip')
             except ConnectionError:
                 error_context = {
                     "result": "error",
                     "message": "Judge0 API seems to be down.",
                 }
+                os.remove('submission.zip')
                 return Response(error_context, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+            
             # retrieve tokens from judge0 response
             tokens = [x['token'] for x in data]
 
@@ -661,5 +627,20 @@ def detect_faces_initial(request):
         error_context = {
             "result": "error",
             "message": f"{ex}",
+        }
+        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
+@login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant, UserGroup.student)
+def vcdrom(request):
+    vcd = request.POST.get('vcd')
+    if vcd:
+        return render(request, 'vcdrom/vcdrom.html', {'vcd': vcd})
+    else:
+        error_context = {
+            "result": "error",
+            "message": "No vcd found.",
         }
         return Response(error_context, status=status.HTTP_400_BAD_REQUEST)

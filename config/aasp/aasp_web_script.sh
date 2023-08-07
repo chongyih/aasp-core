@@ -2,6 +2,10 @@
 
 # startup script for aasp_web
 
+# build vcdrom
+chmod +x vcdrom/build.sh
+./vcdrom/build.sh
+
 # collect static
 python3 manage.py collectstatic --no-input
 

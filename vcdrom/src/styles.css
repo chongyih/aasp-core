@@ -1,0 +1,66 @@
+.wd-time {
+    position: absolute;
+}
+
+.wd-view {
+    z-index: 3;
+}
+
+.wd-menu {
+    z-index: 5;
+}
+
+.wd-waveql {
+    z-index: 4;
+    width: 320px;
+}
+
+.wd-selectvalue {
+    position: absolute;
+    top: 24px;
+    bottom: 24px;
+    width: 320px;
+    z-index: 3;
+    background-color: #111111;
+}
+
+.wd-valuecol {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.5;
+    padding: 4px 0;
+    align-items: flex-end;
+    padding-right: 10px;
+}
+
+.wd-value-hidden {
+    visibility: hidden;
+}
+
+.icon-button {
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    margin: 2;
+    cursor: pointer;
+}
+  
+.icon-button:hover {
+    background-color: transparent;
+}
+
+.icon-style {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 25px;
+    height: 25px;
+    background-color: transparent;
+    color: #666666;
+    transition: color 0.3s ease;
+}
+
+.icon-style:hover {
+    color: #888888;
+}
+  

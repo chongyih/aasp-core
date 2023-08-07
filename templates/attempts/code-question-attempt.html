@@ -186,6 +186,9 @@
                   Run<i
                       class="fa-solid fa-play ms-2"></i></button>
                 <button type="button" id="submit-btn" onclick="submit();" class="btn btn-success">Submit</button>
+                {% if not is_software_language %}
+                  <button type="button" id="waveform-btn" class="btn btn-info" onclick="viewWaveform()">View Waveform</button>
+                {% endif %}
               </div>
               <div>
                 <span class="h5" id="run-status">Ready</span>
@@ -287,6 +290,7 @@
 
   {% include 'attempts/snippets/accordion-item-template.html' %}
   {% include 'attempts/snippets/test-case-details-modal.html' %}
+  {% include 'attempts/snippets/vcd-viewer-modal.html' %}
 {% endblock %}
 
 {% block js %}
@@ -540,8 +544,9 @@
       const mainLoading = $("#main-loading");
       const sampleBtn = $("#sample-btn");
       const submitBtn = $("#submit-btn");
+      const waveformBtn = $("#waveform-btn");
 
-      // modal elements
+      // test case details modal elements
       const modalToken = $("#m-token");
       const modalLoading = $("#m-loading");
       const modalBody = $("#m-body");
@@ -549,6 +554,9 @@
       const modalStdout = $("#m-stdout");
       const modalExpectedOutput = $("#m-expected-output");
       const modalOutcome = $("#m-outcome");
+
+      // vcdrom modal elements
+      const vcdromModal = $("#vcdromModal");
 
       // display error Toast and set status text
       const showError = (msg) => {
@@ -564,11 +572,22 @@
           }).showToast();
       };
 
+      // display error Toast only
+      const showErrorToast = (msg) => {
+          Toastify({
+              text: msg,
+              duration: 3000,
+              position: "center",
+              style: {"background": "#ff6961"}
+          }).showToast();
+      };
+
       // "compile and run" clicked
       const compileAndRun = () => {
           // disable buttons
           sampleBtn.prop("disabled", true);
           submitBtn.prop("disabled", true);
+          waveformBtn.prop("disabled", true);
 
           // hide more details link
           mainLoading.show();
@@ -608,12 +627,55 @@
           });
       };
 
+      // "view waveform" clicked
+      const viewWaveform = () => {
+        const vcd = waveformBtn.data('vcd');
+        if (!vcd) {
+          showErrorToast("An error has occurred. Please check that you have successfully compiled your code and try again.");
+          return;
+        }
+
+        // disable buttons
+        sampleBtn.prop("disabled", true);
+        submitBtn.prop("disabled", true);
+        waveformBtn.prop("disabled", true);
+
+        $.ajax({
+          type: 'POST',
+          url: "{% url 'vcdrom' %}",
+          data: {vcd: vcd, csrfmiddlewaretoken: "{{ csrf_token }}"},
+        }).done((res, textStatus, jqXHR) => {
+          var iframeDocument = modalIframe.contentDocument || modalIframe.contentWindow.document;
+          iframeDocument.open();
+          iframeDocument.write(res);
+          iframeDocument.close();
+          vcdromModal.modal('show');
+        }).fail((jqXHR, textStatus, errorThrown) => {
+          // 4xx status codes
+          if (Math.floor(jqXHR.status / 100) == 4) {
+              console.error("Internal API Error!");
+              showError("Internal API Error &#x274C;");
+          }
+          else {
+              console.error("External API Error!");
+              showError("External API Error &#x274C;");
+          }
+        });
+
+        // enable buttons when modal close
+        vcdromModal.on('hidden.bs.modal', () => {
+          sampleBtn.prop("disabled", false);
+          submitBtn.prop("disabled", false);
+          waveformBtn.prop("disabled", false);
+        });
+      }
+
       // updates sample status by polling
       const updateSampleStatus = (token) => {
           $.ajax({
               type: 'GET',
               url: "{% url 'get-tc-details' %}",
-              data: {token, status_only: true},
+              data: {token, status_only: false, vcd: '{{ is_software_language }}' === 'False'},
           }).done((res, textStatus, jqXHR) => {
               if (res.result === "success") {
                   if (res.data.status_id === 1 || res.data.status_id === 2) {  // not finished
@@ -630,11 +692,16 @@
                       // enable buttons
                       sampleBtn.prop("disabled", false);
                       submitBtn.prop("disabled", false);
+                      waveformBtn.prop("disabled", false);
                       // hide loading, show more details link
                       mainLoading.hide();
                       moreDetails.show();
                       // set token
                       moreDetails.data('token', token);
+                      // set waveform button
+                      if ('{{ is_software_language }}' === 'False')
+                        waveformBtn.data('vcd', res.data.vcd_output);
+                      
                   }
               }
           }).fail((jqXHR, textStatus, errorThrown) => {

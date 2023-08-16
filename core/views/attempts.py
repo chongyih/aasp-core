@@ -23,7 +23,7 @@ from core.models import Assessment, AssessmentAttempt, CodeQuestionAttempt, Code
     CodeQuestionSubmission, TestCaseAttempt, Language, CandidateSnapshot
 from core.tasks import update_test_case_attempt_status, force_submit_assessment, compute_assessment_attempt_score, \
     detect_faces
-from core.views.utils import get_assessment_attempt_question, check_permissions_course, user_enrolled_in_course, construct_judge0_params
+from core.views.utils import get_assessment_attempt_question, check_permissions_course, user_enrolled_in_course, construct_judge0_params, vcd2wavedrom
 
 
 @login_required()
@@ -638,6 +638,21 @@ def vcdrom(request):
     vcd = request.POST.get('vcd')
     if vcd:
         return render(request, 'vcdrom/vcdrom.html', {'vcd': vcd})
+    else:
+        error_context = {
+            "result": "error",
+            "message": "No vcd found.",
+        }
+        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
+@login_required()
+@groups_allowed(UserGroup.educator, UserGroup.lab_assistant, UserGroup.student)
+def wavedrom(request):
+    vcd = request.POST.get('vcd')
+    if vcd:
+        return Response({'wavedrom': vcd2wavedrom(vcd)}, status=status.HTTP_200_OK)
     else:
         error_context = {
             "result": "error",

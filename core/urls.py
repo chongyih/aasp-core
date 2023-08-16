@@ -93,5 +93,8 @@ urlpatterns = [
     path('attempt/<int:assessment_attempt_id>/question/<int:question_index>/iosevka-term-light.woff2', serve, {
         'document_root': settings.STATICFILES_DIRS[0],
         'path': 'vcdrom/iosevka-term-light.woff2',
-    })
+    }),
+
+    # wavedrom
+    path('wavedrom/vcd2wavedrom', attempts.wavedrom, name='vcd2wavedrom')
 ]

@@ -134,9 +134,8 @@ const updateValueCol = (deso, els, xTime, pstate) => {
     const ref = item.ref;
 
     if (ref) {
-      const xx = ((xTime - pstate.xOffset) / pstate.xScale) * pstate.tgcd;
+      const xx = ((xTime - pstate.xOffset) / pstate.xScale);
       const matchingWaveValues = deso.chango[ref].wave.filter((wave) => wave[0] <= xx).at(-1);
-
       // check if the value is not X
       if (matchingWaveValues && !matchingWaveValues[2]) {
         values.push(['span', {class: 'wd-value'}, matchingWaveValues[1]]);

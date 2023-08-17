@@ -123,6 +123,8 @@ const mouseClickHandler = (deso, els, pstate) => {
   }
   document.getElementById('shift-left').addEventListener('click', handler2);
   document.getElementById('shift-right').addEventListener('click', handler2);
+  document.getElementById('jump-beginning').addEventListener('click', handler2);
+  document.getElementById('jump-end').addEventListener('click', handler2);
   document.getElementById('zoom-in').addEventListener('click', handler2);
   document.getElementById('zoom-out').addEventListener('click', handler2);
   document.getElementById('zoom-reset').addEventListener('click', handler2);

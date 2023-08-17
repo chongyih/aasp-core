@@ -282,7 +282,6 @@ def submit_single_test_case(request, test_case_id):
                 return Response(error_context, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # return error if no token
-            print(data)
             token = data.get("token")
             if not token:
                 os.remove('submission.zip')

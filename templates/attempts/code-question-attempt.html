@@ -645,49 +645,6 @@
           });
       };
 
-      // "view waveform" clicked
-      const viewWaveform = () => {
-        const vcd = waveformBtn.data('vcd');
-        if (!vcd) {
-          showErrorToast("An error has occurred. Please check that you have successfully compiled your code and try again.");
-          return;
-        }
-
-        // disable buttons
-        sampleBtn.prop("disabled", true);
-        submitBtn.prop("disabled", true);
-        waveformBtn.prop("disabled", true);
-
-        $.ajax({
-          type: 'POST',
-          url: "{% url 'vcdrom' %}",
-          data: {vcd: vcd, csrfmiddlewaretoken: "{{ csrf_token }}"},
-        }).done((res, textStatus, jqXHR) => {
-          var iframeDocument = modalIframe.contentDocument || modalIframe.contentWindow.document;
-          iframeDocument.open();
-          iframeDocument.write(res);
-          iframeDocument.close();
-          vcdromModal.modal('show');
-        }).fail((jqXHR, textStatus, errorThrown) => {
-          // 4xx status codes
-          if (Math.floor(jqXHR.status / 100) == 4) {
-              console.error("Internal API Error!");
-              showError("Internal API Error &#x274C;");
-          }
-          else {
-              console.error("External API Error!");
-              showError("External API Error &#x274C;");
-          }
-        });
-
-        // enable buttons when modal close
-        vcdromModal.on('hidden.bs.modal', () => {
-          sampleBtn.prop("disabled", false);
-          submitBtn.prop("disabled", false);
-          waveformBtn.prop("disabled", false);
-        });
-      }
-
       // updates sample status by polling
       const updateSampleStatus = (token) => {
           $.ajax({
@@ -746,6 +703,49 @@
                   showError("External API Error &#x274C;");
               }
           });
+      }
+
+      // "view waveform" clicked
+      const viewWaveform = () => {
+        const vcd = waveformBtn.data('vcd');
+        if (!vcd) {
+          showErrorToast("An error has occurred. Please check that you have successfully compiled your code and try again.");
+          return;
+        }
+
+        // disable buttons
+        sampleBtn.prop("disabled", true);
+        submitBtn.prop("disabled", true);
+        waveformBtn.prop("disabled", true);
+
+        $.ajax({
+          type: 'POST',
+          url: "{% url 'vcdrom' %}",
+          data: {vcd: vcd, csrfmiddlewaretoken: "{{ csrf_token }}"},
+        }).done((res, textStatus, jqXHR) => {
+          var iframeDocument = modalIframe.contentDocument || modalIframe.contentWindow.document;
+          iframeDocument.open();
+          iframeDocument.write(res);
+          iframeDocument.close();
+          vcdromModal.modal('show');
+        }).fail((jqXHR, textStatus, errorThrown) => {
+          // 4xx status codes
+          if (Math.floor(jqXHR.status / 100) == 4) {
+              console.error("Internal API Error!");
+              showError("Internal API Error &#x274C;");
+          }
+          else {
+              console.error("External API Error!");
+              showError("External API Error &#x274C;");
+          }
+        });
+
+        // enable buttons when modal close
+        vcdromModal.on('hidden.bs.modal', () => {
+          sampleBtn.prop("disabled", false);
+          submitBtn.prop("disabled", false);
+          waveformBtn.prop("disabled", false);
+        });
       }
 
       // "More Details" or "Test Case x" clicked (opens modal)

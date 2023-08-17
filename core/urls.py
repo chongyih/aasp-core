@@ -47,6 +47,7 @@ urlpatterns = [
     path('code-question/<int:code_question_id>/update-languages/', code_questions.update_languages, name='update-languages'),  # step 3
     path('code-question/update/<int:code_question_id>/', code_questions.update_code_question, name='update-code-question'),
     path('api/get-code-question-details/', code_questions.get_cq_details, name='get-code-question-details'),  # ajax
+    path('api/compile-code/', code_questions.compile_code, name='compile-code'),  # ajax
 
     # assessments
     path('assessment/create/', assessments.create_assessment, name='create-assessment'),
@@ -90,11 +91,7 @@ urlpatterns = [
 
     # vcdrom
     path('vcdrom/', attempts.vcdrom, name='vcdrom'),
-    path('attempt/<int:assessment_attempt_id>/question/<int:question_index>/iosevka-term-light.woff2', serve, {
-        'document_root': settings.STATICFILES_DIRS[0],
-        'path': 'vcdrom/iosevka-term-light.woff2',
-    }),
 
     # wavedrom
-    path('wavedrom/vcd2wavedrom', attempts.wavedrom, name='vcd2wavedrom')
+    path('api/wavedrom/vcd2wavedrom', attempts.wavedrom, name='vcd2wavedrom')
 ]

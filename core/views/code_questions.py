@@ -1,3 +1,9 @@
+import zipfile
+import base64
+import os
+import requests
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -287,3 +293,85 @@ def testbench_generation(request):
     test_bench = generate_testbench(module_code)
 
     return HttpResponse(test_bench, content_type='text/plain')
+
+@api_view(["POST"])
+@login_required()
+@groups_allowed(UserGroup.educator)
+def compile_code(request):
+    """
+    Compiles the code snippet and returns the result.
+    Used only for hardware language test case creation.
+    Specify the output type in the request.
+    """
+    try:
+        if request.method == "POST":
+            language = Language.objects.get(judge_language_id=request.POST.get('lang-id'))
+            file1 = request.POST.get('file1')
+            file2 = request.POST.get('file2')
+
+            if language.name.find('Verilog') != -1:
+                if file1.find('$dumpfile') == -1 and file2.find('$dumpfile') == -1:
+                    # add wave dump to testbench
+                    # find testbench file
+                    if file1.find('initial') != -1:
+                        # add wave dump to last line before endmodule
+                        testbench = file1.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
+                        main = file2
+                    elif file2.stdin.find('initial') != -1:
+                        # add wave dump to last line before endmodule
+                        testbench = file1
+                        main = file2.stdin.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
+
+            # create zip file
+            with zipfile.ZipFile('submission.zip', 'w') as zip_file:
+                zip_file.writestr('main.v', main)
+                zip_file.writestr('testbench.v', testbench)
+                zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
+                zip_file.writestr('run', "if vvp -n a.out | head -n 1 | grep -q 'VCD info:'; then vvp -n a.out | tail -n +2; else vvp -n a.out; fi")
+            
+            # encode zip file
+            with open('submission.zip', 'rb') as f:
+                encoded = base64.b64encode(f.read()).decode('utf-8')
+
+            # judge0 params
+            params = {
+                "additional_files": encoded,
+                "language_id": request.POST.get('lang-id'),
+            }
+
+            # call judge0
+            try:
+                url = settings.JUDGE0_URL + "/submissions/?base64_encoded=false&wait=false"
+                res = requests.post(url, json=params)
+                data = res.json()
+            except requests.exceptions.ConnectionError:
+                os.remove('submission.zip')
+                error_context = {
+                    "result": "error",
+                    "message": "Judge0 API seems to be down.",
+                }
+                return Response(error_context, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # return error if no token
+            token = data.get("token")
+            if not token:
+                os.remove('submission.zip')
+                error_context = {
+                    "result": "error",
+                    "message": "Judge0 error.",
+                }
+                return Response(error_context, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            context = {
+                "result": "success",
+                "token": token,
+            }
+            os.remove('submission.zip')
+            return Response(context, status=status.HTTP_200_OK)
+    
+    except Exception as ex:
+        error_context = {
+            "result": "error",
+            "message": f"{ex}",
+        } 
+        return Response(error_context, status=status.HTTP_400_BAD_REQUEST)

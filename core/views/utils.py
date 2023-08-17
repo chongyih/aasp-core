@@ -1,9 +1,5 @@
 import zipfile
 import base64
-import sys
-import os
-import argparse
-import json
 import re
 
 from vcdvcd.vcdvcd import VCDVCD

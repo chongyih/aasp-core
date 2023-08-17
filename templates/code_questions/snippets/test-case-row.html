@@ -38,6 +38,7 @@
 
 {% endblock %}
 
+<body onload="WaveDrom.ProcessAll()">
 <div class="row test-case-row"
      {% if hidden %}id="empty-test-case-row" style="display:none"{% endif %}
      {% if form.DELETE.value %}style="display:none"{% endif %}
@@ -105,19 +106,29 @@
   <div class="form-group col-4">
   {% endif %}
     <!-- stdout output -->
-    <div class="form-group {% if code %}row{% else %}col-3{% endif %}">
+    <div class="form-group {% if code %}row d-none{% else %}col-3{% endif %}">
       <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdout">Output</label>
       <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdout"
                 id="id_tc-{{ prefix|default:"__prefix__" }}-stdout" rows={% if code %}15{% else %}5{% endif %}
                 class="form-control font-monospace">{{ form.stdout.value|default:"" }}</textarea>
       <div>
-        <button type="button" class="btn btn-link m-0 p-0" onclick="loadFromFile(this)">Generate Output</button>
         <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
       </div>
       {# stdout errors #}
       {% for e in form.stdout.errors %}
         <p class="text-danger">{{ e }}</p>
       {% endfor %}
+    </div>
+    <button id="id_tc-{{ prefix|default:"__prefix__" }}-button" type="button" class="btn btn-link m-0 p-0" onclick="generateOutput(this)">Generate Output</button>
+    <!-- wavedrom -->
+    <div id="id_tc-{{ prefix|default:"__prefix__" }}-wavedrom" class="nowrap d-none" style="overflow-x: auto">
+      <script type="WaveDrom">
+        { signal : [
+          { name: "clk",  wave: "p......" },
+          { name: "bus",  wave: "x.34.5x",   data: "head body tail" },
+          { name: "wire", wave: "0.1..0." },
+        ]}
+      </script>
     </div>
 
     <!-- time and memory limit inputs -->
@@ -189,6 +200,9 @@
 
 {% block js %}
     <script src="{% static 'vendors/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
+    <!-- wavedrom -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wavedrom/3.1.0/skins/default.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wavedrom/3.1.0/wavedrom.min.js" type="text/javascript"></script>
 
     <!-- Ace code editor config -->
     <script>
@@ -221,6 +235,92 @@
                 return;
         });
         
+    </script>
+
+    <!-- Generate output button -->
+    <script>
+      const generateOutput = (elem) => {
+        const editor = ace.edit("sol_editor");
+        const button_id = elem.id;
+        const stdin_id = button_id.replace("button", "stdin");
+        const index = button_id.replace("id_tc-", "").replace("-button", "");
+
+        const file1 = document.getElementById(stdin_id).value;
+        const file2 = editor.getValue();
+
+        $.ajax({
+          type: "POST",
+          url: "{% url 'compile-code' %}",
+          data: {
+            csrfmiddlewaretoken: "{{ csrf_token }}",
+            'lang-id': $("#lang-select").find("option:selected").data('judgeid'),
+            file1: file1,
+            file2: file2,
+          },
+          success: function (data) {
+            updateOutput(data.token, index);
+          },
+          error: function (data) {
+            console.error(data);
+          },
+        });
+      }
+
+      // updates sample status by polling
+      const updateOutput = (token, index) => {
+        $.ajax({
+            type: 'GET',
+            url: "{% url 'get-tc-details' %}",
+            data: {token, status_only: false, vcd: 'true'},
+        }).done((res, textStatus, jqXHR) => {
+            if (res.result === "success") {
+                if (res.data.status_id === 1 || res.data.status_id === 2) {  // not finished
+                    //runStatus.html(res.data.status);
+                    window.setTimeout(() => {
+                        updateOutput(token, index);
+                    }, 1000);
+                } else { // finished
+                    /*if (res.data.status_id === 3)
+                        runStatus.html(res.data.status + " &#x2705;");
+                    else
+                        runStatus.html(res.data.status + " &#x274C;");
+                    */
+
+                    console.log(res.data)
+                    
+                    $.ajax({
+                      type: 'POST',
+                      url: "{% url 'vcd2wavedrom' %}",
+                      data: {'vcd': res.data.vcd_output, csrfmiddlewaretoken: "{{ csrf_token }}"},
+                    }).done((res, textStatus, jqXHR) => {
+                      const e = document.getElementById(`InputJSON_${index}`);
+                      
+                      // Update the input element's value with the wavedrom value
+                      e.innerHTML = JSON.stringify(res.wavedrom);
+                      WaveDrom.RenderWaveForm(index, WaveDrom.eva(`InputJSON_${index}`), "WaveDrom_Display_")
+
+                      // Show the wavedrom div
+                      const wavedrom_div = document.getElementById(`id_tc-${index}-wavedrom`);
+                      wavedrom_div.classList.remove("d-none");
+
+                      // Set the output value
+                      const output = document.getElementById(`id_tc-${index}-stdout`);
+                      output.value = res.wavedrom;
+                    })
+                }
+            }
+        }).fail((jqXHR, textStatus, errorThrown) => {
+            // 4xx status codes
+            if (Math.floor(jqXHR.status / 100) == 4) {
+                console.error("Internal API Error!");
+                showError("Internal API Error &#x274C;");
+            }
+            else {
+                console.error("External API Error!");
+                showError("External API Error &#x274C;");
+            }
+        });
+      }
     </script>
 
 {% endblock %}

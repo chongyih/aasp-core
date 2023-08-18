@@ -127,19 +127,15 @@
             <h5>Sample Input</h5>
             <pre><code class="language-plaintext rounded">{{ sample_tc.stdin }}</code></pre>
 
-            <h5>Sample Output</h5>
-            <pre><code class="language-plaintext rounded">{{ sample_tc.stdout }}</code></pre>
-
             <!-- wavedrom -->
-            {% if not is_software_language %}
+            {% if is_software_language %}
+              <h5>Sample Output</h5>
+              <pre><code class="language-plaintext rounded">{{ sample_tc.stdout }}</code></pre>
+            {% else %}
               <h5>Sample Waveform</h5>
               <div id="wavedrom" class="nowrap" style="overflow-x: auto">
                 <script type="WaveDrom">
-                  { signal : [
-                    { name: "clk",  wave: "p......" },
-                    { name: "bus",  wave: "x.34.5x",   data: "head body tail" },
-                    { name: "wire", wave: "0.1..0." },
-                  ]}
+                  {{ sample_tc.stdout|safe }}
                 </script>
               </div>
             {% endif %}

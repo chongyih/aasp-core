@@ -280,14 +280,6 @@
                         updateOutput(token, index);
                     }, 1000);
                 } else { // finished
-                    /*if (res.data.status_id === 3)
-                        runStatus.html(res.data.status + " &#x2705;");
-                    else
-                        runStatus.html(res.data.status + " &#x274C;");
-                    */
-
-                    console.log(res.data)
-                    
                     $.ajax({
                       type: 'POST',
                       url: "{% url 'vcd2wavedrom' %}",
@@ -305,7 +297,7 @@
 
                       // Set the output value
                       const output = document.getElementById(`id_tc-${index}-stdout`);
-                      output.value = res.wavedrom;
+                      output.value = JSON.stringify(res.wavedrom);
                     })
                 }
             }

@@ -214,7 +214,7 @@ def construct_judge0_params(request, test_case) -> dict:
             zip_file.writestr('main.v', main)
             zip_file.writestr('testbench.v', testbench)
             zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
-            zip_file.writestr('run', "if vvp -n a.out | head -n 1 | grep -q 'VCD info:'; then vvp -n a.out | tail -n +2; else vvp -n a.out; fi")
+            zip_file.writestr('run', "vvp -n a.out | find -name '*.vcd' -exec python3 -m vcd2wavedrom.vcd2wavedrom -i {} +")
         
         # encode zip file
         with open('submission.zip', 'rb') as f:

@@ -23,7 +23,7 @@ class Language(models.Model):
     name = models.CharField(max_length=50, blank=False, null=False, unique=True)
     judge_language_id = models.IntegerField(blank=False, null=False, unique=True)
     ace_mode = models.CharField(max_length=50, blank=False, null=False)
-    software_language = models.BooleanField(null=False, blank=False, default=False)
+    software_language = models.BooleanField(null=False, blank=False, default=True)
     
     def clean(self):
         super().clean()
@@ -84,7 +84,14 @@ class CodeQuestion(models.Model):
         return Language.objects.filter(codesnippet__code_question=self)
     
     def is_software_language(self):
-        return Language.objects.filter(codesnippet__code_question=self, software_language=True).exists()
+        """
+        Sets software language as default language if no language is set.
+        """
+        language_exists = Language.objects.filter(codesnippet__code_question=self).exists()
+        if language_exists:
+            return Language.objects.filter(codesnippet__code_question=self).first().software_language
+        else:
+            return True
 
 class CodeSnippet(models.Model):
     class Meta:
@@ -109,7 +116,7 @@ class TestCase(models.Model):
     stdin = models.TextField(blank=False, null=False)
     stdout = models.TextField(blank=False, null=False)
     time_limit = models.PositiveIntegerField(default=5)
-    memory_limit = models.PositiveIntegerField(default=20480)
+    memory_limit = models.PositiveIntegerField(default=40960)
 
     score = models.PositiveIntegerField()
     hidden = models.BooleanField(default=True)

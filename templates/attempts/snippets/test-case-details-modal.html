@@ -1,6 +1,6 @@
 <!-- Test Case Details Modal -->
 <div class="modal fade" id="detailsModal" tabindex="-1" role="dialog">
-  <div class="modal-dialog modal-dialog-centered" role="document">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="exampleModalLongTitle">Test Case Details</h5>
@@ -27,17 +27,41 @@
           <!-- stdin -->
           <h6>Standard Input</h6>
           <pre><code class="language-plaintext rounded" id="m-stdin"></code></pre>
-          <div class="row">
-            <!-- stdout -->
-            <div class="col-6">
-              <h6>Standard Output</h6>
-              <pre><code class="language-plaintext rounded" id="m-stdout"></code></pre>
+            {% if is_software_language %}
+            <div class="row">
+              <!-- stdout -->
+              <div class="col-6">
+                <h6>Standard Output</h6>
+                <pre><code class="language-plaintext rounded" id="m-stdout"></code></pre>
+              </div>
+              <!-- expected output -->
+              <div class="col-6">
+                <h6>Expected Output</h6>
+                <pre><code class="language-plaintext rounded" id="m-expected-output"></code></pre>
+              </div>
             </div>
-            <!-- expected output -->
-            <div class="col-6">
-              <h6>Expected Output</h6>
-              <pre><code class="language-plaintext rounded" id="m-expected-output"></code></pre>
+            {% else %}
+            <!-- wavedrom -->
+            <div class="row">
+              <div class="col">
+                <h6>Your Output</h6>
+                <div class="nowrap" style="overflow-x: auto">
+                  <script type="WaveDrom">
+                    {"signal": []}
+                  </script>
+                </div>
+              </div>
+              <!-- expected output -->
+              <div class="col">
+                <h6>Expected Output</h6>
+                <div class="nowrap" style="overflow-x: auto">
+                  <script type="WaveDrom">
+                    {"signal": []}
+                  </script>
+                </div>
+              </div>
             </div>
+            {% endif %}
           </div>
           <hr>
 
@@ -45,12 +69,11 @@
           <h6>Outcome</h6>
           <p id="m-outcome"></p>
         </div>
-      </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
       </div>
-
     </div>
   </div>
 </div>

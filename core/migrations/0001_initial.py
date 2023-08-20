@@ -138,7 +138,7 @@ class Migration(migrations.Migration):
                 ('stdin', models.TextField()),
                 ('stdout', models.TextField()),
                 ('time_limit', models.PositiveIntegerField(default=5)),
-                ('memory_limit', models.PositiveIntegerField(default=20480)),
+                ('memory_limit', models.PositiveIntegerField(default=40960)),
                 ('score', models.PositiveIntegerField()),
                 ('hidden', models.BooleanField(default=True)),
                 ('sample', models.BooleanField(default=False)),

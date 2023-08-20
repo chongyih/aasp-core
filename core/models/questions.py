@@ -109,7 +109,7 @@ class TestCase(models.Model):
     stdin = models.TextField(blank=False, null=False)
     stdout = models.TextField(blank=False, null=False)
     time_limit = models.PositiveIntegerField(default=5)
-    memory_limit = models.PositiveIntegerField(default=20480)
+    memory_limit = models.PositiveIntegerField(default=40960)
 
     score = models.PositiveIntegerField()
     hidden = models.BooleanField(default=True)

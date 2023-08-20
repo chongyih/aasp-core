@@ -274,7 +274,6 @@ def submit_single_test_case(request, test_case_id):
                 res = requests.post(url, json=params)
                 data = res.json()
             except requests.exceptions.ConnectionError:
-                os.remove('submission.zip')
                 error_context = {
                     "result": "error",
                     "message": "Judge0 API seems to be down.",
@@ -284,7 +283,6 @@ def submit_single_test_case(request, test_case_id):
             # return error if no token
             token = data.get("token")
             if not token:
-                os.remove('submission.zip')
                 error_context = {
                     "result": "error",
                     "message": "Judge0 error.",
@@ -295,7 +293,6 @@ def submit_single_test_case(request, test_case_id):
                 "result": "success",
                 "token": token,
             }
-            os.remove('submission.zip')
             return Response(context, status=status.HTTP_200_OK)
     
     except Exception as ex:
@@ -304,6 +301,11 @@ def submit_single_test_case(request, test_case_id):
             "message": f"{ex}",
         } 
         return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
+    
+    finally:
+        # delete zip file
+        if os.path.exists('submission.zip'):
+            os.remove('submission.zip')
 
 
 @api_view(["GET"])
@@ -431,14 +433,16 @@ def code_question_submission(request, code_question_attempt_id):
                 url = settings.JUDGE0_URL + "/submissions/batch?base64_encoded=false"
                 res = requests.post(url, json=params)
                 data = res.json()
-                os.remove('submission.zip')
             except ConnectionError:
                 error_context = {
                     "result": "error",
                     "message": "Judge0 API seems to be down.",
                 }
-                os.remove('submission.zip')
                 return Response(error_context, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            finally:
+                # delete zip file
+                if os.path.exists('submission.zip'):
+                    os.remove('submission.zip')
             
             # retrieve tokens from judge0 response
             tokens = [x['token'] for x in data]

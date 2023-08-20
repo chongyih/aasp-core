@@ -193,13 +193,16 @@
 
             <div class="d-flex justify-content-between">
               <div>
-                <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile and
+                {% if is_software_language %}
+                  <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile and
                   Run<i
                       class="fa-solid fa-play ms-2"></i></button>
-                <button type="button" id="submit-btn" onclick="submit();" class="btn btn-success">Submit</button>
-                {% if not is_software_language %}
-                  <button type="button" id="waveform-btn" class="btn btn-info" onclick="viewWaveform()">View Waveform</button>
+                {% else %}
+                  <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile<i
+                        class="fa-solid fa-play ms-2"></i></button>
+                  <button type="button" id="waveform-btn" class="btn btn-info d-none" onclick="viewWaveform()">Run</button>
                 {% endif %}
+                <button type="button" id="submit-btn" onclick="submit();" class="btn btn-success">Submit</button>
               </div>
               <div>
                 <span class="h5" id="run-status">Ready</span>
@@ -601,7 +604,6 @@
           // disable buttons
           sampleBtn.prop("disabled", true);
           submitBtn.prop("disabled", true);
-          waveformBtn.prop("disabled", true);
 
           // hide more details link
           mainLoading.show();
@@ -663,14 +665,13 @@
                       // enable buttons
                       sampleBtn.prop("disabled", false);
                       submitBtn.prop("disabled", false);
-                      waveformBtn.prop("disabled", false);
                       // hide loading, show more details link
                       mainLoading.hide();
                       moreDetails.show();
                       // set token
                       moreDetails.data('token', token);
-                      // set waveform button
-                      if ('{{ is_software_language }}' === 'False') {
+                      // set waveform button if compilation successful
+                      if ((res.data.status_id === 3 | res.data.status_id === 4) && '{{ is_software_language }}' === 'False') {
                         waveformBtn.data('vcd', res.data.vcd_output);
 
                         $.ajax({
@@ -684,6 +685,9 @@
                           e.innerHTML = JSON.stringify(res.wavedrom);
                           WaveDrom.EditorRefresh();
                         })
+
+                        // show waveform button
+                        waveformBtn.removeClass('d-none');
                       }
                       
                   }
@@ -712,7 +716,6 @@
         // disable buttons
         sampleBtn.prop("disabled", true);
         submitBtn.prop("disabled", true);
-        waveformBtn.prop("disabled", true);
 
         $.ajax({
           type: 'POST',
@@ -740,7 +743,6 @@
         vcdromModal.on('hidden.bs.modal', () => {
           sampleBtn.prop("disabled", false);
           submitBtn.prop("disabled", false);
-          waveformBtn.prop("disabled", false);
         });
       }
 
@@ -763,9 +765,21 @@
                   // set values
                   modalToken.html(token);
                   modalStdin.html(res.data.stdin ? res.data.stdin : '&nbsp;');
-                  modalStdout.html(res.data.stdout ? res.data.stdout : '&nbsp;');
-                  modalExpectedOutput.html(res.data.expected_output ? res.data.expected_output : '&nbsp;');
                   modalOutcome.html(res.data.status);
+
+                  if ('{{ is_software_language }}' === 'True') {
+                    modalStdout.html(res.data.stdout ? res.data.stdout : '&nbsp;');
+                    modalExpectedOutput.html(res.data.expected_output ? res.data.expected_output : '&nbsp;');
+                  } else {
+                    const modalWavedrom = document.getElementById(`InputJSON_1`);
+                    const modalWavedrom2 = document.getElementById("InputJSON_2");
+
+                    modalWavedrom.innerHTML = res.data.stdout;
+                    modalWavedrom2.innerHTML = res.data.expected_output;
+
+                    WaveDrom.RenderWaveForm(1, WaveDrom.eva(`InputJSON_1`), "WaveDrom_Display_")
+                    WaveDrom.RenderWaveForm(2, WaveDrom.eva(`InputJSON_2`), "WaveDrom_Display_")
+                  }
 
                   setTimeout(() => {
                       modalLoading.hide();

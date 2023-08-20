@@ -327,7 +327,7 @@ def compile_code(request):
                 zip_file.writestr('main.v', main)
                 zip_file.writestr('testbench.v', testbench)
                 zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
-                zip_file.writestr('run', "if vvp -n a.out | head -n 1 | grep -q 'VCD info:'; then vvp -n a.out | tail -n +2; else vvp -n a.out; fi")
+                zip_file.writestr('run', "vvp -n a.out | find -name '*.vcd' -exec python3 -m vcd2wavedrom.vcd2wavedrom -i {} + | tr -d '[:space:]'")
             
             # encode zip file
             with open('submission.zip', 'rb') as f:
@@ -345,7 +345,6 @@ def compile_code(request):
                 res = requests.post(url, json=params)
                 data = res.json()
             except requests.exceptions.ConnectionError:
-                os.remove('submission.zip')
                 error_context = {
                     "result": "error",
                     "message": "Judge0 API seems to be down.",
@@ -355,7 +354,6 @@ def compile_code(request):
             # return error if no token
             token = data.get("token")
             if not token:
-                os.remove('submission.zip')
                 error_context = {
                     "result": "error",
                     "message": "Judge0 error.",
@@ -366,7 +364,6 @@ def compile_code(request):
                 "result": "success",
                 "token": token,
             }
-            os.remove('submission.zip')
             return Response(context, status=status.HTTP_200_OK)
     
     except Exception as ex:
@@ -375,3 +372,8 @@ def compile_code(request):
             "message": f"{ex}",
         } 
         return Response(error_context, status=status.HTTP_400_BAD_REQUEST)
+    
+    finally:
+        # delete zip file
+        if os.path.exists('submission.zip'):
+            os.remove('submission.zip')

@@ -280,15 +280,10 @@
                         updateOutput(token, index);
                     }, 1000);
                 } else { // finished
-                    $.ajax({
-                      type: 'POST',
-                      url: "{% url 'vcd2wavedrom' %}",
-                      data: {'vcd': res.data.vcd_output, csrfmiddlewaretoken: "{{ csrf_token }}"},
-                    }).done((res, textStatus, jqXHR) => {
                       const e = document.getElementById(`InputJSON_${index}`);
                       
                       // Update the input element's value with the wavedrom value
-                      e.innerHTML = JSON.stringify(res.wavedrom);
+                      e.innerHTML = res.data.stdout;
                       WaveDrom.RenderWaveForm(index, WaveDrom.eva(`InputJSON_${index}`), "WaveDrom_Display_")
 
                       // Show the wavedrom div
@@ -297,8 +292,7 @@
 
                       // Set the output value
                       const output = document.getElementById(`id_tc-${index}-stdout`);
-                      output.value = JSON.stringify(res.wavedrom);
-                    })
+                      output.value = res.data.stdout;
                 }
             }
         }).fail((jqXHR, textStatus, errorThrown) => {

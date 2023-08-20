@@ -119,17 +119,6 @@
         <p class="text-danger">{{ e }}</p>
       {% endfor %}
     </div>
-    <button id="id_tc-{{ prefix|default:"__prefix__" }}-button" type="button" class="btn btn-link m-0 p-0" onclick="generateOutput(this)">Generate Output</button>
-    <!-- wavedrom -->
-    <div id="id_tc-{{ prefix|default:"__prefix__" }}-wavedrom" class="nowrap d-none" style="overflow-x: auto">
-      <script type="WaveDrom">
-        { signal : [
-          { name: "clk",  wave: "p......" },
-          { name: "bus",  wave: "x.34.5x",   data: "head body tail" },
-          { name: "wire", wave: "0.1..0." },
-        ]}
-      </script>
-    </div>
 
     <!-- time and memory limit inputs -->
     <div class="{% if code %}row{% else %}col-3{% endif %}">
@@ -192,6 +181,20 @@
       </div>
     </div>
   </div>
+  <label for="id_tc-{{ prefix|default:"__prefix__" }}-wavedrom">Expected Output</label>
+  <!-- wavedrom -->
+  <div id="id_tc-{{ prefix|default:"__prefix__" }}-wavedrom" class="nowrap d-none" style="overflow-x: auto">
+    <script type="WaveDrom">
+      { signal : []}
+    </script>
+  </div>
+  <div class="d-flex justify-content-between mt-2">
+    <button type="button" id="id_tc-{{ prefix|default:"__prefix__" }}-button" class="btn btn-sm btn-warning" onclick="generateOutput(this)">Generate Output</button>
+    <div>
+      <span class="h5" id="run-status">Ready</span>
+      <div class="spinner-border spinner-border-sm ms-2" id="main-loading" style="display:none;"></div>
+    </div>
+  </div>
   <div class="mt-1">
     <hr>
   </div>
@@ -239,6 +242,9 @@
 
     <!-- Generate output button -->
     <script>
+      const runStatus = $("#run-status");
+      const mainLoading = $("#main-loading");
+
       const generateOutput = (elem) => {
         const editor = ace.edit("sol_editor");
         const button_id = elem.id;
@@ -247,6 +253,9 @@
 
         const file1 = document.getElementById(stdin_id).value;
         const file2 = editor.getValue();
+
+        mainLoading.show();
+        runStatus.html('Compiling...');
 
         $.ajax({
           type: "POST",
@@ -280,19 +289,30 @@
                         updateOutput(token, index);
                     }, 1000);
                 } else { // finished
-                      const e = document.getElementById(`InputJSON_${index}`);
-                      
-                      // Update the input element's value with the wavedrom value
-                      e.innerHTML = res.data.stdout;
-                      WaveDrom.RenderWaveForm(index, WaveDrom.eva(`InputJSON_${index}`), "WaveDrom_Display_")
+                  if (res.data.status_id === 3)
+                    runStatus.html('Successful');
+                  else
+                    runStatus.html(res.data.status + " &#x274C;");
 
-                      // Show the wavedrom div
-                      const wavedrom_div = document.getElementById(`id_tc-${index}-wavedrom`);
-                      wavedrom_div.classList.remove("d-none");
+                  mainLoading.hide();
 
-                      // Set the output value
-                      const output = document.getElementById(`id_tc-${index}-stdout`);
-                      output.value = res.data.stdout;
+                  if (res.data.status_id === 3 | res.data.status_id === 4) {
+                    const e = document.getElementById(`InputJSON_${index}`);
+                    
+                    // Update the input element's value with the wavedrom value
+                    e.innerHTML = res.data.stdout;
+                    WaveDrom.RenderWaveForm(index, WaveDrom.eva(`InputJSON_${index}`), "WaveDrom_Display_")
+
+                    // Show the wavedrom div
+                    const wavedrom_div = document.getElementById(`id_tc-${index}-wavedrom`);
+                    wavedrom_div.classList.remove("d-none");
+
+                    // Set the output value
+                    const output = document.getElementById(`id_tc-${index}-stdout`);
+                    output.value = res.data.stdout;
+                  } else {
+                    showError(res.data.stdout);
+                  }
                 }
             }
         }).fail((jqXHR, textStatus, errorThrown) => {

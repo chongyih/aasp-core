@@ -45,7 +45,7 @@ services:
       - rabbitmq
 
   judge0_server:
-    image: chuachongyih/aasp-judge0:1.0.0
+    image: chuachongyih/aasp-judge0:1.1.0
     volumes:
       - ./config/judge0/judge0.conf:/judge0.conf:ro
     privileged: true
@@ -55,7 +55,7 @@ services:
       - judge0_redis
 
   judge0_worker:
-    image: chuachongyih/aasp-judge0:1.0.0
+    image: chuachongyih/aasp-judge0:1.1.0
     command: [ "./scripts/workers" ]
     volumes:
       - ./config/judge0/judge0.conf:/judge0.conf:ro

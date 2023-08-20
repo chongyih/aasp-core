@@ -123,6 +123,8 @@ const mouseClickHandler = (deso, els, pstate) => {
   }
   document.getElementById('shift-left').addEventListener('click', handler2);
   document.getElementById('shift-right').addEventListener('click', handler2);
+  document.getElementById('jump-beginning').addEventListener('click', handler2);
+  document.getElementById('jump-end').addEventListener('click', handler2);
   document.getElementById('zoom-in').addEventListener('click', handler2);
   document.getElementById('zoom-out').addEventListener('click', handler2);
   document.getElementById('zoom-reset').addEventListener('click', handler2);
@@ -134,12 +136,11 @@ const updateValueCol = (deso, els, xTime, pstate) => {
     const ref = item.ref;
 
     if (ref) {
-      const xx = ((xTime - pstate.xOffset) / pstate.xScale) * pstate.tgcd;
+      const xx = ((xTime - pstate.xOffset) / pstate.xScale);
       const matchingWaveValues = deso.chango[ref].wave.filter((wave) => wave[0] <= xx).at(-1);
-
       // check if the value is not X
       if (matchingWaveValues && !matchingWaveValues[2]) {
-        values.push(['span', {class: 'wd-value'}, matchingWaveValues[1]]);
+        values.push(['span', {class: 'wd-value'}, matchingWaveValues[1].toString(16)]);
       } else {
         values.push(['span', {class: 'wd-value'}, 'X']);
       }

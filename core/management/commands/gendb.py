@@ -140,7 +140,7 @@ def create_code_question():
         stdin='sample in',
         stdout='sample out',
         time_limit=10,
-        memory_limit=20480,
+        memory_limit=40960,
         score=0,
         hidden=False,
         sample=True,
@@ -151,7 +151,7 @@ def create_code_question():
         stdin='in1',
         stdout='out1',
         time_limit=10,
-        memory_limit=20480,
+        memory_limit=40960,
         score=5,
         hidden=False,
     )
@@ -161,7 +161,7 @@ def create_code_question():
         stdin='in2',
         stdout='out2',
         time_limit=10,
-        memory_limit=20480,
+        memory_limit=40960,
         score=5
     )
 

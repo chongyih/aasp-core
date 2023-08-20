@@ -84,7 +84,14 @@ class CodeQuestion(models.Model):
         return Language.objects.filter(codesnippet__code_question=self)
     
     def is_software_language(self):
-        return Language.objects.filter(codesnippet__code_question=self, software_language=True).exists()
+        """
+        Sets software language as default language if no language is set.
+        """
+        language_exists = Language.objects.filter(codesnippet__code_question=self).exists()
+        if language_exists:
+            return Language.objects.filter(codesnippet__code_question=self).first().software_language
+        else:
+            return True
 
 class CodeSnippet(models.Model):
     class Meta:

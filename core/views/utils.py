@@ -206,15 +206,15 @@ def construct_judge0_params(request, test_case) -> dict:
                     main = test_case.stdin
                 elif test_case.stdin.find('initial') != -1:
                     # add wave dump to last line before endmodule
-                    testbench = request.POST.get('code')
-                    main = test_case.stdin.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
+                    main = request.POST.get('code')
+                    testbench = test_case.stdin.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
     
         # create zip file
         with zipfile.ZipFile('submission.zip', 'w') as zip_file:
-            zip_file.writestr('main.v', main)
+            zip_file.writestr('main.v', embed_inout(main))
             zip_file.writestr('testbench.v', testbench)
             zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
-            zip_file.writestr('run', "vvp -n a.out | find -name '*.vcd' -exec python3 -m vcd2wavedrom.vcd2wavedrom -i {} + | tr -d '[:space:]'")
+            zip_file.writestr('run', "vvp -n a.out | find -name '*.vcd' -exec python3 -m vcd2wavedrom.vcd2wavedrom --aasp -i {} + | tr -d '[:space:]'")
         
         # encode zip file
         with open('submission.zip', 'rb') as f:
@@ -231,6 +231,45 @@ def construct_judge0_params(request, test_case) -> dict:
         }
     
     return params
+
+def embed_inout(module_code):
+    """
+    Find the inputs and outputs of a module and embed in_ and out_ in front of signal names to identify them easily.
+    """
+    # Define regular expressions to find input and output ports
+    input_pattern = re.compile(r'\binput\s+\[?.*?\]?\s*([\w,\s]+);')
+    output_pattern = re.compile(r'\boutput\s+\[?.*?\]?\s*([\w,\s]+);')
+
+    # Find input and output port names using regular expressions
+    input_ports_find = input_pattern.findall(module_code)
+    output_ports_find = output_pattern.findall(module_code)
+
+    # Combine multiple patterns into one
+    port_pattern = re.compile(r'(\w+)\s+([\[\]\d:]+\s+)?(\w+)\s*')
+    ports_find = port_pattern.findall(module_code)
+
+    if len(input_ports_find) == 0 and len(output_ports_find) == 0 and len(ports_find) == 0:
+        return module_code
+
+    # Extract individual port names from the combined pattern results
+    input_ports = [port[2] for port in ports_find if port[0] == 'input']
+    output_ports = [port[2] for port in ports_find if port[0] == 'output']
+
+    # Combine ports from multiple sources
+    input_ports.extend([port.strip() for ports in input_ports_find for port in ports.split(',')])
+    output_ports.extend([port.strip() for ports in output_ports_find for port in ports.split(',')])
+
+    # Add 'in_' prefix to input port names
+    renamed_input_ports = ['in_' + port.strip() for port in input_ports]
+
+    # Add 'out_' prefix to output port names
+    renamed_output_ports = ['out_' + port.strip() for port in output_ports]
+
+    # Replace input and output port names in module code
+    for old_port, new_port in zip(input_ports + output_ports, renamed_input_ports + renamed_output_ports):
+        module_code = re.sub(r'\b' + re.escape(old_port) + r'\b', new_port, module_code)
+
+    return module_code
 
 def generate_testbench(module_code):
     test_bench = ""

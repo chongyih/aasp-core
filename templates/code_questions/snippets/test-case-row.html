@@ -298,9 +298,16 @@
 
                   if (res.data.status_id === 3 | res.data.status_id === 4) {
                     const e = document.getElementById(`InputJSON_${index}`);
-                    
+
+                    let wavedrom = JSON.parse(res.data.stdout)
+                    wavedrom.signal = wavedrom.signal.map(signal => {
+                      const nameWithoutPrefix = signal.name.replace(/^in_|^out_/, "");
+                      signal.name = nameWithoutPrefix;
+                      return signal;
+                    });
+
                     // Update the input element's value with the wavedrom value
-                    e.innerHTML = res.data.stdout;
+                    e.innerHTML = JSON.stringify(wavedrom);
                     WaveDrom.RenderWaveForm(index, WaveDrom.eva(`InputJSON_${index}`), "WaveDrom_Display_")
 
                     // Show the wavedrom div

@@ -21,7 +21,7 @@ from core.forms.question_banks import CodeQuestionForm
 from core.models import QuestionBank, Assessment, CodeQuestion
 from core.models.questions import TestCase, CodeSnippet, Language, Tag
 from core.serializers import CodeQuestionsSerializer
-from core.views.utils import check_permissions_course, check_permissions_code_question, generate_testbench
+from core.views.utils import check_permissions_course, check_permissions_code_question, embed_inout, generate_testbench
 
 
 @login_required()
@@ -319,15 +319,15 @@ def compile_code(request):
                         main = file2
                     elif file2.stdin.find('initial') != -1:
                         # add wave dump to last line before endmodule
-                        testbench = file1
-                        main = file2.stdin.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
-
+                        main = file1
+                        testbench = file2.stdin.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
+            
             # create zip file
             with zipfile.ZipFile('submission.zip', 'w') as zip_file:
-                zip_file.writestr('main.v', main)
+                zip_file.writestr('main.v', embed_inout(main))
                 zip_file.writestr('testbench.v', testbench)
                 zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
-                zip_file.writestr('run', "vvp -n a.out | find -name '*.vcd' -exec python3 -m vcd2wavedrom.vcd2wavedrom -i {} + | tr -d '[:space:]'")
+                zip_file.writestr('run', "vvp -n a.out | find -name '*.vcd' -exec python3 -m vcd2wavedrom.vcd2wavedrom --aasp -i {} + | tr -d '[:space:]'")
             
             # encode zip file
             with open('submission.zip', 'rb') as f:

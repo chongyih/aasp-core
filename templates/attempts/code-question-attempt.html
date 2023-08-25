@@ -459,20 +459,86 @@
           }
       };
 
-      // function that sets the language and code snippet
-      const setLanguage = () => {
-          // get the selected option
-          const selected = langSelect.find("option:selected");
-          // set the code snippet
-          editor.session.setValue(selected.data('code'));
-          // set ace mode
-          editor.session.setMode("ace/mode/" + selected.data('ace-mode'));
+	  const updatePorts = () => {
+		return
 
-          updateReadonlyRanges();
-      };
+		// get the selected option
+		const selected = langSelect.find("option:selected")
 
-      // set language on first load
-      setLanguage();
+		// get module header
+		const wavedrom = JSON.parse('{{ sample_tc.stdout|safe }}')
+
+		// iterate through all signals
+		let module_header = ""
+		wavedrom.signal.forEach((signal, index) => {
+			// Determine whether it's an input or output based on the signal name
+			const direction = signal.name.startsWith("in_") ? "input" : "output"
+			// Remove the 'in_' or 'out_' prefix from the signal name
+			const portName = signal.name.replace(/^(in_|out_)/, "")
+
+			// Handle bus declarations
+			const busMatch = portName.match(/^(.+)\[(\d+):(\d+)\]$/)
+			if (busMatch) {
+				const busName = busMatch[1]
+				const msb = busMatch[2]
+				const lsb = busMatch[3]
+				module_header += `${direction} [${msb}:${lsb}] ${busName}`
+			} else {
+				module_header += `${direction} ${portName}`
+			}
+
+			// Add a comma for all but the last port declaration
+			if (index !== wavedrom.signal.length - 1) {
+				module_header += ", "
+			}
+		})
+
+		if (module_header) {
+			// add read only ranges for module header
+			module_header = `// ro-start \nmodule top (${module_header});\n// ro-end`
+
+			// set the code snippet
+			lines = selected.data("code").split("\n")
+			lines[0] = module_header
+			editor.session.setValue(lines.join("\n"))
+		}
+	}
+
+	// function that sets the language and code snippet
+	const setLanguage = () => {
+		// get the selected option
+		const selected = langSelect.find("option:selected")
+		// set the code snippet
+		editor.session.setValue(selected.data("code"))
+		//"{{ is_software_language }}" === "False" ? updatePorts() : editor.session.setValue(selected.data("code"))
+		// set ace mode
+		editor.session.setMode("ace/mode/" + selected.data("ace-mode"))
+
+		updateReadonlyRanges()
+	}
+
+	// set language on first load
+	setLanguage()
+
+	// when language dropdown changed
+	langSelect.change(function () {
+		setLanguage()
+	})
+
+	window.addEventListener("load", function () {
+		let wavedrom = JSON.parse('{{ sample_tc.stdout|safe }}')
+		wavedrom.signal = wavedrom.signal.map((signal) => {
+			const nameWithoutPrefix = signal.name.replace(/^in_|^out_/, "")
+			signal.name = nameWithoutPrefix
+			return signal
+		})
+
+		const e = document.getElementById("InputJSON_0")
+		e.innerHTML = JSON.stringify(wavedrom)
+
+		// Render the updated waveform
+		WaveDrom.RenderWaveForm(0, WaveDrom.eva("InputJSON_0"), "WaveDrom_Display_")
+	})
 
       // when language dropdown changed
       langSelect.change(function () {
@@ -674,18 +740,6 @@
                       if ((res.data.status_id === 3 | res.data.status_id === 4) && '{{ is_software_language }}' === 'False') {
                         waveformBtn.data('vcd', res.data.vcd_output);
 
-                        $.ajax({
-                          type: 'POST',
-                          url: "{% url 'vcd2wavedrom' %}",
-                          data: {'vcd': res.data.vcd_output, csrfmiddlewaretoken: "{{ csrf_token }}"},
-                        }).done((res, textStatus, jqXHR) => {
-                          const e = document.getElementById('InputJSON_0');
-                          
-                          // Update the input element's value with the wavedrom value
-                          e.innerHTML = JSON.stringify(res.wavedrom);
-                          WaveDrom.EditorRefresh();
-                        })
-
                         // show waveform button
                         waveformBtn.removeClass('d-none');
                       }
@@ -746,6 +800,100 @@
         });
       }
 
+	  const compareWaveform = (expectedWave, studentWave) => {
+		const expectedSignals = JSON.parse(expectedWave).signal
+		const studentSignals = JSON.parse(studentWave).signal
+
+		const expectedOutput = expectedSignals.filter((signal) => signal.name.startsWith('out_'))
+		const studentOutput = studentSignals.filter((signal) => signal.name.startsWith('out_'))
+
+		const groupedSignals = {signal: [['Input'], {}, ['Yours'], {}, ['Ref'], {}, {'name': 'Mismatch', 'wave': ''}], foot: {tick: 0, every: 5} }
+
+		// Generate mismatch signal
+		expectedOutput.forEach((signal, index) => {
+		  const mismatch = generateMismatch(expectedOutput[index], studentOutput[index])
+		  groupedSignals.signal[6]['wave'] = mismatch
+		})
+
+		// Group signals by input and output
+		expectedSignals.forEach((signal) => {
+		  const direction = signal.name.startsWith('in_') ? 'Input' : 'Yours';
+		  signal.name = signal.name.replace(/^(in_|out_)/, '');
+		  groupedSignals.signal[direction === 'Input' ? 0 : 2].push(signal);
+		})
+
+		studentSignals.forEach((signal) => {
+		  const direction = signal.name.startsWith('in_') ? 'Input' : 'Ref';
+		  signal.name = signal.name.replace(/^(in_|out_)/, '');
+		  direction === 'Ref' ? groupedSignals.signal[4].push(signal) : null;
+		})
+
+		return JSON.stringify(groupedSignals)
+	  }
+
+	  const generateMismatch = (expectedOutput, studentOutput) => {
+		// compare the two outputs
+		const expectedWave = expectedOutput.wave
+		const studentWave = studentOutput.wave
+		const expectedData = expectedOutput.data
+		const studentData = studentOutput.data
+
+		const mismatch = {'name': 'Mismatch'}
+		let mismatchWave = ''
+		let counter = 0 // counter to track data index
+		let currentMismatch = 'low'
+
+		let expectedArr = []
+		let studentArr = []
+
+		// convert all '.' to previous value
+		expectedWave.split('').forEach((char, index) => {
+		  if (char === '.') {
+			expectedArr.push(expectedArr[index - 1])
+		  } else if (char === '=') {
+			expectedArr.push(expectedData[counter])
+			counter++
+		  } else {
+			expectedArr.push(char)
+		  }
+		})
+
+		counter = 0
+
+		studentWave.split('').forEach((char, index) => {
+		  if (char === '.') {
+			studentArr.push(studentArr[index - 1])
+		  } else if (char === '=') {
+			studentArr.push(studentData[counter])
+			counter++
+		  } else {
+			studentArr.push(char)
+		  }
+		})
+
+		console.log(expectedWave)
+		console.log(expectedArr)
+
+		console.log(studentWave)
+		console.log(studentArr)
+
+		// compare the two strings to generate mismatch
+		for (let i = 0; i < expectedArr.length; i++) {
+			if (expectedArr[i] === 'x' || studentArr[i] === 'x') {
+				i === 0 ? mismatchWave += 'l' : currentMismatch === 'low' ? mismatchWave += '.' : mismatchWave += 'l'
+				currentMismatch = 'low'
+			} else if (expectedArr[i] === studentArr[i]) {
+			i === 0 ? mismatchWave += 'l' : currentMismatch === 'low' ? mismatchWave += '.' : mismatchWave += 'l'
+			currentMismatch = 'low'
+			} else {
+			i === 0 ? mismatchWave += 'h' : currentMismatch === 'high' ? mismatchWave += '.' : mismatchWave += 'h'
+			currentMismatch = 'high'
+			}
+		}
+
+		return mismatchWave
+	  }
+
       // "More Details" or "Test Case x" clicked (opens modal)
       const viewModal = (btn) => {
           // get token
@@ -772,13 +920,10 @@
                     modalExpectedOutput.html(res.data.expected_output ? res.data.expected_output : '&nbsp;');
                   } else {
                     const modalWavedrom = document.getElementById(`InputJSON_1`);
-                    const modalWavedrom2 = document.getElementById("InputJSON_2");
+					const wavedrom = compareWaveform(res.data.expected_output, res.data.stdout)
 
-                    modalWavedrom.innerHTML = res.data.stdout;
-                    modalWavedrom2.innerHTML = res.data.expected_output;
-
-                    WaveDrom.RenderWaveForm(1, WaveDrom.eva(`InputJSON_1`), "WaveDrom_Display_")
-                    WaveDrom.RenderWaveForm(2, WaveDrom.eva(`InputJSON_2`), "WaveDrom_Display_")
+					modalWavedrom.innerHTML = wavedrom;
+					WaveDrom.RenderWaveForm(1, WaveDrom.eva(`InputJSON_1`), "WaveDrom_Display_")
                   }
 
                   setTimeout(() => {

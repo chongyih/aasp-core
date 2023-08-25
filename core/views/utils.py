@@ -208,10 +208,32 @@ def construct_judge0_params(request, test_case) -> dict:
                     # add wave dump to last line before endmodule
                     main = request.POST.get('code')
                     testbench = test_case.stdin.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
-    
+            else:
+                # Define the regular expression patterns
+                dumpfile_pattern = r'\$dumpfile\("[^"]+"\)'
+                dumpvars_pattern = r'\$dumpvars\(\d+\)'
+
+                # Replacement strings
+                new_dumpfile = '$dumpfile("vcd_dump.vcd")'
+                new_dumpvars = '$dumpvars(0)'
+
+                if request.POST.get('code').find('initial') != -1:
+                    # replace wave dump
+                    testbench = re.sub(dumpfile_pattern, new_dumpfile, request.POST.get('code'))
+                    testbench = re.sub(dumpvars_pattern, new_dumpvars, testbench)
+                    main = test_case.stdin
+                elif test_case.stdin.find('initial') != -1:
+                    # replace wave dump
+                    testbench = re.sub(dumpfile_pattern, new_dumpfile, test_case.stdin)
+                    testbench = re.sub(dumpvars_pattern, new_dumpvars, testbench)
+                    main = request.POST.get('code')
+
+        main, input_ports, output_ports = embed_inout_module(main)
+        testbench = embed_inout_testbench(testbench, input_ports, output_ports)
+        
         # create zip file
         with zipfile.ZipFile('submission.zip', 'w') as zip_file:
-            zip_file.writestr('main.v', embed_inout(main))
+            zip_file.writestr('main.v', main)
             zip_file.writestr('testbench.v', testbench)
             zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
             zip_file.writestr('run', "vvp -n a.out | find -name '*.vcd' -exec python3 -m vcd2wavedrom.vcd2wavedrom --aasp -i {} + | tr -d '[:space:]'")
@@ -232,7 +254,7 @@ def construct_judge0_params(request, test_case) -> dict:
     
     return params
 
-def embed_inout(module_code):
+def embed_inout_module(module_code):
     """
     Find the inputs and outputs of a module and embed in_ and out_ in front of signal names to identify them easily.
     """
@@ -269,7 +291,14 @@ def embed_inout(module_code):
     for old_port, new_port in zip(input_ports + output_ports, renamed_input_ports + renamed_output_ports):
         module_code = re.sub(r'\b' + re.escape(old_port) + r'\b', new_port, module_code)
 
-    return module_code
+    return module_code, input_ports, output_ports
+
+def embed_inout_testbench(testbench_code, input_ports, output_ports):
+    # Replace input and output port names in testbench code
+    for old_port, new_port in zip(input_ports + output_ports, ['in_' + port.strip() for port in input_ports] + ['out_' + port.strip() for port in output_ports]):
+        testbench_code = re.sub(r'\b' + re.escape(old_port) + r'\b', new_port, testbench_code)
+    
+    return testbench_code
 
 def generate_testbench(module_code):
     test_bench = ""

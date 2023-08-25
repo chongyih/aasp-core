@@ -1,3 +1,4 @@
+import re
 import zipfile
 import base64
 import os
@@ -21,7 +22,7 @@ from core.forms.question_banks import CodeQuestionForm
 from core.models import QuestionBank, Assessment, CodeQuestion
 from core.models.questions import TestCase, CodeSnippet, Language, Tag
 from core.serializers import CodeQuestionsSerializer
-from core.views.utils import check_permissions_course, check_permissions_code_question, embed_inout, generate_testbench
+from core.views.utils import check_permissions_course, check_permissions_code_question, embed_inout_module, embed_inout_testbench, generate_testbench
 
 
 @login_required()
@@ -321,14 +322,38 @@ def compile_code(request):
                         # add wave dump to last line before endmodule
                         main = file1
                         testbench = file2.stdin.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
+                else:
+                    # Define the regular expression patterns
+                    dumpfile_pattern = r'\$dumpfile\("[^"]+"\)'
+                    dumpvars_pattern = r'\$dumpvars\(\d+\)'
+
+                    # Replacement strings
+                    new_dumpfile = '$dumpfile("vcd_dump.vcd")'
+                    new_dumpvars = '$dumpvars(0)'
+
+                    if file1.find('initial') != -1:
+                        # replace wave dump
+                        testbench = re.sub(dumpfile_pattern, new_dumpfile, file1)
+                        testbench = re.sub(dumpvars_pattern, new_dumpvars, testbench)
+                        main = file2
+                    elif file2.find('initial') != -1:
+                        # replace wave dump
+                        testbench = re.sub(dumpfile_pattern, new_dumpfile, file2)
+                        testbench = re.sub(dumpvars_pattern, new_dumpvars, testbench)
+                        main = file1
+
+            main, input_ports, output_ports = embed_inout_module(main)
+            testbench = embed_inout_testbench(testbench, input_ports, output_ports)
             
             # create zip file
             with zipfile.ZipFile('submission.zip', 'w') as zip_file:
-                zip_file.writestr('main.v', embed_inout(main))
+                zip_file.writestr('main.v', main)
                 zip_file.writestr('testbench.v', testbench)
                 zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
                 zip_file.writestr('run', "vvp -n a.out | find -name '*.vcd' -exec python3 -m vcd2wavedrom.vcd2wavedrom --aasp -i {} + | tr -d '[:space:]'")
             
+            print(main)
+            print(testbench)
             # encode zip file
             with open('submission.zip', 'rb') as f:
                 encoded = base64.b64encode(f.read()).decode('utf-8')
@@ -338,7 +363,7 @@ def compile_code(request):
                 "additional_files": encoded,
                 "language_id": request.POST.get('lang-id'),
             }
-
+            
             # call judge0
             try:
                 url = settings.JUDGE0_URL + "/submissions/?base64_encoded=false&wait=false"

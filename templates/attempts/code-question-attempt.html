@@ -637,6 +637,7 @@
       const modalStdout = $("#m-stdout");
       const modalExpectedOutput = $("#m-expected-output");
       const modalOutcome = $("#m-outcome");
+      const modalAccordion = $("#m-accordion")
 
       // vcdrom modal elements
       const vcdromModal = $("#vcdromModal");
@@ -800,99 +801,105 @@
         });
       }
 
-	  const compareWaveform = (expectedWave, studentWave) => {
-		const expectedSignals = JSON.parse(expectedWave).signal
-		const studentSignals = JSON.parse(studentWave).signal
+      const compareWaveform = (expectedWave, studentWave) => {
+        const expectedSignals = JSON.parse(expectedWave).signal
+        const studentSignals = JSON.parse(studentWave).signal
 
-		const expectedOutput = expectedSignals.filter((signal) => signal.name.startsWith('out_'))
-		const studentOutput = studentSignals.filter((signal) => signal.name.startsWith('out_'))
+        const expectedOutput = expectedSignals.filter((signal) => signal.name.startsWith('out_'))
+        const studentOutput = studentSignals.filter((signal) => signal.name.startsWith('out_'))
 
-		const groupedSignals = {signal: [['Input'], {}, ['Yours'], {}, ['Ref'], {}, {'name': 'Mismatch', 'wave': ''}], foot: {tick: 0, every: 5} }
+        const waveformGroups = []
 
-		// Generate mismatch signal
-		expectedOutput.forEach((signal, index) => {
-		  const mismatch = generateMismatch(expectedOutput[index], studentOutput[index])
-		  groupedSignals.signal[6]['wave'] = mismatch
-		})
+        // Generate mismatch signal
+        expectedOutput.forEach((signal, index) => {
+          const mismatch = generateMismatch(expectedOutput[index], studentOutput[index])
+          const groupedSignals = {signal: [['Input'], {}, ['Yours'], {}, ['Ref'], {}, {'name': 'Mismatch', 'wave': ''}], foot: {tick: 0, every: 5} }
+          groupedSignals.signal[6]['wave'] = mismatch
+          waveformGroups.push(groupedSignals)
+        })
 
-		// Group signals by input and output
-		expectedSignals.forEach((signal) => {
-		  const direction = signal.name.startsWith('in_') ? 'Input' : 'Yours';
-		  signal.name = signal.name.replace(/^(in_|out_)/, '');
-		  groupedSignals.signal[direction === 'Input' ? 0 : 2].push(signal);
-		})
+        expectedOutput.forEach((signal, index) => {
+          signal.name = signal.name.replace(/^(out_)/, '');
+          waveformGroups[index].signal[4].push(signal);
+        })
 
-		studentSignals.forEach((signal) => {
-		  const direction = signal.name.startsWith('in_') ? 'Input' : 'Ref';
-		  signal.name = signal.name.replace(/^(in_|out_)/, '');
-		  direction === 'Ref' ? groupedSignals.signal[4].push(signal) : null;
-		})
+        // Group signals by input and output
+        expectedSignals.forEach((signal) => {
+          const direction = signal.name.startsWith('in_') ? 'Input' : 'Yours';
+          signal.name = signal.name.replace(/^(in_|out_)/, '');
 
-		return JSON.stringify(groupedSignals)
-	  }
+          if (direction === 'Input') {
+            // Push to every waveform group
+            waveformGroups.forEach((group) => {
+              group.signal[0].push(signal)
+            })
+          }
+        })
 
-	  const generateMismatch = (expectedOutput, studentOutput) => {
-		// compare the two outputs
-		const expectedWave = expectedOutput.wave
-		const studentWave = studentOutput.wave
-		const expectedData = expectedOutput.data
-		const studentData = studentOutput.data
+        studentOutput.forEach((signal, index) => {
+          signal.name = signal.name.replace(/^(out_)/, '');
+          waveformGroups[index].signal[2].push(signal)
+        })
 
-		const mismatch = {'name': 'Mismatch'}
-		let mismatchWave = ''
-		let counter = 0 // counter to track data index
-		let currentMismatch = 'low'
+        return waveformGroups
+      }
 
-		let expectedArr = []
-		let studentArr = []
+      const generateMismatch = (expectedOutput, studentOutput) => {
+        // compare the two outputs
+        const expectedWave = expectedOutput.wave
+        const studentWave = studentOutput.wave
+        const expectedData = expectedOutput.data
+        const studentData = studentOutput.data
 
-		// convert all '.' to previous value
-		expectedWave.split('').forEach((char, index) => {
-		  if (char === '.') {
-			expectedArr.push(expectedArr[index - 1])
-		  } else if (char === '=') {
-			expectedArr.push(expectedData[counter])
-			counter++
-		  } else {
-			expectedArr.push(char)
-		  }
-		})
+        const mismatch = {'name': 'Mismatch'}
+        let mismatchWave = ''
+        let counter = 0 // counter to track data index
+        let currentMismatch = 'low'
 
-		counter = 0
+        let expectedArr = []
+        let studentArr = []
 
-		studentWave.split('').forEach((char, index) => {
-		  if (char === '.') {
-			studentArr.push(studentArr[index - 1])
-		  } else if (char === '=') {
-			studentArr.push(studentData[counter])
-			counter++
-		  } else {
-			studentArr.push(char)
-		  }
-		})
+        // convert all '.' to previous value
+        expectedWave.split('').forEach((char, index) => {
+          if (char === '.') {
+          expectedArr.push(expectedArr[index - 1])
+          } else if (char === '=') {
+          expectedArr.push(expectedData[counter])
+          counter++
+          } else {
+          expectedArr.push(char)
+          }
+        })
 
-		console.log(expectedWave)
-		console.log(expectedArr)
+        counter = 0
 
-		console.log(studentWave)
-		console.log(studentArr)
+        studentWave.split('').forEach((char, index) => {
+          if (char === '.') {
+          studentArr.push(studentArr[index - 1])
+          } else if (char === '=') {
+          studentArr.push(studentData[counter])
+          counter++
+          } else {
+          studentArr.push(char)
+          }
+        })
 
-		// compare the two strings to generate mismatch
-		for (let i = 0; i < expectedArr.length; i++) {
-			if (expectedArr[i] === 'x' || studentArr[i] === 'x') {
-				i === 0 ? mismatchWave += 'l' : currentMismatch === 'low' ? mismatchWave += '.' : mismatchWave += 'l'
-				currentMismatch = 'low'
-			} else if (expectedArr[i] === studentArr[i]) {
-			i === 0 ? mismatchWave += 'l' : currentMismatch === 'low' ? mismatchWave += '.' : mismatchWave += 'l'
-			currentMismatch = 'low'
-			} else {
-			i === 0 ? mismatchWave += 'h' : currentMismatch === 'high' ? mismatchWave += '.' : mismatchWave += 'h'
-			currentMismatch = 'high'
-			}
-		}
+        // compare the two strings to generate mismatch
+        for (let i = 0; i < expectedArr.length; i++) {
+          if (expectedArr[i] === 'x' || studentArr[i] === 'x') {
+            i === 0 ? mismatchWave += 'l' : currentMismatch === 'low' ? mismatchWave += '.' : mismatchWave += 'l'
+            currentMismatch = 'low'
+          } else if (expectedArr[i] === studentArr[i]) {
+          i === 0 ? mismatchWave += 'l' : currentMismatch === 'low' ? mismatchWave += '.' : mismatchWave += 'l'
+          currentMismatch = 'low'
+          } else {
+          i === 0 ? mismatchWave += 'h' : currentMismatch === 'high' ? mismatchWave += '.' : mismatchWave += 'h'
+          currentMismatch = 'high'
+          }
+        }
 
-		return mismatchWave
-	  }
+        return mismatchWave
+      }
 
       // "More Details" or "Test Case x" clicked (opens modal)
       const viewModal = (btn) => {
@@ -919,11 +926,36 @@
                     modalStdout.html(res.data.stdout ? res.data.stdout : '&nbsp;');
                     modalExpectedOutput.html(res.data.expected_output ? res.data.expected_output : '&nbsp;');
                   } else {
-                    const modalWavedrom = document.getElementById(`InputJSON_1`);
-					const wavedrom = compareWaveform(res.data.expected_output, res.data.stdout)
+                    if (res.data.stdout) {
+                      // show waveforms
+                      modalAccordion.removeClass("d-none")
 
-					modalWavedrom.innerHTML = wavedrom;
-					WaveDrom.RenderWaveForm(1, WaveDrom.eva(`InputJSON_1`), "WaveDrom_Display_")
+                      const wavedromGroups = compareWaveform(res.data.expected_output, res.data.stdout)
+
+                      wavedromGroups.forEach((wavedrom, index) => {
+                        // update accordion header
+                        const accordionHeader = document.getElementById(`waveformHeading${index + 1}`);
+                        const accordionButton = accordionHeader.querySelector('.accordion-button');
+                        let title
+
+                        if (wavedrom.signal[6].wave.includes('h'))
+                          title = `${wavedrom.signal[2][1].name}<span style="margin-left: 30px">&#x274C;</span>`
+                        else
+                          title = `${wavedrom.signal[2][1].name}<span style="margin-left: 30px">&#x2705;</span>`
+                        
+                        accordionButton.innerHTML = title;
+
+                        // update waveform
+                        const modalWavedrom = document.getElementById(`InputJSON_${index + 1}`)
+                        modalWavedrom.innerHTML = JSON.stringify(wavedrom)
+                        WaveDrom.RenderWaveForm(index + 1, WaveDrom.eva(`InputJSON_${index + 1}`), "WaveDrom_Display_")
+                      })
+                    } else {
+                      // hide waveforms
+                      modalAccordion.addClass("d-none")
+
+                      // show error message
+                    }
                   }
 
                   setTimeout(() => {

@@ -238,6 +238,13 @@ def attempt_question(request, assessment_attempt_id, question_index):
             'code_question_submissions': code_question_submissions,
         })
 
+        # extract outputs if hardware language
+        if not question_attempt.code_question.is_software_language():
+            data = eval(sample_tc.stdout)
+            context.update({
+                'wavedrom_output': [signal['name'] for signal in data['signal'] if signal['name'].startswith('out_')]
+            })
+
         return render(request, "attempts/code-question-attempt.html", context)
 
     else:

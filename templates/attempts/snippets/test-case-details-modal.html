@@ -41,7 +41,7 @@
               </div>
             </div>
             {% else %}
-            <!-- Waveform evaluation -->
+            <!-- waveform evaluation -->
             <hr>
             <div class="row">
               <div class="col d-none" id="m-accordion">
@@ -68,6 +68,11 @@
                   {% endfor %}
                 </div>
               </div>
+            </div>
+            <!-- error -->
+            <div class="d-none" id="m-error">
+              <h6>Error</h6>
+              <pre><code class="language-plaintext rounded" id="m-error-msg"></code></pre>
             </div>
             {% endif %}
           </div>

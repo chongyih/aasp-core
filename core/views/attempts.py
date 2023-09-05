@@ -359,7 +359,7 @@ def get_tc_details(request):
                 elif vcd:
                     url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id,stdout,stderr,expected_output,vcd_output"
                 else:
-                    url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id,stdin,stdout,expected_output"
+                    url = f"{settings.JUDGE0_URL}/submissions/{token}?base64_encoded=false&fields=status_id,stdin,stdout,expected_output,compile_output"
 
                 res = requests.get(url)
                 data = res.json()

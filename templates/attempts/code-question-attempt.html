@@ -638,6 +638,8 @@
       const modalExpectedOutput = $("#m-expected-output");
       const modalOutcome = $("#m-outcome");
       const modalAccordion = $("#m-accordion")
+      const modalError = $("#m-error")
+      const modalErrorMsg = $("#m-error-msg")
 
       // vcdrom modal elements
       const vcdromModal = $("#vcdromModal");
@@ -930,6 +932,9 @@
                       // show waveforms
                       modalAccordion.removeClass("d-none")
 
+                      // hide error message
+                      modalError.addClass("d-none")
+
                       const wavedromGroups = compareWaveform(res.data.expected_output, res.data.stdout)
 
                       wavedromGroups.forEach((wavedrom, index) => {
@@ -950,11 +955,13 @@
                         modalWavedrom.innerHTML = JSON.stringify(wavedrom)
                         WaveDrom.RenderWaveForm(index + 1, WaveDrom.eva(`InputJSON_${index + 1}`), "WaveDrom_Display_")
                       })
-                    } else {
+                    } else if (res.data.status_id === 6) {  // compilation error
                       // hide waveforms
                       modalAccordion.addClass("d-none")
 
                       // show error message
+                      modalErrorMsg.html(res.data.compile_output)
+                      modalError.removeClass("d-none")
                     }
                   }
 

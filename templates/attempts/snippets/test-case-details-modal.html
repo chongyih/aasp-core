@@ -44,10 +44,13 @@
             <!-- waveform evaluation -->
             <hr>
             <div class="row">
-              <div class="col d-none" id="m-accordion">
+              <div class="col">
                 <h6>Timing diagrams for sample test case</h6>
+                <div class="d-none" id="m-hidden">
+                  <pre><code class="language-plaintext rounded">Hidden</code></pre>
+                </div>
                 <!-- Accordion -->
-                <div class="accordion" id="waveformAccordion">
+                <div class="accordion" id="m-accordion">
                   {% for output in wavedrom_output %}
                   <div class="accordion-item">
                       <h2 class="accordion-header" id="waveformHeading{{ forloop.counter }}">
@@ -68,11 +71,11 @@
                   {% endfor %}
                 </div>
               </div>
-            </div>
-            <!-- error -->
-            <div class="d-none" id="m-error">
-              <h6>Error</h6>
-              <pre><code class="language-plaintext rounded" id="m-error-msg"></code></pre>
+              <!-- error -->
+              <div class="d-none" id="m-error">
+                <h6>Error</h6>
+                <pre><code class="language-plaintext rounded" id="m-error-msg"></code></pre>
+              </div>
             </div>
             {% endif %}
           </div>

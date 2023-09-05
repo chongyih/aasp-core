@@ -279,6 +279,10 @@
     </div>
   </div>
 
+  {% include 'attempts/snippets/accordion-item-template.html' %}
+  {% include 'attempts/snippets/test-case-details-modal.html' %}
+  {% include 'attempts/snippets/vcd-viewer-modal.html' %}
+
   <!-- Tab switching warning modal -->
   <div class="modal fade" id="tab-modal" tabindex="-1">
     <div class="modal-dialog">
@@ -301,10 +305,6 @@
       </div>
     </div>
   </div>
-
-  {% include 'attempts/snippets/accordion-item-template.html' %}
-  {% include 'attempts/snippets/test-case-details-modal.html' %}
-  {% include 'attempts/snippets/vcd-viewer-modal.html' %}
 {% endblock %}
 
 {% block js %}
@@ -398,7 +398,16 @@
     }
 
     // limit tab switching (i.e. limit user moving away from assessment screen)
-    window.onblur = () => { handleTabSwitch(); }
+    window.onblur = (event) => { 
+      // check if switching is due to clicking on modal iframe
+      if (document.activeElement.id === 'modalIframe') {
+        document.getElementById('modalIframe').contentWindow.onblur = () => {
+          handleTabSwitch();
+        }
+      } else {
+        handleTabSwitch();
+      }
+    }
   </script>
   {% endif %}
 

@@ -208,6 +208,15 @@
           // update prefix
           $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
 
+          // update wavedrom id
+          $(cloned).find('[id^="WaveDrom_Display_"]').each(function() {
+            var id = $(this).attr('id').replace("WaveDrom_Display_", "");
+
+            $(cloned).find(`[id="WaveDrom_Display_${id}"]`).attr('id', `WaveDrom_Display_${totalForms - 1}`);
+            $(cloned).find(`[id="InputJSON_${id}"]`).attr('id', `InputJSON_${totalForms - 1}`);
+
+          });
+
           // append to container
           testCasesContainer.append(cloned);
 
@@ -232,10 +241,12 @@
           if (code)
               row_editor_{{totalForms}}.setValue(code);
 
+          const index = totalForms - 1;
+
           // Synchronize Ace editor content with the hidden input field
           row_editor_{{totalForms}}.getSession().on('change', function(){
-            var code = row_editor_{{totalForms}}.getValue();
-            document.getElementById(`id_tc-${totalForms - 1}-stdin`).value = code;
+            var code = row_editor_{{index}}.getValue();
+            document.getElementById(`id_tc-${index}-stdin`).value = code;
           });
 
           row_editor_{{totalForms}}.commands.on("afterExec", function (e) {

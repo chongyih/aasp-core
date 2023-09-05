@@ -504,74 +504,74 @@
 		}
 	}
 
-	// function that sets the language and code snippet
-	const setLanguage = () => {
-		// get the selected option
-		const selected = langSelect.find("option:selected")
-		// set the code snippet
-		editor.session.setValue(selected.data("code"))
-		//"{{ is_software_language }}" === "False" ? updatePorts() : editor.session.setValue(selected.data("code"))
-		// set ace mode
-		editor.session.setMode("ace/mode/" + selected.data("ace-mode"))
+    // function that sets the language and code snippet
+    const setLanguage = () => {
+      // get the selected option
+      const selected = langSelect.find("option:selected")
+      // set the code snippet
+      editor.session.setValue(selected.data("code"))
+      //"{{ is_software_language }}" === "False" ? updatePorts() : editor.session.setValue(selected.data("code"))
+      // set ace mode
+      editor.session.setMode("ace/mode/" + selected.data("ace-mode"))
 
-		updateReadonlyRanges()
-	}
+      updateReadonlyRanges()
+    }
 
-	// set language on first load
-	setLanguage()
+    // set language on first load
+    setLanguage()
 
-	// when language dropdown changed
-	langSelect.change(function () {
-		setLanguage()
-	})
+    // when language dropdown changed
+    langSelect.change(function () {
+      setLanguage()
+    })
 
-	window.addEventListener("load", function () {
-		let wavedrom = JSON.parse('{{ sample_tc.stdout|safe }}')
-		wavedrom.signal = wavedrom.signal.map((signal) => {
-			const nameWithoutPrefix = signal.name.replace(/^in_|^out_/, "")
-			signal.name = nameWithoutPrefix
-			return signal
-		})
+    window.addEventListener("load", function () {
+      let wavedrom = JSON.parse('{{ sample_tc.stdout|safe }}')
+      wavedrom.signal = wavedrom.signal.map((signal) => {
+        const nameWithoutPrefix = signal.name.replace(/^in_|^out_/, "")
+        signal.name = nameWithoutPrefix
+        return signal
+      })
 
-		const e = document.getElementById("InputJSON_0")
-		e.innerHTML = JSON.stringify(wavedrom)
+      const e = document.getElementById("InputJSON_0")
+      e.innerHTML = JSON.stringify(wavedrom)
 
-		// Render the updated waveform
-		WaveDrom.RenderWaveForm(0, WaveDrom.eva("InputJSON_0"), "WaveDrom_Display_")
-	})
+      // Render the updated waveform
+      WaveDrom.RenderWaveForm(0, WaveDrom.eva("InputJSON_0"), "WaveDrom_Display_")
+    })
 
-      // when language dropdown changed
-      langSelect.change(function () {
-          setLanguage();
-      });
+    // when language dropdown changed
+    langSelect.change(function () {
+        setLanguage();
+    });
 
-      // prevent action on read-only lines
-      editor.commands.on("exec", function (e) {
-          // ignore arrow keys commands
-          if (arrowCommands.includes(e.command.name))
-              return;
+    // prevent action on read-only lines
+    editor.commands.on("exec", function (e) {
+        // ignore arrow keys commands
+        if (arrowCommands.includes(e.command.name))
+            return;
 
-          const pos = editor.selection.getCursor();
-          readonlyRanges.forEach((readonlyRange) => {
-              if (readonlyRange.inside(pos.row, pos.column) || // cursor inside range (exclusive of start and end)
-                  readonlyRange.isEnd(pos.row, pos.column) && e.command.name === "backspace" ||  // cursor is at the end ( prevent backspace only)
-                  readonlyRange.isStart(pos.row, pos.column) ||  // cursor is at the start of the range
-                  !editor.getSelection().isEmpty() && editor.getSelectionRange().intersects(readonlyRange))  // prevent selection containing readonly area but ends in editable area
-              {
-                  e.preventDefault();
-                  e.stopPropagation();
-              }
-          });
-      });
+        const pos = editor.selection.getCursor();
+        readonlyRanges.forEach((readonlyRange) => {
+            if (readonlyRange.inside(pos.row, pos.column) || // cursor inside range (exclusive of start and end)
+                readonlyRange.isEnd(pos.row, pos.column) && e.command.name === "backspace" ||  // cursor is at the end ( prevent backspace only)
+                readonlyRange.isStart(pos.row, pos.column) ||  // cursor is at the start of the range
+                !editor.getSelection().isEmpty() && editor.getSelectionRange().intersects(readonlyRange))  // prevent selection containing readonly area but ends in editable area
+            {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        });
+    });
 
-      editor.commands.on("afterExec", function (e) {
-          // ignore arrow keys commands
-          if (arrowCommands.includes(e.command.name))
-              return;
-          updateReadonlyRanges();
-      });
+    editor.commands.on("afterExec", function (e) {
+        // ignore arrow keys commands
+        if (arrowCommands.includes(e.command.name))
+            return;
+        updateReadonlyRanges();
+    });
 
-      updateReadonlyRanges();
+    updateReadonlyRanges();
   </script>
 
   <!-- Unload warning -->

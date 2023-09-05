@@ -307,21 +307,14 @@ def compile_code(request):
     try:
         if request.method == "POST":
             language = Language.objects.get(judge_language_id=request.POST.get('lang-id'))
-            file1 = request.POST.get('file1')
-            file2 = request.POST.get('file2')
-
+            main = request.POST.get('main')
+            tb = request.POST.get('tb')
+            
             if language.name.find('Verilog') != -1:
-                if file1.find('$dumpfile') == -1 and file2.find('$dumpfile') == -1:
-                    # add wave dump to testbench
-                    # find testbench file
-                    if file1.find('initial') != -1:
-                        # add wave dump to last line before endmodule
-                        testbench = file1.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
-                        main = file2
-                    elif file2.stdin.find('initial') != -1:
-                        # add wave dump to last line before endmodule
-                        main = file1
-                        testbench = file2.stdin.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
+                if tb.find('$dumpfile') == -1:
+                    # add wave dump to last line before endmodule
+                    main = main
+                    testbench = tb.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
                 else:
                     # Define the regular expression patterns
                     dumpfile_pattern = r'\$dumpfile\("[^"]+"\)'
@@ -331,19 +324,16 @@ def compile_code(request):
                     new_dumpfile = '$dumpfile("vcd_dump.vcd")'
                     new_dumpvars = '$dumpvars(0)'
 
-                    if file1.find('initial') != -1:
-                        # replace wave dump
-                        testbench = re.sub(dumpfile_pattern, new_dumpfile, file1)
-                        testbench = re.sub(dumpvars_pattern, new_dumpvars, testbench)
-                        main = file2
-                    elif file2.find('initial') != -1:
-                        # replace wave dump
-                        testbench = re.sub(dumpfile_pattern, new_dumpfile, file2)
-                        testbench = re.sub(dumpvars_pattern, new_dumpvars, testbench)
-                        main = file1
+                    # replace wave dump
+                    testbench = re.sub(dumpfile_pattern, new_dumpfile, tb)
+                    testbench = re.sub(dumpvars_pattern, new_dumpvars, testbench)
+                    main = main
 
-            main, input_ports, output_ports = embed_inout_module(main)
-            testbench = embed_inout_testbench(testbench, input_ports, output_ports)
+                try:
+                    main, input_ports, output_ports = embed_inout_module(main)
+                    testbench = embed_inout_testbench(testbench, input_ports, output_ports)
+                except Exception as ex:
+                    pass
             
             # create zip file
             with zipfile.ZipFile('submission.zip', 'w') as zip_file:
@@ -351,9 +341,7 @@ def compile_code(request):
                 zip_file.writestr('testbench.v', testbench)
                 zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
                 zip_file.writestr('run', "vvp -n a.out | find -name '*.vcd' -exec python3 -m vcd2wavedrom.vcd2wavedrom --aasp -i {} + | tr -d '[:space:]'")
-            
-            print(main)
-            print(testbench)
+
             # encode zip file
             with open('submission.zip', 'rb') as f:
                 encoded = base64.b64encode(f.read()).decode('utf-8')

@@ -397,17 +397,22 @@
       }
     }
 
-    // limit tab switching (i.e. limit user moving away from assessment screen)
-    window.onblur = (event) => { 
-      // check if switching is due to clicking on modal iframe
-      if (document.activeElement.id === 'modalIframe') {
-        document.getElementById('modalIframe').contentWindow.onblur = () => {
+    window.onfocus = () => {
+      setBinding();
+    }
+
+    const setBinding = () => {
+      window.onblur = (event) => { 
+        // check if switching is due to clicking on modal iframe
+        if (document.activeElement.id === 'modalIframe') {
+          window.onblur = null;
+        } else {
           handleTabSwitch();
         }
-      } else {
-        handleTabSwitch();
       }
     }
+
+    setBinding();
   </script>
   {% endif %}
 

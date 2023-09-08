@@ -113,12 +113,15 @@
                     {% endfor %}
                   </div>
                 {% else %}
-                  <!-- test cases & code snippet management forms -->
-                  {{ testcase_formset.management_form }}
-
-                  {% include 'code_questions/snippets/solution-row.html' with form=testcase_formset.0 %}
+                  <!-- hdl question solution management forms -->
+                  {{ hdl_solution_formset.management_form }}
+                  
+                  {% include 'code_questions/snippets/solution-row.html' with form=hdl_solution_formset.0 %}
 
                   <hr>
+
+                  <!-- test cases & code snippet management forms -->
+                  {{ testcase_formset.management_form }}
 
                   <!-- Sample Test case -->
                   <h5>Sample Test Case</h5>

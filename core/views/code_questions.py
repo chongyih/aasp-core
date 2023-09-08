@@ -20,7 +20,7 @@ from rest_framework.renderers import JSONRenderer
 from core.decorators import groups_allowed, UserGroup
 from core.forms.question_banks import CodeQuestionForm
 from core.models import QuestionBank, Assessment, CodeQuestion
-from core.models.questions import TestCase, CodeSnippet, Language, Tag
+from core.models.questions import HDLQuestionSolution, TestCase, CodeSnippet, Language, Tag
 from core.serializers import CodeQuestionsSerializer
 from core.views.utils import check_permissions_course, check_permissions_code_question, embed_inout_module, embed_inout_testbench, generate_testbench
 
@@ -169,9 +169,32 @@ def update_test_cases(request, code_question_id):
                                                         'hidden', 'sample'])
     testcase_formset = TestCaseFormset(prefix='tc', instance=code_question)
 
+    context = {
+        'creation': request.GET.get('next') is None,
+        'code_question': code_question,
+        'code_snippet': code_snippets,
+        'testcase_formset': testcase_formset,
+        'is_software_language': code_question.is_software_language(),
+    }
+
+    # prepare HDL solution form
+    if not code_question.is_software_language():
+        HDLSolutionFormset = inlineformset_factory(CodeQuestion, HDLQuestionSolution, extra=0, 
+                                                    fields=['module', 'testbench'])
+        hdl_solution_formset = HDLSolutionFormset(prefix='solution', instance=code_question)
+        context['hdl_solution_formset'] = hdl_solution_formset
+
     # process POST requests
     if request.method == "POST":
+        if not code_question.is_software_language():
+            hdl_solution_formset = HDLSolutionFormset(request.POST, instance=code_question, prefix='solution')
+
+            if hdl_solution_formset.is_valid():
+                hdl_solution_formset.save()
+                messages.success(request, "HDL Solution updated!")
+
         testcase_formset = TestCaseFormset(request.POST, instance=code_question, prefix='tc')
+
         if testcase_formset.is_valid():
 
             # remove past attempts
@@ -190,13 +213,6 @@ def update_test_cases(request, code_question_id):
             else:
                 return redirect('assessment-details', assessment_id=code_question.assessment.id)
 
-    context = {
-        'creation': request.GET.get('next') is None,
-        'code_question': code_question,
-        'code_snippet': code_snippets,
-        'testcase_formset': testcase_formset,
-        'is_software_language': code_question.is_software_language(),
-    }
     return render(request, 'code_questions/update-test-cases.html', context)
 
 

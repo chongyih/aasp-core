@@ -243,8 +243,6 @@
         const e = document.getElementById(`InputJSON_${index}`);
         
         if (!wavedrom) return;
-
-        console.log(index)
         
         let wavedrom_json = JSON.parse(wavedrom)
         wavedrom_json.signal = wavedrom_json.signal.map(signal => {
@@ -405,8 +403,6 @@
                     signal.name = nameWithoutPrefix;
                     return signal;
                   });
-
-                  console.log(`InputJSON_${index}`)
 
                   // Update the input element's value with the wavedrom value
                   e.innerHTML = JSON.stringify(wavedrom);

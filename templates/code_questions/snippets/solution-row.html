@@ -1,50 +1,17 @@
 {% load static %}
 
-{% block styles %}
-  <!-- Split.js, ace editor css -->
-  <style>
-      .split {
-          display: flex;
-          flex-direction: row;
-      }
+<div class="row solution-row">
+    {# if id is not None, this is an existing row #}
+    {% if form.id.value != None %}
+        <input type="hidden" name="solution-0-id" value="{{ form.id.value }}"
+            id="id_solution-0-id">
+        <input type="checkbox" style="visibility:hidden" class="delete-checkbox"
+            name="solution-0-DELETE"
+            id="solution-0-DELETE" {% if form.DELETE.value %}checked{% endif %}>
+    {% endif %}
 
-      .gutter {
-          background-color: #eee;
-          background-repeat: no-repeat;
-          background-position: 50%;
-      }
-
-      .gutter.gutter-horizontal {
-          background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
-          cursor: col-resize;
-      }
-
-      @font-face {
-          font-family: 'JetBrains Mono';
-          src: url('{% static 'fonts/JetBrainsMono-Regular.ttf' %}') format('truetype');
-          font-weight: normal;
-          font-style: normal;
-      }
-
-      /* for ace editor */
-      .readonly-highlight {
-          position: absolute;
-          background-color: red;
-          opacity: 0.1;
-      }
-  </style>
-  <link rel="stylesheet" href="{% static 'vendors/highlight.js/styles/night-owl.min.css' %}">
-  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
-
-{% endblock %}
-
-<div class="row test-case-row"
-     {% if hidden %}id="empty-test-case-row" style="display:none"{% endif %}
-     {% if form.DELETE.value %}style="display:none"{% endif %}
->
     <h4 class="pb-2">Solution</h4>
     <div class="mb-3">
-    <label for="solution" class="form-label">To auto-generate testbenches and output, it is recommeded to provide a sample solution so that a testbench can be generated for you. This is also required if you want to execute the program with the testbench to generate the output.</label>
     
     <div class="row">
         <!-- Language selection -->
@@ -65,12 +32,18 @@
         <div class="col">
             <label>Module Definition</label>
             <pre id="sol_editor" class="inner rounded" style="height: 500px;"></pre>
+            <input type="hidden" name="solution-0-module" 
+               id="id_solution-0-module" 
+               value="{{ form.module.value|default:module|default:"" }}">
         </div>
 
         <!-- Ace Code Editor -->
         <div class="col">
             <label>Testbench</label>
             <pre id="testbench_editor" class="inner rounded" style="height: 500px;"></pre>
+            <input type="hidden" name="solution-0-testbench" 
+               id="id_solution-0-testbench" 
+               value="{{ form.testbench.value|default:testbench|default:"" }}">
         </div>
     </div>
 
@@ -91,11 +64,13 @@
         // language and theme selections
         const langSelect = $("#lang-select");
         const themeSelect = $("#theme-select");
+        const moduleInput = $("#id_solution-0-module");
+        const testbenchInput = $("#id_solution-0-testbench");
 
         // initialize solution ace editor
-        let editor = ace.edit("sol_editor");
-        editor.renderer.setScrollMargin(10);
-        editor.setOptions({
+        let module_editor = ace.edit("sol_editor");
+        module_editor.renderer.setScrollMargin(10);
+        module_editor.setOptions({
             fontFamily: "JetBrains Mono",
             fontSize: "16px",
             theme: "ace/theme/cloud9_day",
@@ -104,7 +79,7 @@
             wrap: true,
             tabSize: 4,
         });
-        editor.setOption("dragEnabled", false);
+        module_editor.setOption("dragEnabled", false);
 
         // initialize testbench ace editor
         let testbench_editor = ace.edit("testbench_editor");
@@ -120,11 +95,6 @@
         });
         testbench_editor.setOption("dragEnabled", false);
 
-        // when theme dropdown changed
-        themeSelect.change(function () {
-            editor.setTheme("ace/theme/" + $(this).val());
-        });
-
         const arrowCommands = ["gotoleft", "gotoright", "golineup", "golinedown"];
         let markers = [];
 
@@ -132,10 +102,14 @@
         const setLanguage = () => {
             // get the selected option
             const selected = langSelect.find("option:selected");
+            // get the solution code
+            const module = moduleInput.val();
+            const testbench = testbenchInput.val();
             // set the code snippet
-            editor.session.setValue(selected.data('code'));
+            module_editor.session.setValue(module ? module : selected.data('code'));
+            testbench_editor.session.setValue(testbench ? testbench : "");
             // set ace mode
-            editor.session.setMode("ace/mode/" + selected.data('ace-mode'));
+            module_editor.session.setMode("ace/mode/" + selected.data('ace-mode'));
             testbench_editor.session.setMode("ace/mode/" + selected.data('ace-mode'));
         };
 
@@ -147,10 +121,15 @@
             setLanguage();
         });
 
-        editor.commands.on("afterExec", function (e) {
-            // ignore arrow keys commands
-            if (arrowCommands.includes(e.command.name))
-                return;
+        // Synchronize both Ace editor content with the hidden input field
+        module_editor.getSession().on('change', function(){
+            var code = module_editor.getValue();
+            document.getElementById("id_solution-0-module").value = code;
+        });
+
+        testbench_editor.getSession().on('change', function(){
+            var code = testbench_editor.getValue();
+            document.getElementById("id_solution-0-testbench").value = code;
         });
     </script>
 
@@ -170,7 +149,7 @@
                     },
                     success: function(data) {
                         let testbench_editor = ace.edit("testbench_editor");
-                        testbench_editor.setValue(data);
+                        testbench_editor.setValue(data, -1);
                     },
                     error: function(data) {
                         console.log(data);
@@ -194,6 +173,7 @@
             testbench_editors.forEach((editor) => {
                 // set the testbench code
                 ace.edit(editor).setValue(testbench_code);
+                ace.edit(editor).clearSelection();
             });
 
             // store testbench to apply to new test cases

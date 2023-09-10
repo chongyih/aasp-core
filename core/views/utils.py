@@ -299,8 +299,6 @@ def embed_inout_testbench(testbench_code, input_ports, output_ports):
         testbench_code = re.sub(r'\b' + re.escape(old_port) + r'\b', new_port, testbench_code)
     
     return testbench_code
-
-def generate_testbench(module_code):
     test_bench = ""
 
     # remove comments from module_code
@@ -480,8 +478,8 @@ def generate_testbench(module_code):
         test_bench += "\t\t"+input+" = 0;\n"
         
     ############ wait for global reset  ############
-    test_bench += "\n\t\t// Wait 100 ns for global reset to finish\n"
-    test_bench += "\t\t#100;"
+    test_bench += "\n\t\t// Wait 20 ns for global reset to finish\n"
+    test_bench += "\t\t#20;"
     test_bench += "\n\n\t\t// Add stimulus here\n\n"
 
     test_bench += "\t\t$finish; \n\tend" +'\n'
@@ -494,6 +492,215 @@ def generate_testbench(module_code):
     test_bench += "\nendmodule"
 
     return test_bench
+
+def generate_module(module_name, ports):
+    """
+    Generate a Verilog module design text based on module name and ports.
+
+    Args:
+        module_name (str): The name of the Verilog module.
+        ports (list): A list of dictionaries, where each dictionary represents a port.
+                      Each port dictionary should have the following keys:
+                      - 'name': The name of the port (str).
+                      - 'direction': The direction of the port ('input', 'output', or 'inout').
+                      - 'bus': Boolean indicating if it's a bus.
+                      - 'msb': The most significant bit (int).
+                      - 'lsb': The least significant bit (int).
+
+    Returns:
+        str: The Verilog module design text.
+    """
+    # Start building the module design text
+    verilog_code = f"module {module_name} (\n"
+
+    # Iterate over the ports and add them to the module
+    for port in ports:
+        port_name = port['name']
+        port_direction = port['direction']
+        is_bus = port['bus']
+        msb = port['msb']
+        lsb = port['lsb']
+
+        # Construct the port declaration based on bus and direction
+        if is_bus:
+            port_declaration = f"\t{port_direction} [{msb}:{lsb}] {port_name},\n"
+        else:
+            port_declaration = f"\t{port_direction} {port_name},\n"
+
+        verilog_code += port_declaration
+
+    # Remove the trailing comma and newline from the last port
+    verilog_code = verilog_code.rstrip(',\n')
+
+    # Close the module and return the Verilog code
+    verilog_code += "\n);\n\n\n\nendmodule\n"
+
+    return verilog_code
+
+class TestbenchGenerator:
+    def __init__(self, module_code):
+        self.module_code = module_code
+        self.testbench = ""
+        self.mod_name = ""
+        self.pin_list = []
+        self.clock_name = ""
+        self.reset_name = ""
+        self.parser()
+
+    def __call__(self):
+        self.print_module_head()
+        self.print_wires()
+        self.print_dut()
+        self.print_stimulus_block()
+        self.print_clock_gen()
+        self.print_module_end() 
+
+        return self.testbench
+
+    def clean_module(self, cont):
+        ## clean '// ...'
+        cont = re.sub(r"//[^\n^\r]*", '\n', cont)
+        ## clean '/* ... */'
+        cont = re.sub(r"/\*.*\*/", '', cont)
+        ## clean '`define ..., etc.'
+        #cont = re.sub(r"[^\n^\r]+`[^\n^\r]*", '\n', cont)
+        ## clean tables
+        cont = re.sub(r'    +', ' ', cont)
+        ## clean '\n' * '\r'
+        cont = re.sub(r'[\n\r]+', '', cont)
+        return cont
+    
+    def parser(self):
+        # print vf_cont 
+        mod_pattern = r"module[\s]+(\S*)[\s]*\([^\)]*\)[\s\S]*"  
+        
+        module_result = re.findall(mod_pattern, self.clean_module(self.module_code))
+        #print module_result
+        self.mod_name = module_result[0]
+        
+        self.parser_inoutput()
+        self.find_clk_rst()
+
+    def parser_inoutput(self):
+        pin_list = self.clean_module(self.module_code) 
+
+        comp_pin_list_pre = []
+        for match in re.finditer(r'\b(input|output|inout)\s+([^;]+?)(?=[;]|input|output|inout|$)', pin_list):
+            direction = match.group(1)
+            ports = match.group(2)
+            # remove bus and store bus
+            bus = re.findall(r'\[[^\]]*\]', ports)
+            if len(bus) != 0:
+                bus = bus[0]
+            else:
+                bus = ''
+            ports = re.sub(r'\[[^\]]*\]', '', ports)
+            # remove reg
+            ports = re.sub(r'reg[\s]*', '', ports)
+            # split by ','
+            ports = ports.split(',')
+            
+            for port in ports:
+                if port != '\t':
+                    # remove space and brackets
+                    port = re.sub(r'[\[\]\(\) ]', '', port)
+                    print(direction, bus, port)
+                    comp_pin_list_pre.append((direction, bus + port))
+
+        print(comp_pin_list_pre)
+        comp_pin_list = []
+        type_name = ['reg', 'wire', 'wire', "ERROR"]
+        for i in comp_pin_list_pre:
+            x = re.split(r']', i[1])
+            type = 0;
+            if i[0] == 'input':
+                type = 0
+            elif i[0] == 'output':
+                type = 1
+            elif i[0] == 'inout':
+                type = 2
+            else:
+                type = 3
+
+            if len(x) == 2:
+                x[1] = re.sub('[\s]*', '', x[1])
+                comp_pin_list.append((i[0], x[1], x[0] + ']', type_name[type]))
+            else:
+                comp_pin_list.append((i[0], x[0], '', type_name[type]))
+        
+        self.pin_list = comp_pin_list
+
+    def print_dut(self):
+        max_len = 0
+        for cpin_name in self.pin_list:
+            pin_name = cpin_name[1]
+            if len(pin_name) > max_len:
+                max_len = len(pin_name)
+        
+        
+        self.testbench +=  "\t%s uut (\n" % self.mod_name 
+        
+        align_cont = self.align_print(list(map(lambda x:("\t\t", "." + x[1], "(", x[1], '),'), self.pin_list)), 2)
+        align_cont = align_cont[:-2] + "\n"
+        self.testbench +=  align_cont
+        
+        self.testbench +=  "\t);\n" 
+    
+    def print_wires(self):
+        self.testbench += self.align_print(list(map(lambda x:('\t', x[3], x[2], x[1], ';'), self.pin_list)), 1)
+        self.testbench += "\n"
+    
+    def print_clock_gen(self):
+        if not self.clock_name:
+            clock_gen_text = "\n\treg CLK = 0;\n\talways #5 CLK = ~CLK;\n\n"
+            self.testbench += clock_gen_text
+        else:
+            clock_gen_text = "\n\talways #5 CLK = ~CLK;\n\n"
+            self.testbench += re.sub('CLK', self.clock_name, clock_gen_text)
+
+    def print_stimulus_block(self):
+        input_init_text = "\n".join([f"\t\t{port[1]} = 0;" for port in self.pin_list if port[0] == 'input'])
+        stimulus_block_text = "\n\tinitial begin\n\t\t// Initialize Inputs\n%s\n\n\t\t// Add stimulus here\n\n\n\t\t$finish; \n\tend\n" % input_init_text
+        self.testbench += stimulus_block_text
+        
+    def find_clk_rst(self):
+        for pin in self.pin_list:
+            if re.match(r'[\S]*(clk|clock)[\S]*', pin[1]):
+                print(pin[1])
+                self.clock_name = pin[1]
+                break
+
+        for pin in self.pin_list:
+            if re.match(r'rst|reset', pin[1]):
+                self.reset_name = pin[1]
+                break
+
+    def print_module_head(self):
+        self.testbench += "`timescale 1ns / 1ns\n\nmodule tb_%s;\n\n" % self.mod_name
+        
+    def print_module_end(self):
+        self.testbench += "endmodule\n"
+
+    def align_print(self, content, indent):
+        """ Align pretty print."""
+
+        row_len = len(content)
+        col_len = len(content[0])
+        align_cont = [""] * row_len
+        for i in range(col_len):
+            col = list(map(lambda x:x[i], content))
+            max_len = max(map(len, col))
+            for i in range(row_len):
+                l = len(col[i])
+                if col[i] == "\t":
+                    align_cont[i] += "\t"
+                else:
+                    align_cont[i] += "%s%s" % (col[i], (indent + max_len - l) * ' ')
+        
+        # remove space in line end
+        align_cont = list(map(lambda s:re.sub('[ ]*$', '', s), align_cont))
+        return "\n".join(align_cont) + "\n"
+
 
 class VCD2Wavedrom:
 

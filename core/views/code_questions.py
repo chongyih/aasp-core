@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.forms import inlineformset_factory
+from django.forms import formset_factory, inlineformset_factory
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import status
@@ -18,11 +18,11 @@ from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import JSONRenderer
 
 from core.decorators import groups_allowed, UserGroup
-from core.forms.question_banks import CodeQuestionForm
+from core.forms.question_banks import CodeQuestionForm, ModuleGenerationForm
 from core.models import QuestionBank, Assessment, CodeQuestion
-from core.models.questions import TestCase, CodeSnippet, Language, Tag
+from core.models.questions import HDLQuestionSolution, TestCase, CodeSnippet, Language, Tag
 from core.serializers import CodeQuestionsSerializer
-from core.views.utils import check_permissions_course, check_permissions_code_question, embed_inout_module, embed_inout_testbench, generate_testbench
+from core.views.utils import TestbenchGenerator, check_permissions_course, check_permissions_code_question, embed_inout_module, embed_inout_testbench, generate_module
 
 
 @login_required()
@@ -169,9 +169,42 @@ def update_test_cases(request, code_question_id):
                                                         'hidden', 'sample'])
     testcase_formset = TestCaseFormset(prefix='tc', instance=code_question)
 
+    # get module and testbench from session
+    module = request.session.get('module')
+    testbench = request.session.get('testbench')
+
+    # delete session variables
+    if module and testbench:
+        del request.session['module']
+        del request.session['testbench']
+
+    context = {
+        'creation': request.GET.get('next') is None,
+        'code_question': code_question,
+        'code_snippet': code_snippets,
+        'testcase_formset': testcase_formset,
+        'module': module,
+        'testbench': testbench,
+        'is_software_language': code_question.is_software_language(),
+    }
+
+    # prepare HDL solution form
+    if not code_question.is_software_language():
+        HDLSolutionFormset = inlineformset_factory(CodeQuestion, HDLQuestionSolution, extra=0, 
+                                                    fields=['module', 'testbench'])
+        hdl_solution_formset = HDLSolutionFormset(prefix='solution', instance=code_question)
+        context['hdl_solution_formset'] = hdl_solution_formset
+
     # process POST requests
     if request.method == "POST":
+        if not code_question.is_software_language():
+            hdl_solution_formset = HDLSolutionFormset(request.POST, instance=code_question, prefix='solution')
+
+            if hdl_solution_formset.is_valid():
+                hdl_solution_formset.save()
+
         testcase_formset = TestCaseFormset(request.POST, instance=code_question, prefix='tc')
+
         if testcase_formset.is_valid():
 
             # remove past attempts
@@ -190,13 +223,6 @@ def update_test_cases(request, code_question_id):
             else:
                 return redirect('assessment-details', assessment_id=code_question.assessment.id)
 
-    context = {
-        'creation': request.GET.get('next') is None,
-        'code_question': code_question,
-        'code_snippet': code_snippets,
-        'testcase_formset': testcase_formset,
-        'is_software_language': code_question.is_software_language(),
-    }
     return render(request, 'code_questions/update-test-cases.html', context)
 
 
@@ -222,20 +248,44 @@ def update_languages(request, code_question_id):
     # process POST requests
     if request.method == "POST":
         code_snippet_formset = CodeSnippetFormset(request.POST, instance=code_question, prefix='cs')
+
         if code_snippet_formset.is_valid():
 
             # remove past attempts
             if code_question.assessment:
                 code_question.assessment.assessmentattempt_set.all().delete()
 
+            cq_is_software = code_question.is_software_language()
+
             code_snippet_formset.save()
             messages.success(request, "Code Snippets saved!")
+
+            # get first undeleted language
+            for form in code_snippet_formset:
+                if form.cleaned_data.get('DELETE') is True:
+                    continue
+                name = form.cleaned_data.get('language')
+                break
+            
+            # remove all test cases if language type is changed
+            language = get_object_or_404(Language, name=name)
+            if language.software_language != cq_is_software:
+                code_question.testcase_set.all().delete()
+                
+                if not language.software_language:
+                    code_question.hdlquestionsolution_set.all().delete()
+                    return redirect('update-question-type', code_question_id=code_question.id)
+
+                return redirect('update-test-cases', code_question_id=code_question.id)
 
             next_url = request.GET.get("next")
             if next_url:
                 return redirect(next_url)
-
-            return redirect('update-test-cases', code_question_id=code_question.id)
+            
+            if code_question.is_software_language():
+                return redirect('update-test-cases', code_question_id=code_question.id)
+            else:
+                return redirect('update-question-type', code_question_id=code_question.id)
 
     context = {
         'creation': request.GET.get('next') is None,
@@ -247,6 +297,71 @@ def update_languages(request, code_question_id):
 
     return render(request, 'code_questions/update-languages.html', context)
 
+@login_required()
+@groups_allowed(UserGroup.educator)
+def update_question_type(request, code_question_id):
+    # get CodeQuestion instance
+    code_question = get_object_or_404(CodeQuestion, id=code_question_id)
+
+    # check permissions
+    if check_permissions_code_question(code_question, request.user) != 2:
+        return PermissionDenied()
+
+    # if belongs to a published assessment, disallow
+    if code_question.assessment and code_question.assessment.published:
+        messages.warning(request, "Question type from a published assessment cannot be modified!")
+        return redirect('assessment-details', assessment_id=code_question.assessment.id)
+    
+    # render form
+    ModuleGenerationFormset = formset_factory(ModuleGenerationForm, extra=0)
+    module_generation_formset = ModuleGenerationFormset(prefix='module', initial=[{'module_name': '', 'port_direction': 'input', 'bus': False, 'msb': 0, 'lsb': 0}])
+
+    # process POST requests
+    if request.method == "POST":
+        # check if skip button is pressed
+        if 'skip' in request.POST:
+            return redirect('update-test-cases', code_question_id=code_question.id)
+        
+        module_generation_formset = ModuleGenerationFormset(request.POST, prefix='module')
+
+        if module_generation_formset.is_valid():
+            # Generate Verilog module code using the form inputs
+            module_name = module_generation_formset[0].cleaned_data.get('module_name')
+
+            ports = []
+            for form in module_generation_formset:
+                port_name = form.cleaned_data.get('port_name')
+                port_direction = form.cleaned_data.get('port_direction')
+                bus = form.cleaned_data.get('bus')
+                msb = form.cleaned_data.get('msb')
+                lsb = form.cleaned_data.get('lsb')
+                ports.append({
+                    'name': port_name,
+                    'direction': port_direction,
+                    'bus': bus,
+                    'msb': msb,
+                    'lsb': lsb,
+                })
+
+            module_code = generate_module(module_name, ports)
+            testbench = TestbenchGenerator(module_code)()
+
+            request.session['module'] = module_code
+            request.session['testbench'] = testbench
+
+            next_url = request.GET.get("next")
+            if next_url:
+                return redirect(next_url)
+
+            return redirect('update-test-cases', code_question_id=code_question.id)
+
+    context = {
+        'creation': request.GET.get('next') is None,
+        'code_question': code_question,
+        'module_formset': module_generation_formset,
+    }
+
+    return render(request, 'code_questions/update-question-type.html', context)
 
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
@@ -291,7 +406,7 @@ def testbench_generation(request):
     # get module_code from request
     module_code = request.POST.get("module_code")
 
-    test_bench = generate_testbench(module_code)
+    test_bench = TestbenchGenerator(module_code)()
 
     return HttpResponse(test_bench, content_type='text/plain')
 
@@ -307,21 +422,14 @@ def compile_code(request):
     try:
         if request.method == "POST":
             language = Language.objects.get(judge_language_id=request.POST.get('lang-id'))
-            file1 = request.POST.get('file1')
-            file2 = request.POST.get('file2')
-
+            main = request.POST.get('main')
+            tb = request.POST.get('tb')
+            
             if language.name.find('Verilog') != -1:
-                if file1.find('$dumpfile') == -1 and file2.find('$dumpfile') == -1:
-                    # add wave dump to testbench
-                    # find testbench file
-                    if file1.find('initial') != -1:
-                        # add wave dump to last line before endmodule
-                        testbench = file1.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
-                        main = file2
-                    elif file2.stdin.find('initial') != -1:
-                        # add wave dump to last line before endmodule
-                        main = file1
-                        testbench = file2.stdin.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
+                if tb.find('$dumpfile') == -1:
+                    # add wave dump to last line before endmodule
+                    main = main
+                    testbench = tb.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
                 else:
                     # Define the regular expression patterns
                     dumpfile_pattern = r'\$dumpfile\("[^"]+"\)'
@@ -331,19 +439,16 @@ def compile_code(request):
                     new_dumpfile = '$dumpfile("vcd_dump.vcd")'
                     new_dumpvars = '$dumpvars(0)'
 
-                    if file1.find('initial') != -1:
-                        # replace wave dump
-                        testbench = re.sub(dumpfile_pattern, new_dumpfile, file1)
-                        testbench = re.sub(dumpvars_pattern, new_dumpvars, testbench)
-                        main = file2
-                    elif file2.find('initial') != -1:
-                        # replace wave dump
-                        testbench = re.sub(dumpfile_pattern, new_dumpfile, file2)
-                        testbench = re.sub(dumpvars_pattern, new_dumpvars, testbench)
-                        main = file1
+                    # replace wave dump
+                    testbench = re.sub(dumpfile_pattern, new_dumpfile, tb)
+                    testbench = re.sub(dumpvars_pattern, new_dumpvars, testbench)
+                    main = main
 
-            main, input_ports, output_ports = embed_inout_module(main)
-            testbench = embed_inout_testbench(testbench, input_ports, output_ports)
+                try:
+                    main, input_ports, output_ports = embed_inout_module(main)
+                    testbench = embed_inout_testbench(testbench, input_ports, output_ports)
+                except Exception as ex:
+                    pass
             
             # create zip file
             with zipfile.ZipFile('submission.zip', 'w') as zip_file:
@@ -351,9 +456,7 @@ def compile_code(request):
                 zip_file.writestr('testbench.v', testbench)
                 zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
                 zip_file.writestr('run', "vvp -n a.out | find -name '*.vcd' -exec python3 -m vcd2wavedrom.vcd2wavedrom --aasp -i {} + | tr -d '[:space:]'")
-            
-            print(main)
-            print(testbench)
+
             # encode zip file
             with open('submission.zip', 'rb') as f:
                 encoded = base64.b64encode(f.read()).decode('utf-8')

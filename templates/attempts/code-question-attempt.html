@@ -279,6 +279,10 @@
     </div>
   </div>
 
+  {% include 'attempts/snippets/accordion-item-template.html' %}
+  {% include 'attempts/snippets/test-case-details-modal.html' %}
+  {% include 'attempts/snippets/vcd-viewer-modal.html' %}
+
   <!-- Tab switching warning modal -->
   <div class="modal fade" id="tab-modal" tabindex="-1">
     <div class="modal-dialog">
@@ -301,10 +305,6 @@
       </div>
     </div>
   </div>
-
-  {% include 'attempts/snippets/accordion-item-template.html' %}
-  {% include 'attempts/snippets/test-case-details-modal.html' %}
-  {% include 'attempts/snippets/vcd-viewer-modal.html' %}
 {% endblock %}
 
 {% block js %}
@@ -397,8 +397,22 @@
       }
     }
 
-    // limit tab switching (i.e. limit user moving away from assessment screen)
-    window.onblur = () => { handleTabSwitch(); }
+    window.onfocus = () => {
+      setBinding();
+    }
+
+    const setBinding = () => {
+      window.onblur = (event) => { 
+        // check if switching is due to clicking on modal iframe
+        if (document.activeElement.id === 'modalIframe') {
+          window.onblur = null;
+        } else {
+          handleTabSwitch();
+        }
+      }
+    }
+
+    setBinding();
   </script>
   {% endif %}
 
@@ -504,74 +518,74 @@
 		}
 	}
 
-	// function that sets the language and code snippet
-	const setLanguage = () => {
-		// get the selected option
-		const selected = langSelect.find("option:selected")
-		// set the code snippet
-		editor.session.setValue(selected.data("code"))
-		//"{{ is_software_language }}" === "False" ? updatePorts() : editor.session.setValue(selected.data("code"))
-		// set ace mode
-		editor.session.setMode("ace/mode/" + selected.data("ace-mode"))
+    // function that sets the language and code snippet
+    const setLanguage = () => {
+      // get the selected option
+      const selected = langSelect.find("option:selected")
+      // set the code snippet
+      editor.session.setValue(selected.data("code"))
+      //"{{ is_software_language }}" === "False" ? updatePorts() : editor.session.setValue(selected.data("code"))
+      // set ace mode
+      editor.session.setMode("ace/mode/" + selected.data("ace-mode"))
 
-		updateReadonlyRanges()
-	}
+      updateReadonlyRanges()
+    }
 
-	// set language on first load
-	setLanguage()
+    // set language on first load
+    setLanguage()
 
-	// when language dropdown changed
-	langSelect.change(function () {
-		setLanguage()
-	})
+    // when language dropdown changed
+    langSelect.change(function () {
+      setLanguage()
+    })
 
-	window.addEventListener("load", function () {
-		let wavedrom = JSON.parse('{{ sample_tc.stdout|safe }}')
-		wavedrom.signal = wavedrom.signal.map((signal) => {
-			const nameWithoutPrefix = signal.name.replace(/^in_|^out_/, "")
-			signal.name = nameWithoutPrefix
-			return signal
-		})
+    window.addEventListener("load", function () {
+      let wavedrom = JSON.parse('{{ sample_tc.stdout|safe }}')
+      wavedrom.signal = wavedrom.signal.map((signal) => {
+        const nameWithoutPrefix = signal.name.replace(/^in_|^out_/, "")
+        signal.name = nameWithoutPrefix
+        return signal
+      })
 
-		const e = document.getElementById("InputJSON_0")
-		e.innerHTML = JSON.stringify(wavedrom)
+      const e = document.getElementById("InputJSON_0")
+      e.innerHTML = JSON.stringify(wavedrom)
 
-		// Render the updated waveform
-		WaveDrom.RenderWaveForm(0, WaveDrom.eva("InputJSON_0"), "WaveDrom_Display_")
-	})
+      // Render the updated waveform
+      WaveDrom.RenderWaveForm(0, WaveDrom.eva("InputJSON_0"), "WaveDrom_Display_")
+    })
 
-      // when language dropdown changed
-      langSelect.change(function () {
-          setLanguage();
-      });
+    // when language dropdown changed
+    langSelect.change(function () {
+        setLanguage();
+    });
 
-      // prevent action on read-only lines
-      editor.commands.on("exec", function (e) {
-          // ignore arrow keys commands
-          if (arrowCommands.includes(e.command.name))
-              return;
+    // prevent action on read-only lines
+    editor.commands.on("exec", function (e) {
+        // ignore arrow keys commands
+        if (arrowCommands.includes(e.command.name))
+            return;
 
-          const pos = editor.selection.getCursor();
-          readonlyRanges.forEach((readonlyRange) => {
-              if (readonlyRange.inside(pos.row, pos.column) || // cursor inside range (exclusive of start and end)
-                  readonlyRange.isEnd(pos.row, pos.column) && e.command.name === "backspace" ||  // cursor is at the end ( prevent backspace only)
-                  readonlyRange.isStart(pos.row, pos.column) ||  // cursor is at the start of the range
-                  !editor.getSelection().isEmpty() && editor.getSelectionRange().intersects(readonlyRange))  // prevent selection containing readonly area but ends in editable area
-              {
-                  e.preventDefault();
-                  e.stopPropagation();
-              }
-          });
-      });
+        const pos = editor.selection.getCursor();
+        readonlyRanges.forEach((readonlyRange) => {
+            if (readonlyRange.inside(pos.row, pos.column) || // cursor inside range (exclusive of start and end)
+                readonlyRange.isEnd(pos.row, pos.column) && e.command.name === "backspace" ||  // cursor is at the end ( prevent backspace only)
+                readonlyRange.isStart(pos.row, pos.column) ||  // cursor is at the start of the range
+                !editor.getSelection().isEmpty() && editor.getSelectionRange().intersects(readonlyRange))  // prevent selection containing readonly area but ends in editable area
+            {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        });
+    });
 
-      editor.commands.on("afterExec", function (e) {
-          // ignore arrow keys commands
-          if (arrowCommands.includes(e.command.name))
-              return;
-          updateReadonlyRanges();
-      });
+    editor.commands.on("afterExec", function (e) {
+        // ignore arrow keys commands
+        if (arrowCommands.includes(e.command.name))
+            return;
+        updateReadonlyRanges();
+    });
 
-      updateReadonlyRanges();
+    updateReadonlyRanges();
   </script>
 
   <!-- Unload warning -->
@@ -637,7 +651,10 @@
       const modalStdout = $("#m-stdout");
       const modalExpectedOutput = $("#m-expected-output");
       const modalOutcome = $("#m-outcome");
-      const modalAccordion = $("#m-accordion")
+      const modalAccordion = $("#m-accordion");
+      const modalHidden = $("#m-hidden");
+      const modalError = $("#m-error")
+      const modalErrorMsg = $("#m-error-msg")
 
       // vcdrom modal elements
       const vcdromModal = $("#vcdromModal");
@@ -910,6 +927,11 @@
           modalBody.hide();
           modalLoading.show();
 
+          // hide waveforms
+          modalAccordion.addClass("d-none")
+          modalHidden.addClass("d-none")
+          modalError.addClass("d-none")
+
           // ajax request
           $.ajax({
               type: 'GET',
@@ -926,7 +948,7 @@
                     modalStdout.html(res.data.stdout ? res.data.stdout : '&nbsp;');
                     modalExpectedOutput.html(res.data.expected_output ? res.data.expected_output : '&nbsp;');
                   } else {
-                    if (res.data.stdout) {
+                    if (res.data.stdout && res.data.stdout !== 'Hidden') {
                       // show waveforms
                       modalAccordion.removeClass("d-none")
 
@@ -950,11 +972,17 @@
                         modalWavedrom.innerHTML = JSON.stringify(wavedrom)
                         WaveDrom.RenderWaveForm(index + 1, WaveDrom.eva(`InputJSON_${index + 1}`), "WaveDrom_Display_")
                       })
-                    } else {
-                      // hide waveforms
-                      modalAccordion.addClass("d-none")
-
+                    } else if (res.data.stdout === 'Hidden') {
+                      // show hidden
+                      modalHidden.removeClass("d-none")
+                    } else if (res.data.status_id === 6) {  // compilation error
                       // show error message
+                      modalError.removeClass("d-none")
+                      modalErrorMsg.html(res.data.compile_output)
+                    } else {
+                      // show error message
+                      modalError.removeClass("d-none")
+                      modalErrorMsg.html(res.data.stderr)
                     }
                   }
 

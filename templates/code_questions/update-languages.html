@@ -42,10 +42,17 @@
             <!-- Tab contents -->
             <div class="pt-3">
               {# Attempts deletion warning #}
-              {% if code_question.assessment and code_question.assessment.published == False and code_question.assessment.assessmentattempt_set.count != 0 %}
+              {% if code_question.assessment and code_question.assessment.published == False %}
+              {% if code_question.assessment.assessmentattempt_set.count != 0 or code_question.assessment.testcase_set.count != 0 %}
                 <div class="alert alert-warning">
+                {% if code_question.assessment.assessmentattempt_set.count != 0 %}
                   <p class="text-danger fw-bold">Warning! Updating languages will delete all existing assessment attempts!</p>
+                {% endif %}
+                {% if code_question.assessment.testcase_set.count != 0 %}
+                  <p class="text-danger fw-bold">Warning! Updating language type (Software/Hardware) will delete all existing test cases!</p>
+                {% endif %}
                 </div>
+              {% endif %}
               {% endif %}
 
               <h4>Allowed Languages</h4>

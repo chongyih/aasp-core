@@ -247,8 +247,28 @@ def update_languages(request, code_question_id):
             if code_question.assessment:
                 code_question.assessment.assessmentattempt_set.all().delete()
 
+            cq_is_software = code_question.is_software_language()
+
             code_snippet_formset.save()
             messages.success(request, "Code Snippets saved!")
+
+            # get first undeleted language
+            for form in code_snippet_formset:
+                if form.cleaned_data.get('DELETE') is True:
+                    continue
+                name = form.cleaned_data.get('language')
+                break
+            
+            # remove all test cases if language type is changed
+            language = get_object_or_404(Language, name=name)
+            if language.software_language != cq_is_software:
+                code_question.testcase_set.all().delete()
+                
+                if not language.software_language:
+                    code_question.hdlquestionsolution_set.all().delete()
+                    return redirect('update-question-type', code_question_id=code_question.id)
+
+                return redirect('update-test-cases', code_question_id=code_question.id)
 
             next_url = request.GET.get("next")
             if next_url:

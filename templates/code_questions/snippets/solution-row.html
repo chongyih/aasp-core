@@ -34,7 +34,7 @@
             <pre id="sol_editor" class="inner rounded" style="height: 500px;"></pre>
             <input type="hidden" name="solution-0-module" 
                id="id_solution-0-module" 
-               value="{{ form.module.value|default:"" }}">
+               value="{{ form.module.value|default:module|default:"" }}">
         </div>
 
         <!-- Ace Code Editor -->
@@ -43,7 +43,7 @@
             <pre id="testbench_editor" class="inner rounded" style="height: 500px;"></pre>
             <input type="hidden" name="solution-0-testbench" 
                id="id_solution-0-testbench" 
-               value="{{ form.testbench.value|default:"" }}">
+               value="{{ form.testbench.value|default:testbench|default:"" }}">
         </div>
     </div>
 
@@ -149,7 +149,7 @@
                     },
                     success: function(data) {
                         let testbench_editor = ace.edit("testbench_editor");
-                        testbench_editor.setValue(data);
+                        testbench_editor.setValue(data, -1);
                     },
                     error: function(data) {
                         console.log(data);

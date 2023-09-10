@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.forms import inlineformset_factory
+from django.forms import formset_factory, inlineformset_factory
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import status
@@ -18,11 +18,11 @@ from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import JSONRenderer
 
 from core.decorators import groups_allowed, UserGroup
-from core.forms.question_banks import CodeQuestionForm
+from core.forms.question_banks import CodeQuestionForm, ModuleGenerationForm
 from core.models import QuestionBank, Assessment, CodeQuestion
 from core.models.questions import HDLQuestionSolution, TestCase, CodeSnippet, Language, Tag
 from core.serializers import CodeQuestionsSerializer
-from core.views.utils import check_permissions_course, check_permissions_code_question, embed_inout_module, embed_inout_testbench, generate_testbench
+from core.views.utils import TestbenchGenerator, check_permissions_course, check_permissions_code_question, embed_inout_module, embed_inout_testbench, generate_module
 
 
 @login_required()
@@ -174,6 +174,8 @@ def update_test_cases(request, code_question_id):
         'code_question': code_question,
         'code_snippet': code_snippets,
         'testcase_formset': testcase_formset,
+        'module': request.session.get('module'),
+        'testbench': request.session.get('testbench'),
         'is_software_language': code_question.is_software_language(),
     }
 
@@ -238,6 +240,7 @@ def update_languages(request, code_question_id):
     # process POST requests
     if request.method == "POST":
         code_snippet_formset = CodeSnippetFormset(request.POST, instance=code_question, prefix='cs')
+
         if code_snippet_formset.is_valid():
 
             # remove past attempts
@@ -250,8 +253,11 @@ def update_languages(request, code_question_id):
             next_url = request.GET.get("next")
             if next_url:
                 return redirect(next_url)
-
-            return redirect('update-test-cases', code_question_id=code_question.id)
+            
+            if code_question.is_software_language():
+                return redirect('update-test-cases', code_question_id=code_question.id)
+            else:
+                return redirect('update-question-type', code_question_id=code_question.id)
 
     context = {
         'creation': request.GET.get('next') is None,
@@ -263,6 +269,67 @@ def update_languages(request, code_question_id):
 
     return render(request, 'code_questions/update-languages.html', context)
 
+@login_required()
+@groups_allowed(UserGroup.educator)
+def update_question_type(request, code_question_id):
+    # get CodeQuestion instance
+    code_question = get_object_or_404(CodeQuestion, id=code_question_id)
+
+    # check permissions
+    if check_permissions_code_question(code_question, request.user) != 2:
+        return PermissionDenied()
+
+    # if belongs to a published assessment, disallow
+    if code_question.assessment and code_question.assessment.published:
+        messages.warning(request, "Question type from a published assessment cannot be modified!")
+        return redirect('assessment-details', assessment_id=code_question.assessment.id)
+    
+    # render form
+    ModuleGenerationFormset = formset_factory(ModuleGenerationForm, extra=0)
+    module_generation_formset = ModuleGenerationFormset(prefix='module', initial=[{'module_name': '', 'port_direction': 'input', 'bus': False, 'msb': 0, 'lsb': 0}])
+
+    # process POST requests
+    if request.method == "POST":
+        module_generation_formset = ModuleGenerationFormset(request.POST, prefix='module')
+
+        if module_generation_formset.is_valid():
+            # Generate Verilog module code using the form inputs
+            module_name = module_generation_formset[0].cleaned_data.get('module_name')
+
+            ports = []
+            for form in module_generation_formset:
+                port_name = form.cleaned_data.get('port_name')
+                port_direction = form.cleaned_data.get('port_direction')
+                bus = form.cleaned_data.get('bus')
+                msb = form.cleaned_data.get('msb')
+                lsb = form.cleaned_data.get('lsb')
+                ports.append({
+                    'name': port_name,
+                    'direction': port_direction,
+                    'bus': bus,
+                    'msb': msb,
+                    'lsb': lsb,
+                })
+
+            module_code = generate_module(module_name, ports)
+            testbench = TestbenchGenerator(module_code)()
+
+            request.session['module'] = module_code
+            request.session['testbench'] = testbench
+
+            next_url = request.GET.get("next")
+            if next_url:
+                return redirect(next_url)
+
+            return redirect('update-test-cases', code_question_id=code_question.id)
+
+    context = {
+        'creation': request.GET.get('next') is None,
+        'code_question': code_question,
+        'module_formset': module_generation_formset,
+    }
+
+    return render(request, 'code_questions/update-question-type.html', context)
 
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
@@ -307,7 +374,7 @@ def testbench_generation(request):
     # get module_code from request
     module_code = request.POST.get("module_code")
 
-    test_bench = generate_testbench(module_code)
+    test_bench = TestbenchGenerator(module_code)()
 
     return HttpResponse(test_bench, content_type='text/plain')
 

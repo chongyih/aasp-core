@@ -169,13 +169,22 @@ def update_test_cases(request, code_question_id):
                                                         'hidden', 'sample'])
     testcase_formset = TestCaseFormset(prefix='tc', instance=code_question)
 
+    # get module and testbench from session
+    module = request.session.get('module')
+    testbench = request.session.get('testbench')
+
+    # delete session variables
+    if module and testbench:
+        del request.session['module']
+        del request.session['testbench']
+
     context = {
         'creation': request.GET.get('next') is None,
         'code_question': code_question,
         'code_snippet': code_snippets,
         'testcase_formset': testcase_formset,
-        'module': request.session.get('module'),
-        'testbench': request.session.get('testbench'),
+        'module': module,
+        'testbench': testbench,
         'is_software_language': code_question.is_software_language(),
     }
 
@@ -193,7 +202,6 @@ def update_test_cases(request, code_question_id):
 
             if hdl_solution_formset.is_valid():
                 hdl_solution_formset.save()
-                messages.success(request, "HDL Solution updated!")
 
         testcase_formset = TestCaseFormset(request.POST, instance=code_question, prefix='tc')
 
@@ -310,6 +318,10 @@ def update_question_type(request, code_question_id):
 
     # process POST requests
     if request.method == "POST":
+        # check if skip button is pressed
+        if 'skip' in request.POST:
+            return redirect('update-test-cases', code_question_id=code_question.id)
+        
         module_generation_formset = ModuleGenerationFormset(request.POST, prefix='module')
 
         if module_generation_formset.is_valid():

@@ -2,7 +2,7 @@
 {% load static %}
 {% load utils %}
 
-{% block title %}Question Types{% endblock %}
+{% block title %}Module Generation{% endblock %}
 
 {% block styles %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
@@ -18,7 +18,7 @@
     <div class="page-title">
       <div class="row">
         <div class="col-12 col-md-12 order-md-1 order-last pb-3">
-          <h2>Update HDL Question Type</h2>
+          <h2>Module Generation</h2>
           {% if code_question.question_bank != None %}
             <h5 class="text-muted">For {{ code_question.name }} in question bank: {{ code_question.question_bank.name }}</h5>
           {% else %}
@@ -48,8 +48,11 @@
                     </li>
                     </ul>
                 {% endif %}
-  
-
+                    
+                    <h4>Define Modules</h4>
+                    <p>
+                    Define a module and specify I/O Ports to generate a module template. For each port specified, MSB and LSB values will be ignored unless its Bus column is checked.
+                    </p>
                     <!-- Form to add new rows -->
                     <form method="post">
                         {% csrf_token %}

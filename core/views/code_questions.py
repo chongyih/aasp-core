@@ -260,6 +260,8 @@ def update_languages(request, code_question_id):
             code_snippet_formset.save()
             messages.success(request, "Code Snippets saved!")
 
+            name = ''
+
             # get first undeleted language
             for form in code_snippet_formset:
                 if form.cleaned_data.get('DELETE') is True:
@@ -300,6 +302,10 @@ def update_languages(request, code_question_id):
 @login_required()
 @groups_allowed(UserGroup.educator)
 def update_question_type(request, code_question_id):
+    return render(request, 'code_questions/update-question-type.html')
+
+@login_required()
+def generate_module_code(request, code_question_id):
     # get CodeQuestion instance
     code_question = get_object_or_404(CodeQuestion, id=code_question_id)
 
@@ -361,7 +367,7 @@ def update_question_type(request, code_question_id):
         'module_formset': module_generation_formset,
     }
 
-    return render(request, 'code_questions/update-question-type.html', context)
+    return render(request, 'code_questions/generate-module-code.html', context)
 
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])

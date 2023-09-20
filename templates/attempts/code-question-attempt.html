@@ -651,6 +651,7 @@
       const modalStdout = $("#m-stdout");
       const modalExpectedOutput = $("#m-expected-output");
       const modalOutcome = $("#m-outcome");
+      const modalTiming = $("#m-timing");
       const modalAccordion = $("#m-accordion");
       const modalHidden = $("#m-hidden");
       const modalError = $("#m-error")
@@ -928,6 +929,7 @@
           modalLoading.show();
 
           // hide waveforms
+          modalTiming.addClass("d-none")
           modalAccordion.addClass("d-none")
           modalHidden.addClass("d-none")
           modalError.addClass("d-none")
@@ -974,8 +976,12 @@
                       })
                     } else if (res.data.stdout === 'Hidden') {
                       // show hidden
+                      modalTiming.addClass("d-none")
                       modalHidden.removeClass("d-none")
                     } else if (res.data.status_id === 6) {  // compilation error
+                      // hide timing diagram
+                      modalTiming.addClass("d-none")
+
                       // show error message
                       modalError.removeClass("d-none")
                       modalErrorMsg.html(res.data.compile_output)

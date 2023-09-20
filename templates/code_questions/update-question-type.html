@@ -1,14 +1,14 @@
 {% extends 'layouts/master-nav.html' %}
 {% load static %}
 
-{% block title %}Allowed Languages{% endblock %}
+{% block title %}HDL Question Type{% endblock %}
 
 {% block content %}
   <div class="page-heading">
     <div class="page-title">
       <div class="row">
         <div class="col-12 col-md-12 order-md-1 order-last pb-3">
-          <h2>Update Allowed Languages</h2>
+          <h2>Update Question Type</h2>
           {% if code_question.question_bank != None %}
             <h5 class="text-muted">For {{ code_question.name }} in question bank: {{ code_question.question_bank.name }}</h5>
           {% else %}
@@ -41,7 +41,35 @@
 
             <!-- Tab contents -->
             <div class="pt-3">
-        
+                <h3>Select HDL Question Type</h3>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="hdlType" id="moduleType" value="module">
+                        <label class="form-check-label" for="moduleType">
+                        Module Design Evaluation
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="hdlType" id="testbenchType" value="testbench">
+                        <label class="form-check-label" for="testbenchType">
+                        Testbench Evaluation
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="hdlType" id="bothType" value="both">
+                        <label class="form-check-label" for="bothType">
+                        Module Design and Testbench Evaluation
+                        </label>
+                    </div>
+
+                    <hr>
+
+                    <h3>Additional Configuration Options</h3>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="generateModuleCode" name="generateModuleCode">
+                        <label class="form-check-label" for="generateModuleCode">
+                        Generate Module Code
+                        </label>
+                    </div>
             </div>
           </div>
         </div>

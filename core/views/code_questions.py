@@ -20,7 +20,7 @@ from rest_framework.renderers import JSONRenderer
 from core.decorators import groups_allowed, UserGroup
 from core.forms.question_banks import CodeQuestionForm, ModuleGenerationForm
 from core.models import QuestionBank, Assessment, CodeQuestion
-from core.models.questions import HDLQuestionSolution, TestCase, CodeSnippet, Language, Tag
+from core.models.questions import HDLQuestionConfig, TestCase, CodeSnippet, Language, Tag
 from core.serializers import CodeQuestionsSerializer
 from core.views.utils import TestbenchGenerator, check_permissions_course, check_permissions_code_question, embed_inout_module, embed_inout_testbench, generate_module
 
@@ -190,7 +190,7 @@ def update_test_cases(request, code_question_id):
 
     # prepare HDL solution form
     if not code_question.is_software_language():
-        HDLSolutionFormset = inlineformset_factory(CodeQuestion, HDLQuestionSolution, extra=0, 
+        HDLSolutionFormset = inlineformset_factory(CodeQuestion, HDLQuestionConfig, extra=0, 
                                                     fields=['module', 'testbench'])
         hdl_solution_formset = HDLSolutionFormset(prefix='solution', instance=code_question)
         context['hdl_solution_formset'] = hdl_solution_formset
@@ -275,7 +275,7 @@ def update_languages(request, code_question_id):
                 code_question.testcase_set.all().delete()
                 
                 if not language.software_language:
-                    code_question.hdlquestionsolution_set.all().delete()
+                    code_question.hdlquestionconfig_set.all().delete()
                     return redirect('update-question-type', code_question_id=code_question.id)
 
                 return redirect('update-test-cases', code_question_id=code_question.id)

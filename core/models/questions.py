@@ -131,11 +131,15 @@ class CodeTemplate(models.Model):
     name = models.CharField(max_length=50, blank=False, null=False)
     code = models.TextField(blank=False, null=False)
 
-class HDLQuestionSolution(models.Model):
+class HDLQuestionConfig(models.Model):
     QUESTION_TYPES = [
         (1, "Module Design"),
         (2, "Testbench Design"),
         (3, "Module and Testbench Design"),
+    ]
+
+    CONFIGURATION_OPTIONS = [
+        (1, "Generate module code"),
     ]
 
     class Meta:
@@ -143,6 +147,6 @@ class HDLQuestionSolution(models.Model):
 
     code_question = models.ForeignKey(CodeQuestion, null=False, blank=False, on_delete=models.CASCADE)
     question_type = models.IntegerField(choices=QUESTION_TYPES, default=1)
+    question_config = models.IntegerField(choices=CONFIGURATION_OPTIONS, default=1)
     module = models.TextField(blank=False, null=False)
     testbench = models.TextField(blank=True, null=True)
-    

@@ -41,35 +41,23 @@
 
             <!-- Tab contents -->
             <div class="pt-3">
-                <h3>Select HDL Question Type</h3>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="hdlType" id="moduleType" value="module">
-                        <label class="form-check-label" for="moduleType">
-                        Module Design Evaluation
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="hdlType" id="testbenchType" value="testbench">
-                        <label class="form-check-label" for="testbenchType">
-                        Testbench Evaluation
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="hdlType" id="bothType" value="both">
-                        <label class="form-check-label" for="bothType">
-                        Module Design and Testbench Evaluation
-                        </label>
-                    </div>
+                <form method="POST">
+                    {% csrf_token %}
 
-                    <hr>
-
-                    <h3>Additional Configuration Options</h3>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="generateModuleCode" name="generateModuleCode">
-                        <label class="form-check-label" for="generateModuleCode">
-                        Generate Module Code
-                        </label>
+                    <!-- question type -->
+                    <h4>Question Type</h4>
+                    <div class="row mx-2">
+                        {% for qt in question_type_form.question_type %}
+                            <div class="form-check radio col-3">
+                                {{ qt }}
+                            </div>
+                        {% endfor %}
                     </div>
+                    <!-- buttons -->
+                    <div>
+                        <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save and Continue</button>
+                    </div>
+                </form>
             </div>
           </div>
         </div>

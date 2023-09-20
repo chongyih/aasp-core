@@ -18,7 +18,7 @@ from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import JSONRenderer
 
 from core.decorators import groups_allowed, UserGroup
-from core.forms.question_banks import CodeQuestionForm, ModuleGenerationForm
+from core.forms.question_banks import CodeQuestionForm, ModuleGenerationForm, QuestionTypeForm
 from core.models import QuestionBank, Assessment, CodeQuestion
 from core.models.questions import HDLQuestionConfig, TestCase, CodeSnippet, Language, Tag
 from core.serializers import CodeQuestionsSerializer
@@ -302,7 +302,46 @@ def update_languages(request, code_question_id):
 @login_required()
 @groups_allowed(UserGroup.educator)
 def update_question_type(request, code_question_id):
-    return render(request, 'code_questions/update-question-type.html')
+    # get CodeQuestion instance
+    code_question = get_object_or_404(CodeQuestion, id=code_question_id)
+
+    # check permissions
+    if check_permissions_code_question(code_question, request.user) != 2:
+        return PermissionDenied()
+    
+    # if belongs to a published assessment, disallow
+    if code_question.assessment and code_question.assessment.published:
+        messages.warning(request, "Question type from a published assessment cannot be modified!")
+        return redirect('assessment-details', assessment_id=code_question.assessment.id)
+    
+    # prepare form
+    question_type_form = QuestionTypeForm(instance=code_question)
+
+    # process POST requests
+    if request.method == "POST":
+        form = QuestionTypeForm(request.POST, instance=code_question)
+
+        if form.is_valid():
+            form.save()
+
+            if form.cleaned_data.get('question_config'):
+                print(form.cleaned_data.get('question_config'))
+
+            next_url = request.GET.get("next")
+            if next_url:
+                return redirect(next_url)
+            
+            return redirect('generate-module-code', code_question_id=code_question.id)
+        else:
+            print(form.errors)
+        
+    context = {
+        'creation': request.GET.get('next') is None,
+        'code_question': code_question,
+        'question_type_form': question_type_form,
+    }
+
+    return render(request, 'code_questions/update-question-type.html', context)
 
 @login_required()
 def generate_module_code(request, code_question_id):

@@ -114,15 +114,18 @@
                     {% endfor %}
                   </div>
                 {% else %}
-                  <!-- hdl question solution management forms -->
-                  {{ hdl_solution_formset.management_form }}
+                  {% csrf_token %}
+
+                  <!-- solution row -->
+                  {% include 'code_questions/snippets/solution-row.html' with form=hdl_solution_form %}
                   
+                  <!-- test case rows -->
                   {% if question_type == 'Module Design' %}
-                    {% include 'code_questions/snippets/module-test-case.html' with testcase_formset=testcase_formset hdl_solution_formset=hdl_solution_formset %}
+                    {% include 'code_questions/snippets/module-test-case.html' with testcase_formset=testcase_formset hdl_solution_form=hdl_solution_form %}
                   {% elif question_type == 'Testbench Design' %}
-                    {% include 'code_questions/snippets/testbench-test-case.html' with testcase_formset=testcase_formset hdl_solution_formset=hdl_solution_formset %}
+                    {% include 'code_questions/snippets/testbench-test-case.html' with testcase_formset=testcase_formset hdl_solution_form=hdl_solution_form %}
                   {% elif question_type == 'Module and Testbench Design' %}
-                    {% include 'code_questions/snippets/module-testbench-test-case.html' with testcase_formset=testcase_formset hdl_solution_formset=hdl_solution_formset %}
+                    {% include 'code_questions/snippets/module-testbench-test-case.html' with testcase_formset=testcase_formset hdl_solution_form=hdl_solution_form %}
                   {% endif %}
                   
 
@@ -278,10 +281,31 @@
 
   </script>
 
+  <script>
+    // display error Toast and set status text
+    const showError = (msg, index) => {
+        const runStatus = $(`#id_tc-${index}-run-status`);
+        const mainLoading = $(`#id_tc-${index}-main-loading`);
+        const moreDetails = $(`#id_tc-${index}-more-details`);
+        
+        mainLoading.hide();
+        moreDetails.hide();
+
+        runStatus.html(msg);
+        Toastify({
+            text: msg,
+            duration: 3000,
+            position: "center",
+            style: {"background": "#ff6961"}
+        }).showToast();
+    };
+  </script>
+
   <!-- Generate output button -->
   <script>
     const generateOutput = (elem) => {
-      const editor = ace.edit("sol_editor");
+      let editor, module, testbench;
+
       const button_id = elem.id;
       const stdin_id = button_id.replace("button", "stdin");
       const index = button_id.replace("id_tc-", "").replace("-button", "");
@@ -290,14 +314,21 @@
       const mainLoading = $(`#id_tc-${index}-main-loading`);
       const moreDetails = $(`#id_tc-${index}-more-details`);
 
-      const tb = document.getElementById(stdin_id).value;
-      const main = editor.getValue();
+      // get the corresponding ace editor and stdin
+      if ('{{ question_type }}' == 'Testbench Design') {
+        // testcase is module definition
+        module = document.getElementById(stdin_id).value;
+        testbench = ace.edit("testbench_editor").getValue()
+      } else {
+        module = ace.edit("module_editor").getValue()
+        testbench = document.getElementById(stdin_id).value;
+      }
 
       // check if empty
-      if (tb === "") {
+      if (testbench === "") {
         runStatus.html("Testbench is empty &#x274C;", index);
         return;
-      } else if (main === "") {
+      } else if (module === "") {
         runStatus.html("Module Definition is empty &#x274C;", index);
         return;
       }
@@ -312,8 +343,8 @@
         data: {
           csrfmiddlewaretoken: "{{ csrf_token }}",
           'lang-id': $("#lang-select").find("option:selected").data('judgeid'),
-          main: main,
-          tb: tb,
+          module: module,
+          testbench: testbench,
         },
       }).done((res, textStatus, jqXHR) => {
         if (res.result === "success") {
@@ -400,6 +431,7 @@
           }
       });
     }
+
   </script>
 
   <!-- Load from file -->

@@ -5,15 +5,6 @@
 {% endblock %}
 
 <div class="row solution-row">
-    {# if id is not None, this is an existing row #}
-    {% if form.id.value != None %}
-        <input type="hidden" name="solution-0-id" value="{{ form.id.value }}"
-            id="id_solution-0-id">
-        <input type="checkbox" style="visibility:hidden" class="delete-checkbox"
-            name="solution-0-DELETE"
-            id="solution-0-DELETE" {% if form.DELETE.value %}checked{% endif %}>
-    {% endif %}
-
     <h4 class="pb-2">Solution</h4>
     <div class="mb-3">
     
@@ -35,19 +26,19 @@
         <!-- Ace Code Editor -->
         <div class="col">
             <label>Module Definition</label>
-            <pre id="sol_editor" class="inner rounded" style="height: 500px;"></pre>
-            <input type="hidden" name="solution-0-module" 
-               id="id_solution-0-module" 
-               value="{{ form.module.value|default:module|default:"" }}">
+            <pre id="module_editor" class="inner rounded" style="height: 500px;"></pre>
+            <input type="hidden" name="module" 
+               id="id_module" 
+               value="{{ form.module.value }}">
         </div>
 
         <!-- Ace Code Editor -->
         <div class="col">
             <label>Testbench</label>
             <pre id="testbench_editor" class="inner rounded" style="height: 500px;"></pre>
-            <input type="hidden" name="solution-0-testbench" 
-               id="id_solution-0-testbench" 
-               value="{{ form.testbench.value|default:testbench|default:"" }}">
+            <input type="hidden" name="testbench" 
+               id="id_testbench" 
+               value="{{ form.testbench.value }}">
         </div>
     </div>
 
@@ -62,19 +53,6 @@
     <script src="{% static 'vendors/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
     <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
 
-    
-    <!-- Error message toast -->
-    <script>
-        const showErrorToast = (msg) => {
-            Toastify({
-                text: msg,
-                duration: 3000,
-                position: "center",
-                style: {"background": "#ff6961"}
-            }).showToast();
-        };
-    </script>
-
     <!-- Ace code editor config -->
     <script>
         const Range = ace.require("ace/range").Range;
@@ -82,11 +60,11 @@
         // language and theme selections
         const langSelect = $("#lang-select");
         const themeSelect = $("#theme-select");
-        const moduleInput = $("#id_solution-0-module");
-        const testbenchInput = $("#id_solution-0-testbench");
+        const moduleInput = $("#id_module");
+        const testbenchInput = $("#id_testbench");
 
         // initialize solution ace editor
-        let module_editor = ace.edit("sol_editor");
+        let module_editor = ace.edit("module_editor");
         module_editor.renderer.setScrollMargin(10);
         module_editor.setOptions({
             fontFamily: "JetBrains Mono",
@@ -142,19 +120,19 @@
         // Synchronize both Ace editor content with the hidden input field
         module_editor.getSession().on('change', function(){
             var code = module_editor.getValue();
-            document.getElementById("id_solution-0-module").value = code;
+            document.getElementById("id_module").value = code;
         });
 
         testbench_editor.getSession().on('change', function(){
             var code = testbench_editor.getValue();
-            document.getElementById("id_solution-0-testbench").value = code;
+            document.getElementById("id_testbench").value = code;
         });
     </script>
 
     <!-- Generate Testbench -->
     <script>
         const generateTestbench = () => {
-            let editor = ace.edit("sol_editor");
+            let editor = ace.edit("module_editor");
             const module_code = editor.getValue();
 
             $(document).ready(function() {

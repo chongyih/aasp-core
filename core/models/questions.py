@@ -155,6 +155,6 @@ class HDLQuestionConfig(models.Model):
     question_config = models.IntegerField(choices=CONFIGURATION_OPTIONS, default=1)
 
 class HDLQuestionSolution(models.Model):
-    code_question = models.ForeignKey(CodeQuestion, null=False, blank=False, on_delete=models.CASCADE)
-    module = models.TextField(blank=False, null=False)
+    code_question = models.OneToOneField(CodeQuestion, null=True, blank=True, on_delete=models.CASCADE)
+    module = models.TextField(blank=True, null=True)
     testbench = models.TextField(blank=True, null=True)

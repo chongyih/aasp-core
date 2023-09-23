@@ -18,9 +18,9 @@ from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import JSONRenderer
 
 from core.decorators import groups_allowed, UserGroup
-from core.forms.question_banks import CodeQuestionForm, ModuleGenerationForm, QuestionTypeForm
+from core.forms.question_banks import CodeQuestionForm, ModuleGenerationForm, QuestionSolutionForm, QuestionTypeForm
 from core.models import QuestionBank, Assessment, CodeQuestion
-from core.models.questions import HDLQuestionConfig, HDLQuestionSolution, TestCase, CodeSnippet, Language, Tag
+from core.models.questions import HDLQuestionConfig, TestCase, CodeSnippet, Language, Tag
 from core.serializers import CodeQuestionsSerializer
 from core.views.utils import TestbenchGenerator, check_permissions_course, check_permissions_code_question, embed_inout_module, embed_inout_testbench, generate_module
 
@@ -174,15 +174,7 @@ def update_test_cases(request, code_question_id):
                                                         'hidden', 'sample'])
     testcase_formset = TestCaseFormset(prefix='tc', instance=code_question)
 
-    # get module and testbench from session
-    module = request.session.get('module')
-    testbench = request.session.get('testbench')
-
-    # delete session variables
-    if module and testbench:
-        del request.session['module']
-        del request.session['testbench']
-
+    # get question type
     if hasattr(code_question, 'hdlquestionconfig'):
         question_type = code_question.hdlquestionconfig.get_question_type()
     else:
@@ -190,17 +182,28 @@ def update_test_cases(request, code_question_id):
 
     # prepare HDL solution form
     if not code_question.is_software_language():
-        HDLSolutionFormset = inlineformset_factory(CodeQuestion, HDLQuestionSolution, extra=0, 
-                                                    fields=['module', 'testbench'])
-        hdl_solution_formset = HDLSolutionFormset(prefix='solution', instance=code_question)
+        hdl_solution_form = QuestionSolutionForm(instance=code_question.hdlquestionsolution if hasattr(code_question, 'hdlquestionsolution') else None)
+
+        if request.session.get('module'):
+            hdl_solution_form.initial['module'] = request.session.get('module')
+            hdl_solution_form.initial['testbench'] = request.session.get('testbench')
+            
+            del request.session['module']
+            del request.session['testbench']
 
     # process POST requests
     if request.method == "POST":
         if not code_question.is_software_language():
-            hdl_solution_formset = HDLSolutionFormset(request.POST, instance=code_question, prefix='solution')
+            hdl_solution_form = QuestionSolutionForm(request.POST)
 
-            if hdl_solution_formset.is_valid():
-                hdl_solution_formset.save()
+            if hdl_solution_form.is_valid():
+                # check if existing config exists
+                if hasattr(code_question, 'hdlquestionsolution'):
+                    code_question.hdlquestionsolution.delete()
+                    
+                question_sol = hdl_solution_form.save(commit=False)
+                question_sol.code_question = code_question
+                question_sol.save()
 
         testcase_formset = TestCaseFormset(request.POST, instance=code_question, prefix='tc')
 
@@ -227,11 +230,9 @@ def update_test_cases(request, code_question_id):
         'code_question': code_question,
         'code_snippet': code_snippets,
         'testcase_formset': testcase_formset,
-        'module': module,
-        'testbench': testbench,
         'question_type': question_type,
         'is_software_language': code_question.is_software_language(),
-        'hdl_solution_formset': hdl_solution_formset if not code_question.is_software_language() else None,
+        'hdl_solution_form': hdl_solution_form if not code_question.is_software_language() else None,
     }
 
     return render(request, 'code_questions/update-test-cases.html', context)
@@ -289,8 +290,6 @@ def update_languages(request, code_question_id):
                     code_question.hdlquestionconfig.delete()
 
                 if not language.software_language:
-                    code_question.hdlquestionsolution_set.all().delete()
-
                     return redirect('update-question-type', code_question_id=code_question.id)
 
                 return redirect('update-test-cases', code_question_id=code_question.id)
@@ -499,14 +498,13 @@ def compile_code(request):
     try:
         if request.method == "POST":
             language = Language.objects.get(judge_language_id=request.POST.get('lang-id'))
-            main = request.POST.get('main')
-            tb = request.POST.get('tb')
+            module = request.POST.get('module')
+            testbench = request.POST.get('testbench')
             
             if language.name.find('Verilog') != -1:
-                if tb.find('$dumpfile') == -1:
+                if testbench.find('$dumpfile') == -1:
                     # add wave dump to last line before endmodule
-                    main = main
-                    testbench = tb.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
+                    testbench = testbench.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
                 else:
                     # Define the regular expression patterns
                     dumpfile_pattern = r'\$dumpfile\("[^"]+"\)'
@@ -517,19 +515,17 @@ def compile_code(request):
                     new_dumpvars = '$dumpvars(0)'
 
                     # replace wave dump
-                    testbench = re.sub(dumpfile_pattern, new_dumpfile, tb)
+                    testbench = re.sub(dumpfile_pattern, new_dumpfile, testbench)
                     testbench = re.sub(dumpvars_pattern, new_dumpvars, testbench)
-                    main = main
-
                 try:
-                    main, input_ports, output_ports = embed_inout_module(main)
+                    module, input_ports, output_ports = embed_inout_module(module)
                     testbench = embed_inout_testbench(testbench, input_ports, output_ports)
                 except Exception as ex:
                     pass
             
             # create zip file
             with zipfile.ZipFile('submission.zip', 'w') as zip_file:
-                zip_file.writestr('main.v', main)
+                zip_file.writestr('main.v', module)
                 zip_file.writestr('testbench.v', testbench)
                 zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
                 zip_file.writestr('run', "vvp -n a.out | find -name '*.vcd' -exec python3 -m vcd2wavedrom.vcd2wavedrom --aasp -i {} + | tr -d '[:space:]'")

@@ -29,7 +29,7 @@
             <pre id="module_editor" class="inner rounded" style="height: 500px;"></pre>
             <input type="hidden" name="module" 
                id="id_module" 
-               value="{{ form.module.value }}">
+               value="{{ form.module.value|default:"" }}">
         </div>
 
         <!-- Ace Code Editor -->
@@ -38,7 +38,7 @@
             <pre id="testbench_editor" class="inner rounded" style="height: 500px;"></pre>
             <input type="hidden" name="testbench" 
                id="id_testbench" 
-               value="{{ form.testbench.value }}">
+               value="{{ form.testbench.value|default:"" }}">
         </div>
     </div>
 
@@ -162,23 +162,26 @@
     <!-- Apply testbench to all existing test cases -->
     <script>
         const applyToAll = () => {
-            // find all testbench editors excluding hidden ones"
-            const testbench_editors = document.querySelectorAll("[id^='id_tc-'][id$='-stdin-editor']:not([id='id_tc-{{ prefix|default:'__prefix__' }}-stdin-editor'])");
+            let code_editor, code;
+
+            // find all stdin editors excluding hidden ones"
+            const stdin_editors = document.querySelectorAll("[id^='id_tc-'][id$='-stdin-editor']:not([id='id_tc-{{ prefix|default:'__prefix__' }}-stdin-editor'])");
             
             // get the current testbench
-            let testbench_editor = ace.edit("testbench_editor");
-            const testbench_code = testbench_editor.getValue();
+            if ('{{ question_type }}' === 'Module Design') {
+                code_editor = ace.edit("testbench_editor");
+                code = testbench_editor.getValue();
+            } else {
+                code_editor = ace.edit("module_editor");
+                code = module_editor.getValue();
+            }
 
-            // loop through all testbench editors
-            testbench_editors.forEach((editor) => {
+            // loop through all stdin editors
+            stdin_editors.forEach((editor) => {
                 // set the testbench code
-                ace.edit(editor).setValue(testbench_code);
+                ace.edit(editor).setValue(code);
                 ace.edit(editor).clearSelection();
             });
-
-            // store testbench to apply to new test cases
-            const testbench = document.getElementById("testbench_editor");
-            testbench.dataset.code = testbench_code;
         }
     </script>
 {% endblock %}

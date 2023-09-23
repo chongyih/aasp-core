@@ -182,7 +182,10 @@ def update_test_cases(request, code_question_id):
 
     # prepare HDL solution form
     if not code_question.is_software_language():
-        hdl_solution_form = QuestionSolutionForm(instance=code_question.hdlquestionsolution if hasattr(code_question, 'hdlquestionsolution') else None)
+        if hasattr(code_question, 'hdlquestionsolution'):
+            hdl_solution_form = QuestionSolutionForm(instance=code_question.hdlquestionsolution)
+        else:
+            hdl_solution_form = QuestionSolutionForm()
 
         if request.session.get('module'):
             hdl_solution_form.initial['module'] = request.session.get('module')

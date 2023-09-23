@@ -68,7 +68,7 @@
   
   <!-- Input -->
   {% if code %}
-  <!-- Ace Code Editor -->
+    <!-- Ace Code Editor -->
     <div class="col-8">
       <div class="form-group">
         <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdin">Testbench</label>
@@ -469,6 +469,45 @@
         });
       }
 
+    </script>
+
+    <!-- Load from file -->
+    <script>
+      const loadFromFile = (elem) => {
+          // get the corresponding text area if software
+          const textArea = $(elem).siblings("textarea").first();
+
+          // get the corresponding ace editor if hardware
+          const editor_id = $(elem).siblings("pre").first().attr('id');
+          const editor = ace.edit(editor_id);
+
+          // create input element in DOM
+          let input = document.createElement('input');
+          input.type = 'file';
+          input.accept = '.txt';
+
+          // define onchange event
+          input.onchange = e => {
+              // get the selected file
+              let file = e.target.files[0];
+
+              // setting up the reader
+              let reader = new FileReader();
+              reader.readAsText(file, 'UTF-8');
+
+              // set text area value
+              reader.onload = readerEvent => {
+                  textArea.val(readerEvent.target.result);
+                  editor.setValue(readerEvent.target.result, -1);
+              }
+          }
+
+          // trigger the file picker
+          input.click();
+
+          // clean up
+          input.remove()
+      }
     </script>
 
 {% endblock %}

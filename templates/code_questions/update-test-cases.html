@@ -112,39 +112,26 @@
                       {% include 'code_questions/snippets/test-case-row.html' with prefix=forloop.counter form=f %}
                     {% endfor %}
                   </div>
-
-                  <!-- buttons -->
-                  <div>
-                    <button type="button" class="btn btn-sm btn-warning" id="addTestCase-btn">Add Test Case</button>
-                    <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save and Continue</button>
-                  </div>
                 {% else %}
                   <!-- hdl question solution management forms -->
                   {{ hdl_solution_formset.management_form }}
                   
                   {% if question_type == 'Module Design' %}
                     {% include 'code_questions/snippets/module-test-case.html' with testcase_formset=testcase_formset hdl_solution_formset=hdl_solution_formset %}
-                    
-                    <!-- buttons -->
-                    <div>
-                      <button type="button" class="btn btn-sm btn-warning" id="addTestCase-btn">Add Test Case</button>
-                      <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save and Continue</button>
-                    </div>
                   {% elif question_type == 'Testbench Design' %}
                     {% include 'code_questions/snippets/testbench-test-case.html' with testcase_formset=testcase_formset hdl_solution_formset=hdl_solution_formset %}
                   {% elif question_type == 'Module and Testbench Design' %}
                     {% include 'code_questions/snippets/module-testbench-test-case.html' with testcase_formset=testcase_formset hdl_solution_formset=hdl_solution_formset %}
-
-                    <!-- buttons -->
-                    <div>
-                      <button type="button" class="btn btn-sm btn-warning" id="addTestCase-btn">Add Test Case</button>
-                      <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save and Continue</button>
-                    </div>
                   {% endif %}
                   
 
                 {% endif %}
 
+                <!-- buttons -->
+                <div>
+                  <button type="button" class="btn btn-sm btn-warning {% if question_type == 'Testbench Design' %}d-none{% endif %}" id="addTestCase-btn">Add Test Case</button>
+                  <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save and Continue</button>
+                </div>
               </div>
 
             </form>
@@ -288,40 +275,6 @@
           }
       }
 
-  </script>
-
-  <!-- Load from file -->
-  <script>
-      const loadFromFile = (elem) => {
-          // get the corresponding text area
-          const textArea = $(elem).siblings("textarea").first();
-
-          // create input element in DOM
-          let input = document.createElement('input');
-          input.type = 'file';
-          input.accept = '.txt';
-
-          // define onchange event
-          input.onchange = e => {
-              // get the selected file
-              let file = e.target.files[0];
-
-              // setting up the reader
-              let reader = new FileReader();
-              reader.readAsText(file, 'UTF-8');
-
-              // set text area value
-              reader.onload = readerEvent => {
-                  textArea.val(readerEvent.target.result);
-              }
-          }
-
-          // trigger the file picker
-          input.click();
-
-          // clean up
-          input.remove()
-      }
   </script>
 
 {% endblock %}

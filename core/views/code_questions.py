@@ -160,7 +160,12 @@ def update_test_cases(request, code_question_id):
 
     # prepare formset
     if code_question.testcase_set.count() == 0:
-        TestCaseFormset = inlineformset_factory(CodeQuestion, TestCase, extra=3,
+        if hasattr(code_question, 'hdlquestionconfig') and code_question.hdlquestionconfig.get_question_type() == 'Testbench Design':
+            TestCaseFormset = inlineformset_factory(CodeQuestion, TestCase, extra=1,
+                                                    fields=['stdin', 'stdout', 'time_limit', 'memory_limit', 'score',
+                                                            'hidden', 'sample'])
+        else:
+            TestCaseFormset = inlineformset_factory(CodeQuestion, TestCase, extra=3,
                                                 fields=['stdin', 'stdout', 'time_limit', 'memory_limit', 'score',
                                                         'hidden', 'sample'])
     else:
@@ -223,6 +228,8 @@ def update_test_cases(request, code_question_id):
                 return redirect('question-bank-details', question_bank_id=code_question.question_bank.id)
             else:
                 return redirect('assessment-details', assessment_id=code_question.assessment.id)
+        else:
+            print(testcase_formset.errors)
 
     return render(request, 'code_questions/update-test-cases.html', context)
 

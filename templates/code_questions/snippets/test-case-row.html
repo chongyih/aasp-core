@@ -189,9 +189,13 @@
       { signal: [] }
     </script>
   </div>
+  {# stdout errors #}
+  {% for e in form.stdout.errors %}
+    <p class="text-danger mt-1">{% if e == 'This field is required.' %}Please generate an output.{% else %}{{ e }}{% endif %}</p>
+  {% endfor %}
   <div class="d-flex justify-content-between mt-2">
     <button type="button" id="id_tc-{{ prefix|default:"__prefix__" }}-button" class="btn btn-sm btn-warning" style="height: min-content" onclick="generateOutput(this)">Generate Output</button>
-    <div>
+    <div class="mt-1">
       <span class="h5" id="id_tc-{{ prefix|default:"__prefix__" }}-run-status">Ready</span>
       <div class="spinner-border spinner-border-sm ms-2" id="id_tc-{{ prefix|default:"__prefix__" }}-main-loading" style="display:none;"></div>
       <br>
@@ -293,6 +297,6 @@
                   return;
           });
         }
-        
+    
     </script>
 {% endblock %}

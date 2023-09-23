@@ -188,23 +188,11 @@ def update_test_cases(request, code_question_id):
     else:
         question_type = None
 
-    context = {
-        'creation': request.GET.get('next') is None,
-        'code_question': code_question,
-        'code_snippet': code_snippets,
-        'testcase_formset': testcase_formset,
-        'module': module,
-        'testbench': testbench,
-        'question_type': question_type,
-        'is_software_language': code_question.is_software_language(),
-    }
-
     # prepare HDL solution form
     if not code_question.is_software_language():
         HDLSolutionFormset = inlineformset_factory(CodeQuestion, HDLQuestionSolution, extra=0, 
                                                     fields=['module', 'testbench'])
         hdl_solution_formset = HDLSolutionFormset(prefix='solution', instance=code_question)
-        context['hdl_solution_formset'] = hdl_solution_formset
 
     # process POST requests
     if request.method == "POST":
@@ -233,8 +221,18 @@ def update_test_cases(request, code_question_id):
                 return redirect('question-bank-details', question_bank_id=code_question.question_bank.id)
             else:
                 return redirect('assessment-details', assessment_id=code_question.assessment.id)
-        else:
-            print(testcase_formset.errors)
+    
+    context = {
+        'creation': request.GET.get('next') is None,
+        'code_question': code_question,
+        'code_snippet': code_snippets,
+        'testcase_formset': testcase_formset,
+        'module': module,
+        'testbench': testbench,
+        'question_type': question_type,
+        'is_software_language': code_question.is_software_language(),
+        'hdl_solution_formset': hdl_solution_formset if not code_question.is_software_language() else None,
+    }
 
     return render(request, 'code_questions/update-test-cases.html', context)
 

@@ -277,4 +277,203 @@
 
   </script>
 
+  <!-- Generate output button -->
+  <script>
+    const generateOutput = (elem) => {
+      const editor = ace.edit("sol_editor");
+      const button_id = elem.id;
+      const stdin_id = button_id.replace("button", "stdin");
+      const index = button_id.replace("id_tc-", "").replace("-button", "");
+
+      const runStatus = $(`#id_tc-${index}-run-status`);
+      const mainLoading = $(`#id_tc-${index}-main-loading`);
+      const moreDetails = $(`#id_tc-${index}-more-details`);
+
+      const tb = document.getElementById(stdin_id).value;
+      const main = editor.getValue();
+
+      // check if empty
+      if (tb === "") {
+        runStatus.html("Testbench is empty &#x274C;", index);
+        return;
+      } else if (main === "") {
+        runStatus.html("Module Definition is empty &#x274C;", index);
+        return;
+      }
+
+      mainLoading.show();
+      moreDetails.hide()
+      runStatus.html('Compiling...');
+
+      $.ajax({
+        type: "POST",
+        url: "{% url 'compile-code' %}",
+        data: {
+          csrfmiddlewaretoken: "{{ csrf_token }}",
+          'lang-id': $("#lang-select").find("option:selected").data('judgeid'),
+          main: main,
+          tb: tb,
+        },
+      }).done((res, textStatus, jqXHR) => {
+        if (res.result === "success") {
+          updateOutput(res.token, index);
+
+          // set token
+          moreDetails.data('token', res.token)
+        }
+      }).fail((jqXHR, textStatus, errorThrown) => {
+          // 4xx status codes
+          if (Math.floor(jqXHR.status / 100) == 4) {
+              console.error("Internal API Error!");
+              showError("Internal API Error &#x274C;", index);
+          }
+          else {
+              console.error("External API Error!");
+              showError("External API Error &#x274C;", index);
+          }
+      });
+    }
+
+    // updates sample status by polling
+    const updateOutput = (token, index) => {
+      $.ajax({
+          type: 'GET',
+          url: "{% url 'get-tc-details' %}",
+          data: {token, status_only: false, vcd: 'true'},
+      }).done((res, textStatus, jqXHR) => {
+          if (res.result === "success") {
+            const runStatus = $(`#id_tc-${index}-run-status`);
+            const moreDetails = $(`#id_tc-${index}-more-details`);
+            const mainLoading = $(`#id_tc-${index}-main-loading`);
+
+            if (res.data.status_id === 1 || res.data.status_id === 2) {  // not finished
+                //runStatus.html(res.data.status);
+                window.setTimeout(() => {
+                    updateOutput(token, index);
+                }, 1000);
+            } else { // finished
+              if (res.data.status_id === 3)
+                runStatus.html('Successful');
+              else
+                runStatus.html(res.data.status + " &#x274C;");
+
+              mainLoading.hide();
+
+              if (res.data.status_id === 3 | res.data.status_id === 4) {
+                const e = document.getElementById(`InputJSON_${index}`);
+
+                let wavedrom = JSON.parse(res.data.stdout)
+                wavedrom.signal = wavedrom.signal.map(signal => {
+                  const nameWithoutPrefix = signal.name.replace(/^in_|^out_/, "");
+                  signal.name = nameWithoutPrefix;
+                  return signal;
+                });
+
+                // Update the input element's value with the wavedrom value
+                e.innerHTML = JSON.stringify(wavedrom);
+                WaveDrom.RenderWaveForm(index, WaveDrom.eva(`InputJSON_${index}`), "WaveDrom_Display_")
+
+                // Show the wavedrom div
+                const wavedrom_div = document.getElementById(`id_tc-${index}-wavedrom`);
+                wavedrom_div.classList.remove("d-none");
+
+                // Set the output value
+                const output = document.getElementById(`id_tc-${index}-stdout`);
+                output.value = res.data.stdout;
+              } else if (res.data.status_id === 6) {  // compilation error
+                moreDetails.show();
+              } else {
+                showError(res.data.stdout, index);
+              }
+            }
+          }
+      }).fail((jqXHR, textStatus, errorThrown) => {
+          // 4xx status codes
+          if (Math.floor(jqXHR.status / 100) == 4) {
+              console.error("Internal API Error!");
+              showError("Internal API Error &#x274C;", index);
+          }
+          else {
+              console.error("External API Error!");
+              showError("External API Error &#x274C;", index);
+          }
+      });
+    }
+  </script>
+
+  <!-- Load from file -->
+  <script>
+    const loadFromFile = (elem) => {
+        // get the corresponding text area if software
+        const textArea = $(elem).siblings("textarea").first();
+
+        // get the corresponding ace editor if hardware
+        const editor_id = $(elem).siblings("pre").first().attr('id');
+        const editor = ace.edit(editor_id);
+
+        // create input element in DOM
+        let input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.txt';
+
+        // define onchange event
+        input.onchange = e => {
+            // get the selected file
+            let file = e.target.files[0];
+
+            // setting up the reader
+            let reader = new FileReader();
+            reader.readAsText(file, 'UTF-8');
+
+            // set text area value
+            reader.onload = readerEvent => {
+                textArea.val(readerEvent.target.result);
+                editor.setValue(readerEvent.target.result, -1);
+            }
+        }
+
+        // trigger the file picker
+        input.click();
+
+        // clean up
+        input.remove()
+    }
+  </script>
+
+  <script>
+    // "More Details" clicked (opens modal)
+    const viewModal = (btn) => {
+      // get index
+      const index = btn.id.replace("id_tc-", "").replace("-more-details", "");
+
+      // get token
+      const token = $(btn).data('token');
+
+      // ajax request
+      $.ajax({
+          type: 'GET',
+          url: "{% url 'get-tc-details' %}",
+          data: {token, status_only: false},
+      }).done((res, textStatus, jqXHR) => {
+          if (res.result === "success") {
+            // set error details
+            $("#error-details").html(res.data.compile_output);
+
+            // show modal
+            $("#error-modal").modal('show')
+          }
+      }).fail((jqXHR, textStatus, errorThrown) => {
+          // 4xx status codes
+          if (Math.floor(jqXHR.status / 100) == 4) {
+              console.error("Internal API Error!");
+              showError("Internal API Error &#x274C;", index);
+          }
+          else {
+              console.error("External API Error!");
+              showError("External API Error &#x274C;", index);
+          }
+      });
+    }
+
+  </script>
 {% endblock %}

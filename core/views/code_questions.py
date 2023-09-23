@@ -183,6 +183,11 @@ def update_test_cases(request, code_question_id):
         del request.session['module']
         del request.session['testbench']
 
+    if hasattr(code_question, 'hdlquestionconfig'):
+        question_type = code_question.hdlquestionconfig.get_question_type()
+    else:
+        question_type = None
+
     context = {
         'creation': request.GET.get('next') is None,
         'code_question': code_question,
@@ -190,7 +195,7 @@ def update_test_cases(request, code_question_id):
         'testcase_formset': testcase_formset,
         'module': module,
         'testbench': testbench,
-        'question_type': code_question.hdlquestionconfig.get_question_type(),
+        'question_type': question_type,
         'is_software_language': code_question.is_software_language(),
     }
 
@@ -282,9 +287,10 @@ def update_languages(request, code_question_id):
             if language.software_language != cq_is_software:
                 code_question.testcase_set.all().delete()
                 
+                if hasattr(code_question, 'hdlquestionconfig'):
+                    code_question.hdlquestionconfig.delete()
+
                 if not language.software_language:
-                    if hasattr(code_question, 'hdlquestionconfig'):
-                        code_question.hdlquestionconfig.delete()
                     code_question.hdlquestionsolution_set.all().delete()
 
                     return redirect('update-question-type', code_question_id=code_question.id)

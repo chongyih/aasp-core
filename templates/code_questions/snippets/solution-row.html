@@ -1,5 +1,9 @@
 {% load static %}
 
+{% block style %}
+    <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
+{% endblock %}
+
 <div class="row solution-row">
     {# if id is not None, this is an existing row #}
     {% if form.id.value != None %}
@@ -56,6 +60,20 @@
 {% block js %}
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="{% static 'vendors/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
+    <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
+
+    
+    <!-- Error message toast -->
+    <script>
+        const showErrorToast = (msg) => {
+            Toastify({
+                text: msg,
+                duration: 3000,
+                position: "center",
+                style: {"background": "#ff6961"}
+            }).showToast();
+        };
+    </script>
 
     <!-- Ace code editor config -->
     <script>
@@ -141,21 +159,25 @@
 
             $(document).ready(function() {
                     $.ajax({
-                    type: "POST",
-                    url: "/testbench/generate/",
-                    data: {
-                        csrfmiddlewaretoken: "{{ csrf_token }}",
-                        module_code: module_code,
-                    },
-                    success: function(data) {
+                        type: "POST",
+                        url: "/testbench/generate/",
+                        data: {
+                            csrfmiddlewaretoken: "{{ csrf_token }}",
+                            module_code: module_code,
+                        },
+                    }).done((res, textStatus, jqXHR) => {
                         let testbench_editor = ace.edit("testbench_editor");
-                        testbench_editor.setValue(data, -1);
-                    },
-                    error: function(data) {
-                        console.log(data);
-                    }
+                        testbench_editor.setValue(res.testbench, -1);
+                    }).fail((jqXHR, textStatus, errorThrown) => {
+                        // 4xx status codes
+                        if (Math.floor(jqXHR.status / 100) == 4) {
+                            showErrorToast(jqXHR.responseJSON.message);
+                        }
+                        else {
+                            showErrorToast("Something went wrong. Please try again.");
+                        }
+                    });
                 })
-            })
         }
     </script>
 

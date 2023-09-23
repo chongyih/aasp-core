@@ -112,35 +112,39 @@
                       {% include 'code_questions/snippets/test-case-row.html' with prefix=forloop.counter form=f %}
                     {% endfor %}
                   </div>
+
+                  <!-- buttons -->
+                  <div>
+                    <button type="button" class="btn btn-sm btn-warning" id="addTestCase-btn">Add Test Case</button>
+                    <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save and Continue</button>
+                  </div>
                 {% else %}
                   <!-- hdl question solution management forms -->
                   {{ hdl_solution_formset.management_form }}
                   
-                  {% include 'code_questions/snippets/solution-row.html' with form=hdl_solution_formset.0 %}
+                  {% if question_type == 'Module Design' %}
+                    {% include 'code_questions/snippets/module-test-case.html' with testcase_formset=testcase_formset hdl_solution_formset=hdl_solution_formset %}
+                    
+                    <!-- buttons -->
+                    <div>
+                      <button type="button" class="btn btn-sm btn-warning" id="addTestCase-btn">Add Test Case</button>
+                      <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save and Continue</button>
+                    </div>
+                  {% elif question_type == 'Testbench Design' %}
+                    {% include 'code_questions/snippets/testbench-test-case.html' with testcase_formset=testcase_formset hdl_solution_formset=hdl_solution_formset %}
+                  {% elif question_type == 'Module and Testbench Design' %}
+                    {% include 'code_questions/snippets/module-testbench-test-case.html' with testcase_formset=testcase_formset hdl_solution_formset=hdl_solution_formset %}
 
-                  <hr>
-
-                  <!-- test cases & code snippet management forms -->
-                  {{ testcase_formset.management_form }}
-
-                  <!-- Sample Test case -->
-                  <h5>Sample Test Case</h5>
-                  {% include 'code_questions/snippets/test-case-row.html' with sample=True code=True prefix="0" form=testcase_formset.0 %}
-                  <!-- this div holds all internal test case rows -->
-                  <h5>Internal Test Cases</h5>
-                  <div id="test-cases-container" class="mt-4">
-                    {% for f in testcase_formset|slice:"1:" %}
-                      {% include 'code_questions/snippets/test-case-row.html' with code=True prefix=forloop.counter form=f %}
-                    {% endfor %}
-                  </div>
+                    <!-- buttons -->
+                    <div>
+                      <button type="button" class="btn btn-sm btn-warning" id="addTestCase-btn">Add Test Case</button>
+                      <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save and Continue</button>
+                    </div>
+                  {% endif %}
+                  
 
                 {% endif %}
 
-                <!-- buttons -->
-                <div>
-                  <button type="button" class="btn btn-sm btn-warning" id="addTestCase-btn">Add Test Case</button>
-                  <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save and Continue</button>
-                </div>
               </div>
 
             </form>

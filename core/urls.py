@@ -91,9 +91,7 @@ urlpatterns = [
     # testbench generation
     path('testbench/generate/', code_questions.testbench_generation, name='testbench-generation'),   # ajax
 
-    # vcdrom
+    # waveform display
     path('vcdrom/', attempts.vcdrom, name='vcdrom'),
-
-    # wavedrom
     path('api/wavedrom/vcd2wavedrom', attempts.wavedrom, name='vcd2wavedrom')
 ]

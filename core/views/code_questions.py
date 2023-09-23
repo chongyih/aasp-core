@@ -20,7 +20,7 @@ from rest_framework.renderers import JSONRenderer
 from core.decorators import groups_allowed, UserGroup
 from core.forms.question_banks import CodeQuestionForm, ModuleGenerationForm, QuestionTypeForm
 from core.models import QuestionBank, Assessment, CodeQuestion
-from core.models.questions import HDLQuestionConfig, TestCase, CodeSnippet, Language, Tag
+from core.models.questions import HDLQuestionConfig, HDLQuestionSolution, TestCase, CodeSnippet, Language, Tag
 from core.serializers import CodeQuestionsSerializer
 from core.views.utils import TestbenchGenerator, check_permissions_course, check_permissions_code_question, embed_inout_module, embed_inout_testbench, generate_module
 
@@ -185,12 +185,13 @@ def update_test_cases(request, code_question_id):
         'testcase_formset': testcase_formset,
         'module': module,
         'testbench': testbench,
+        'question_type': code_question.hdlquestionconfig.get_question_type(),
         'is_software_language': code_question.is_software_language(),
     }
 
     # prepare HDL solution form
     if not code_question.is_software_language():
-        HDLSolutionFormset = inlineformset_factory(CodeQuestion, HDLQuestionConfig, extra=0, 
+        HDLSolutionFormset = inlineformset_factory(CodeQuestion, HDLQuestionSolution, extra=0, 
                                                     fields=['module', 'testbench'])
         hdl_solution_formset = HDLSolutionFormset(prefix='solution', instance=code_question)
         context['hdl_solution_formset'] = hdl_solution_formset
@@ -275,7 +276,10 @@ def update_languages(request, code_question_id):
                 code_question.testcase_set.all().delete()
                 
                 if not language.software_language:
-                    code_question.hdlquestionconfig_set.all().delete()
+                    if hasattr(code_question, 'hdlquestionconfig'):
+                        code_question.hdlquestionconfig.delete()
+                    code_question.hdlquestionsolution_set.all().delete()
+
                     return redirect('update-question-type', code_question_id=code_question.id)
 
                 return redirect('update-test-cases', code_question_id=code_question.id)
@@ -315,26 +319,27 @@ def update_question_type(request, code_question_id):
         return redirect('assessment-details', assessment_id=code_question.assessment.id)
     
     # prepare form
-    question_type_form = QuestionTypeForm(instance=code_question)
+    question_type_form = QuestionTypeForm()
 
     # process POST requests
     if request.method == "POST":
-        form = QuestionTypeForm(request.POST, instance=code_question)
+        form = QuestionTypeForm(request.POST)
 
         if form.is_valid():
-            form.save()
+            # remove existing config
+            if hasattr(code_question, 'hdlquestionconfig'):
+                code_question.hdlquestionconfig.delete()
 
-            if form.cleaned_data.get('question_config'):
-                print(form.cleaned_data.get('question_config'))
+            hdl_config = form.save(commit=False)
+            hdl_config.code_question = code_question
+            hdl_config.save()
 
             next_url = request.GET.get("next")
             if next_url:
                 return redirect(next_url)
             
             return redirect('generate-module-code', code_question_id=code_question.id)
-        else:
-            print(form.errors)
-        
+    
     context = {
         'creation': request.GET.get('next') is None,
         'code_question': code_question,
@@ -446,14 +451,30 @@ def get_cq_details(request):
             }
         return Response(context, status=status.HTTP_400_BAD_REQUEST)
     
+@api_view(["POST"])
 @login_required()
+@renderer_classes([JSONRenderer])
 def testbench_generation(request):
     # get module_code from request
     module_code = request.POST.get("module_code")
 
-    test_bench = TestbenchGenerator(module_code)()
+    try:
+        # generate testbench
+        testbench = TestbenchGenerator(module_code)()
 
-    return HttpResponse(test_bench, content_type='text/plain')
+        context = {
+            "result": "success",
+            "testbench": testbench
+        }
+
+        return Response(context, status=status.HTTP_200_OK)
+    
+    except Exception as ex:
+        context = { 
+            "result": "error",
+            "message": "Error in generating testbench. Please check that your module code has inputs and outputs defined."
+        }
+        return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(["POST"])
 @login_required()

@@ -1,0 +1,15 @@
+<div>
+
+    {% include 'code_questions/snippets/solution-row.html' with form=hdl_solution_formset.0 %}
+
+    <hr>
+
+    <!-- test cases & code snippet management forms -->
+    {{ testcase_formset.management_form }}
+
+    <!-- Test case (testbench test only has one test case) -->
+    <h5>Test Case</h5>
+    {% include 'code_questions/snippets/test-case-row.html' with sample=False code=True prefix="0" form=testcase_formset.0 %}
+    </div>
+
+</div>

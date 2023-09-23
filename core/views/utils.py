@@ -553,7 +553,7 @@ class TestbenchGenerator:
         self.print_dut()
         self.print_stimulus_block()
         self.print_clock_gen()
-        self.print_module_end() 
+        self.print_module_end()
 
         return self.testbench
 
@@ -601,7 +601,7 @@ class TestbenchGenerator:
             ports = ports.split(',')
             
             for port in ports:
-                if port != '\t':
+                if port != '\t' and port != ' ':
                     # remove space and brackets
                     port = re.sub(r'[\[\]\(\) ]', '', port)
                     comp_pin_list_pre.append((direction, bus + port))

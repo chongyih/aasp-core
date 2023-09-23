@@ -49,7 +49,6 @@ class QuestionBank(models.Model):
     def __str__(self):
         return self.name
 
-
 class CodeQuestion(models.Model):
     class Meta:
         pass
@@ -145,8 +144,17 @@ class HDLQuestionConfig(models.Model):
     class Meta:
         pass
 
-    code_question = models.ForeignKey(CodeQuestion, null=False, blank=False, on_delete=models.CASCADE)
+    def get_question_type(self):
+        """
+        Returns the question type of the HDL question.
+        """
+        return self.QUESTION_TYPES[self.question_type - 1][1]
+    
+    code_question = models.OneToOneField(CodeQuestion, null=True, blank=True, on_delete=models.CASCADE)
     question_type = models.IntegerField(choices=QUESTION_TYPES, default=1)
     question_config = models.IntegerField(choices=CONFIGURATION_OPTIONS, default=1)
+
+class HDLQuestionSolution(models.Model):
+    code_question = models.ForeignKey(CodeQuestion, null=False, blank=False, on_delete=models.CASCADE)
     module = models.TextField(blank=False, null=False)
     testbench = models.TextField(blank=True, null=True)

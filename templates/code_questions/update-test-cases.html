@@ -4,24 +4,8 @@
 {% block title %}Test Cases{% endblock %}
 
 {% block styles %}
-  <!-- Split.js, ace editor css -->
+  <!-- Ace editor css -->
   <style>
-      .split {
-          display: flex;
-          flex-direction: row;
-      }
-
-      .gutter {
-          background-color: #eee;
-          background-repeat: no-repeat;
-          background-position: 50%;
-      }
-
-      .gutter.gutter-horizontal {
-          background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
-          cursor: col-resize;
-      }
-
       @font-face {
           font-family: 'JetBrains Mono';
           src: url('{% static 'fonts/JetBrainsMono-Regular.ttf' %}') format('truetype');
@@ -118,6 +102,8 @@
 
                   <!-- solution row -->
                   {% include 'code_questions/snippets/solution-row.html' with form=hdl_solution_form %}
+
+                  <hr>
                   
                   <!-- test case rows -->
                   {% if question_type == 'Module Design' %}

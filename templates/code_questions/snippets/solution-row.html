@@ -2,6 +2,24 @@
 
 {% block style %}
     <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
+
+    <style>
+        .split {
+            display: flex;
+            flex-direction: row;
+        }
+  
+        .gutter {
+            background-color: #eee;
+            background-repeat: no-repeat;
+            background-position: 50%;
+        }
+  
+        .gutter.gutter-horizontal {
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+            cursor: col-resize;
+        }
+    </style>
 {% endblock %}
 
 <div class="row solution-row">
@@ -23,23 +41,29 @@
     </div>
 
     <div class="row">
-        <!-- Ace Code Editor -->
-        <div class="col">
-            <label>Module Definition</label>
-            <pre id="module_editor" class="inner rounded" style="height: 500px;"></pre>
-            <input type="hidden" name="module" 
-               id="id_module" 
-               value="{{ form.module.value|default:"" }}">
-        </div>
+        <div class="split">
+            <div id="split-0">
+                <!-- Ace Code Editor -->
+                <div class="col pe-2">
+                    <label>Module Definition</label>
+                    <pre id="module_editor" class="inner rounded" style="height: 500px;"></pre>
+                    <input type="hidden" name="module" 
+                    id="id_module" 
+                    value="{{ form.module.value|default:"" }}">
+                </div>
+            </div>
 
-        <!-- Ace Code Editor -->
-        <div class="col">
-            <label>Testbench</label>
-            <pre id="testbench_editor" class="inner rounded" style="height: 500px;"></pre>
-            <input type="hidden" name="testbench" 
-               id="id_testbench" 
-               value="{{ form.testbench.value|default:"" }}">
-        </div>
+            <div id="split-1">
+                <!-- Ace Code Editor -->
+                <div class="col ps-2">
+                    <label>Testbench</label>
+                    <pre id="testbench_editor" class="inner rounded" style="height: 500px;"></pre>
+                    <input type="hidden" name="testbench" 
+                    id="id_testbench" 
+                    value="{{ form.testbench.value|default:"" }}">
+                </div>
+            </div>
+        </split>
     </div>
 
     <div>
@@ -50,6 +74,7 @@
 
 {% block js %}
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js"></script>
     <script src="{% static 'vendors/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
     <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
 
@@ -127,6 +152,15 @@
             var code = testbench_editor.getValue();
             document.getElementById("id_testbench").value = code;
         });
+
+        Split(['#split-0', '#split-1'], {
+            sizes: [50, 50],
+            minSize: 400,
+            onDrag: () => {
+                module_editor.resize() // resize code editor when panes are resized
+                testbench_editor.resize()
+            }
+        })
     </script>
 
     <!-- Generate Testbench -->

@@ -1,16 +1,100 @@
+{% load static %}
+{% load utils %}
+
 <div>
     <!-- test cases & code snippet management forms -->
     {{ testcase_formset.management_form }}
 
     <!-- Sample Test case -->
     <h5>Sample Test Case</h5>
-    {% include 'code_questions/snippets/hdl-test-case-row.html' with sample=True prefix="0" form=testcase_formset.0 %}
+    {% include 'code_questions/snippets/double-hdl-test-case-row.html' with sample=True double=True prefix_1="0" prefix_2="1" form_1=testcase_formset.0 form_2=testcase_formset.1 %}
     <!-- this div holds all internal test case rows -->
     <h5>Internal Test Cases</h5>
     <div id="test-cases-container" class="mt-4">
-    {% for f in testcase_formset|slice:"1:" %}
-        {% include 'code_questions/snippets/hdl-test-case-row.html' with prefix=forloop.counter form=f %}
-    {% endfor %}
+    {% with testcase_formset|slice:"2:"|chunks:2 as form_pairs %}
+        {% for form_pair in form_pairs %}
+            {% with f1=form_pair.0 f2=form_pair.1 %}
+                {% include 'code_questions/snippets/double-hdl-test-case-row.html' with double=True prefix_1=forloop.counter|add:forloop.counter prefix_2=forloop.counter|add:forloop.counter|add:1 form_1=f1 form_2=f2 %}
+            {% endwith %}
+        {% endfor %}
+    {% endwith %}
     </div>
 
 </div>
+
+{% block js %}
+    <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
+
+    <!-- Error message toast -->
+    <script>
+        const showErrorToast = (msg) => {
+            Toastify({
+                text: msg,
+                duration: 3000,
+                position: "center",
+                style: {"background": "#ff6961"}
+            }).showToast();
+        };
+    </script>
+
+    <script>
+        const initialize_editor = (editor, textId) => {
+            editor.renderer.setScrollMargin(10);
+
+            editor.setOptions({
+                fontFamily: "JetBrains Mono",
+                fontSize: "16px",
+                theme: "ace/theme/cloud9_day",
+                showPrintMargin: false,
+                highlightActiveLine: false,
+                wrap: true,
+                tabSize: 4,
+            });
+
+            editor.setOption("dragEnabled", false);
+
+            editor.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
+
+            // Synchronize Ace editor content with the hidden input field
+            editor.getSession().on('change', function(){
+                var code = editor.getValue();
+                document.getElementById(textId).value = code;
+            });
+        }
+
+        for (let i = 0; i < $("#id_tc-TOTAL_FORMS").val(); i++) {
+            let editor = ace.edit(`id_tc-${i}-stdin-editor`);
+
+            initialize_editor(editor, `id_tc-${i}-stdin`);
+        }
+
+        const generateTestbench = (elem) => {
+            const index = elem.id.replace("id_tc-", "").replace("-gen-tb", "");
+            
+            const module_code = document.getElementById(`id_tc-${index}-stdin`).value;
+
+            $(document).ready(function() {
+                    $.ajax({
+                        type: "POST",
+                        url: "/testbench/generate/",
+                        data: {
+                            csrfmiddlewaretoken: "{{ csrf_token }}",
+                            module_code: module_code,
+                        },
+                    }).done((res, textStatus, jqXHR) => {
+                        let testbench_editor = ace.edit(`id_tc-${Number(index) + 1}-stdin-editor`);
+                        testbench_editor.setValue(res.testbench, -1);
+                    }).fail((jqXHR, textStatus, errorThrown) => {
+                        // 4xx status codes
+                        if (Math.floor(jqXHR.status / 100) == 4) {
+                            showErrorToast(jqXHR.responseJSON.message);
+                        }
+                        else {
+                            showErrorToast("Something went wrong. Please try again.");
+                        }
+                    });
+                })
+            }
+        
+    </script>
+{% endblock %}

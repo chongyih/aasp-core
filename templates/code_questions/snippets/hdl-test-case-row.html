@@ -1,192 +1,179 @@
 {% load static %}
 
-{% block styles %}
-  <!-- ace editor css -->
-  <style>
-      @font-face {
-          font-family: 'JetBrains Mono';
-          src: url('{% static 'fonts/JetBrainsMono-Regular.ttf' %}') format('truetype');
-          font-weight: normal;
-          font-style: normal;
-      }
-
-      /* for ace editor */
-      .readonly-highlight {
-          position: absolute;
-          background-color: red;
-          opacity: 0.1;
-      }
-  </style>
-  <link rel="stylesheet" href="{% static 'vendors/highlight.js/styles/night-owl.min.css' %}">
-  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
-
-{% endblock %}
-
 <body onload="WaveDrom.ProcessAll()">
-<div class="row test-case-row"
-     {% if hidden %}id="empty-test-case-row" style="display:none"{% endif %}
-     {% if form.DELETE.value %}style="display:none"{% endif %}
->
+    <div class="row test-case-row"
+        {% if hidden %}id="empty-test-case-row" style="display:none"{% endif %}
+        {% if form.DELETE.value %}style="display:none"{% endif %}
+    >
 
-  {# if id is not None, this is an existing row #}
-  {% if form.id.value != None %}
-    <input type="hidden" name="tc-{{ prefix|default:"__prefix__" }}-id" value="{{ form.id.value }}"
-           id="id_tc-{{ prefix|default:"__prefix__" }}-id">
-    <input type="checkbox" style="visibility:hidden" class="delete-checkbox"
-           name="tc-{{ prefix|default:"__prefix__" }}-DELETE"
-           id="id_tc-{{ prefix|default:"__prefix__" }}-DELETE" {% if form.DELETE.value %}checked{% endif %}>
-  {% endif %}
+        {# if id is not None, this is an existing row #}
+        {% if form.id.value != None %}
+            <input type="hidden" name="tc-{{ prefix|default:"__prefix__" }}-id" value="{{ form.id.value }}"
+                id="id_tc-{{ prefix|default:"__prefix__" }}-id">
+            <input type="checkbox" style="visibility:hidden" class="delete-checkbox"
+                name="tc-{{ prefix|default:"__prefix__" }}-DELETE"
+                id="id_tc-{{ prefix|default:"__prefix__" }}-DELETE" {% if form.DELETE.value %}checked{% endif %}>
+        {% endif %}
 
-  <!-- Label and delete button row -->
-  {% if not sample %}
-    <div class="d-flex justify-content-between align-items-center">
-      <h6>Test Case <span style="display:none"
-                          id="tc-{{ prefix|default:"__prefix__" }}-label">{{ prefix|default:"__prefix__" }}</span>
-      </h6>
-      <button type="button"
-              class="btn btn-sm btn-danger float-end justify-content-center d-flex align-items-center"
-              onclick="removeClicked(this, {% if form.id.value != None %}true{% else %}false{% endif %});"><i
-              class="fa-solid fa-xmark"></i></button>
-    </div>
-  {% endif %}
-  
-  <!-- Input -->
-    <!-- Ace Code Editor -->
-    <div class="col-8">
-      <div class="form-group">
-        <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdin">{% if question_type == 'Module Design' %}Testbench{% else %}Module Definition{% endif %}</label>
-        <pre name="tc-{{ prefix|default:"__prefix__" }}-stdin" 
-             id="id_tc-{{ prefix|default:"__prefix__" }}-stdin-editor" 
-             class="inner rounded" style="height: 500px;" >{{ form.stdin.value|default:"" }}</pre>
-        <input type="hidden" name="tc-{{ prefix|default:"__prefix__" }}-stdin" 
-               id="id_tc-{{ prefix|default:"__prefix__" }}-stdin" 
-               value="{{ form.stdin.value|default:"" }}">
-        <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
-        {% for e in form.stdin.errors %}
-          <p class="text-danger">{{ e }}</p>
-        {% endfor %}
-      </div>
-    </div>
-  
-  <div class="form-group col-4">
-    <!-- stdout output -->
-    <div class="form-group row d-none">
-      <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdout">Output</label>
-      <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdout"
-                id="id_tc-{{ prefix|default:"__prefix__" }}-stdout" rows=5
-                class="form-control font-monospace">{{ form.stdout.value|default:"" }}</textarea>
-    </div>
-
-    <!-- time and memory limit inputs -->
-    <div class="row">
-      <div class="form-group">
-        <label for="id_tc-{{ prefix|default:"__prefix__" }}-time_limit">Time Limit (s)</label>
-        <input name="tc-{{ prefix|default:"__prefix__" }}-time_limit"
-              id="id_tc-{{ prefix|default:"__prefix__" }}-time_limit" type="number"
-              class="form-control" min="0" value="{{ form.time_limit.value }}">
-        {# time_limit errors #}
-        {% for e in form.time_limit.errors %}
-          <p class="text-danger">{{ e }}</p>
-        {% endfor %}
-      </div>
-      <div class="form-group">
-        <label for="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit">Memory Limit (KB)</label>
-        <input name="tc-{{ prefix|default:"__prefix__" }}-memory_limit"
-              id="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit" type="number"
-              class="form-control" min="0" value="{{ form.memory_limit.value }}">
-        {# memory_limit errors #}
-        {% for e in form.memory_limit.errors %}
-          <p class="text-danger">{{ e }}</p>
-        {% endfor %}
-      </div>
-    </div>
-
-    <!-- score and sample/hidden checkboxes input -->
-    <div class="row">
-      <div class="form-group">
-        <label for="id_tc-{{ prefix|default:"__prefix__" }}-score">Score</label>
-        <input name="tc-{{ prefix|default:"__prefix__" }}-score" id="id_tc-{{ prefix|default:"__prefix__" }}-score"
-              type="number" class="form-control"
-              min="0"
-                {% if sample %}
-              value="{{ form.score.value|default:0 }}"
-                {% else %}
-              value="{{ form.score.value|default:5 }}"
-                {% endif %}>
-        {# score errors #}
-        {% for e in form.score.errors %}
-          <p class="text-danger">{{ e }}</p>
-        {% endfor %}
-      </div>
-
-      <div class="form-group" {% if sample %} style="visibility:hidden"{% endif %}>
-        <label>Options</label>
-        <div class="form-check">
-          <div class="checkbox">
-            <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-hidden"
-                  id="id_tc-{{ prefix|default:"__prefix__" }}-hidden"
-                  class="form-check-input" {% if form.hidden.value and not sample %}checked{% endif %}>
-            <label for="id_tc-{{ prefix|default:"__prefix__" }}-hidden">Hidden</label>
-          </div>
-          <div class="checkbox" style="visibility:hidden">
-            <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-sample"
-                  id="id_tc-{{ prefix|default:"__prefix__" }}-sample"
-                  class="form-check-input" {% if sample %}checked{% endif %}>
-            <label for="id_tc-{{ prefix|default:"__prefix__" }}-sample">Sample</label>
-          </div>
+        <!-- Label and delete button row -->
+        {% if not sample %}
+            <div class="d-flex justify-content-between align-items-center">
+            <h6>Test Case <span style="display:none"
+                                id="tc-{{ prefix|default:"__prefix__" }}-label">{{ prefix|default:"__prefix__" }}</span>
+            </h6>
+            <button type="button"
+                    class="btn btn-sm btn-danger float-end justify-content-center d-flex align-items-center"
+                    onclick="removeClicked(this, {% if form.id.value != None %}true{% else %}false{% endif %});"><i
+                    class="fa-solid fa-xmark"></i></button>
+            </div>
+        {% endif %}
+    
+        <!-- Input -->
+        <!-- Ace Code Editor -->
+        <div class="col-8">
+        <div class="form-group">
+            <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdin">{% if question_type == 'Module Design' %}Testbench{% else %}Module Definition{% endif %}</label>
+            <pre name="tc-{{ prefix|default:"__prefix__" }}-stdin" 
+                id="id_tc-{{ prefix|default:"__prefix__" }}-stdin-editor" 
+                class="inner rounded" style="height: 500px;" >{{ form.stdin.value|default:"" }}</pre>
+            <input type="hidden" name="tc-{{ prefix|default:"__prefix__" }}-stdin" 
+                id="id_tc-{{ prefix|default:"__prefix__" }}-stdin" 
+                value="{{ form.stdin.value|default:"" }}">
+            <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
+            {% for e in form.stdin.errors %}
+            <p class="text-danger">{{ e }}</p>
+            {% endfor %}
         </div>
-      </div>
-    </div>
-  </div>
-  <label for="id_tc-{{ prefix|default:"__prefix__" }}-wavedrom">Expected Output</label>
-  <!-- wavedrom -->
-  <div id="id_tc-{{ prefix|default:"__prefix__" }}-wavedrom" class="nowrap d-none" style="overflow-x: auto">
-    <script type="WaveDrom">
-      { signal: [] }
-    </script>
-  </div>
-  {# stdout errors #}
-  {% for e in form.stdout.errors %}
-    <p class="text-danger mt-1">{% if e == 'This field is required.' %}Please generate an output.{% else %}{{ e }}{% endif %}</p>
-  {% endfor %}
-  <div class="d-flex justify-content-between mt-2">
-    <button type="button" id="id_tc-{{ prefix|default:"__prefix__" }}-button" class="btn btn-sm btn-warning" style="height: min-content" onclick="generateOutput(this)">Generate Output</button>
-    <div class="mt-1">
-      <span class="h5" id="id_tc-{{ prefix|default:"__prefix__" }}-run-status">Ready</span>
-      <div class="spinner-border spinner-border-sm ms-2" id="id_tc-{{ prefix|default:"__prefix__" }}-main-loading" style="display:none;"></div>
-      <br>
-      <button type="button" id="id_tc-{{ prefix|default:"__prefix__" }}-more-details" class="btn btn-link p-0 view-modal" onclick="viewModal(this)"
-              style="display:none;">
-        More Details
-      </button>
-    </div>
-  </div>
-
-  <div class="mt-1">
-    <hr>
-  </div>
-
-  <!-- Error modal -->
-  <div class="modal fade" id="error-modal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            Compilation Errors
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" />
         </div>
-        <div class="modal-body">
-          <pre id="error-details" style="color: red; font-family: monospace; font-size: medium; padding: 10px;"></pre>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
+    
+        <div class="form-group col-4">
+            <!-- stdout output -->
+            <div class="form-group row d-none">
+            <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdout">Output</label>
+            <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdout"
+                        id="id_tc-{{ prefix|default:"__prefix__" }}-stdout" rows=5
+                        class="form-control font-monospace">{{ form.stdout.value|default:"" }}</textarea>
+            <div>
+                <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
+            </div>
+            {# stdout errors #}
+            {% for e in form.stdout.errors %}
+                <p class="text-danger">{{ e }}</p>
+            {% endfor %}
+            </div>
 
-</div>
+            <!-- time and memory limit inputs -->
+            <div class="row">
+            <div class="form-group">
+                <label for="id_tc-{{ prefix|default:"__prefix__" }}-time_limit">Time Limit (s)</label>
+                <input name="tc-{{ prefix|default:"__prefix__" }}-time_limit"
+                    id="id_tc-{{ prefix|default:"__prefix__" }}-time_limit" type="number"
+                    class="form-control" min="0" value="{{ form.time_limit.value }}">
+                {# time_limit errors #}
+                {% for e in form.time_limit.errors %}
+                <p class="text-danger">{{ e }}</p>
+                {% endfor %}
+            </div>
+            <div class="form-group">
+                <label for="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit">Memory Limit (KB)</label>
+                <input name="tc-{{ prefix|default:"__prefix__" }}-memory_limit"
+                    id="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit" type="number"
+                    class="form-control" min="0" value="{{ form.memory_limit.value }}">
+                {# memory_limit errors #}
+                {% for e in form.memory_limit.errors %}
+                <p class="text-danger">{{ e }}</p>
+                {% endfor %}
+            </div>
+            </div>
+
+            <!-- score and sample/hidden checkboxes input -->
+            <div class="row">
+            <div class="form-group">
+                <label for="id_tc-{{ prefix|default:"__prefix__" }}-score">Score</label>
+                <input name="tc-{{ prefix|default:"__prefix__" }}-score" id="id_tc-{{ prefix|default:"__prefix__" }}-score"
+                    type="number" class="form-control"
+                    min="0"
+                        {% if sample %}
+                    value="{{ form.score.value|default:0 }}"
+                        {% else %}
+                    value="{{ form.score.value|default:5 }}"
+                        {% endif %}>
+                {# score errors #}
+                {% for e in form.score.errors %}
+                <p class="text-danger">{{ e }}</p>
+                {% endfor %}
+            </div>
+
+            <div class="form-group" {% if sample %} style="visibility:hidden"{% endif %}>
+                <label>Options</label>
+                <div class="form-check">
+                <div class="checkbox">
+                    <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-hidden"
+                        id="id_tc-{{ prefix|default:"__prefix__" }}-hidden"
+                        class="form-check-input" {% if form.hidden.value and not sample %}checked{% endif %}>
+                    <label for="id_tc-{{ prefix|default:"__prefix__" }}-hidden">Hidden</label>
+                </div>
+                <div class="checkbox" style="visibility:hidden">
+                    <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-sample"
+                        id="id_tc-{{ prefix|default:"__prefix__" }}-sample"
+                        class="form-check-input" {% if sample %}checked{% endif %}>
+                    <label for="id_tc-{{ prefix|default:"__prefix__" }}-sample">Sample</label>
+                </div>
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <label for="id_tc-{{ prefix|default:"__prefix__" }}-wavedrom">Expected Output</label>
+        <!-- wavedrom -->
+        <div id="id_tc-{{ prefix|default:"__prefix__" }}-wavedrom" class="nowrap d-none" style="overflow-x: auto">
+            <script type="WaveDrom">
+            { signal: [] }
+            </script>
+        </div>
+        {# stdout errors #}
+        {% for e in form.stdout.errors %}
+            <p class="text-danger mt-1">{% if e == 'This field is required.' %}Please generate an output.{% else %}{{ e }}{% endif %}</p>
+        {% endfor %}
+        <div class="d-flex justify-content-between mt-2">
+            <button type="button" id="id_tc-{{ prefix|default:"__prefix__" }}-button" class="btn btn-sm btn-warning" style="height: min-content" onclick="generateOutput(this)">Generate Output</button>
+            <div class="mt-1">
+            <span class="h5" id="id_tc-{{ prefix|default:"__prefix__" }}-run-status">Ready</span>
+            <div class="spinner-border spinner-border-sm ms-2" id="id_tc-{{ prefix|default:"__prefix__" }}-main-loading" style="display:none;"></div>
+            <br>
+            <button type="button" id="id_tc-{{ prefix|default:"__prefix__" }}-more-details" class="btn btn-link p-0 view-modal" onclick="viewModal(this)"
+                    style="display:none;">
+                More Details
+            </button>
+            </div>
+        </div>
+
+        <div class="mt-1">
+            <hr>
+        </div>
+
+        <!-- Error modal -->
+        <div class="modal fade" id="error-modal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                <h5 class="modal-title">
+                    Compilation Errors
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" />
+                </div>
+                <div class="modal-body">
+                <pre id="error-details" style="color: red; font-family: monospace; font-size: medium; padding: 10px;"></pre>
+                </div>
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+            </div>
+        </div>
+
+    </div>
+</body>
 
 {% block js %}
     <script src="{% static 'vendors/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
@@ -223,36 +210,34 @@
 
     <!-- Ace code editor config -->
     <script>
-        if (!{{ is_software_language|yesno:"true,false" }}) {
-          // initialize testbench ace editor
-          let row_editor_{{prefix}} = ace.edit(`id_tc-${"{{prefix}}"|"__prefix__"}-stdin-editor`);
+        // initialize testbench ace editor
+        let row_editor_{{prefix}} = ace.edit(`id_tc-${"{{prefix}}"|"__prefix__"}-stdin-editor`);
 
-          row_editor_{{prefix}}.renderer.setScrollMargin(10);
-          row_editor_{{prefix}}.setOptions({
-              fontFamily: "JetBrains Mono",
-              fontSize: "16px",
-              theme: "ace/theme/cloud9_day",
-              showPrintMargin: false,
-              highlightActiveLine: false,
-              wrap: true,
-              tabSize: 4,
-          });
-          row_editor_{{prefix}}.setOption("dragEnabled", false);
+        row_editor_{{prefix}}.renderer.setScrollMargin(10);
+        row_editor_{{prefix}}.setOptions({
+            fontFamily: "JetBrains Mono",
+            fontSize: "16px",
+            theme: "ace/theme/cloud9_day",
+            showPrintMargin: false,
+            highlightActiveLine: false,
+            wrap: true,
+            tabSize: 4,
+        });
+        row_editor_{{prefix}}.setOption("dragEnabled", false);
 
-          row_editor_{{prefix}}.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
+        row_editor_{{prefix}}.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
 
-          // Synchronize Ace editor content with the hidden input field
-          row_editor_{{prefix}}.getSession().on('change', function(){
-            var code = row_editor_{{prefix}}.getValue();
-            document.getElementById("id_tc-{{ prefix|default:"__prefix__" }}-stdin").value = code;
-          });
+        // Synchronize Ace editor content with the hidden input field
+        row_editor_{{prefix}}.getSession().on('change', function(){
+        var code = row_editor_{{prefix}}.getValue();
+        document.getElementById("id_tc-{{ prefix|default:"__prefix__" }}-stdin").value = code;
+        });
 
-          row_editor_{{prefix}}.commands.on("afterExec", function (e) {
-              // ignore arrow keys commands
-              if (arrowCommands.includes(e.command.name))
-                  return;
-          });
-        }
+        row_editor_{{prefix}}.commands.on("afterExec", function (e) {
+            // ignore arrow keys commands
+            if (arrowCommands.includes(e.command.name))
+                return;
+        });
     
     </script>
 {% endblock %}

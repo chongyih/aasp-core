@@ -4,22 +4,23 @@
 {% block title %}Test Cases{% endblock %}
 
 {% block styles %}
-  <!-- Ace editor css -->
+  <!-- ace editor css -->
   <style>
-      @font-face {
-          font-family: 'JetBrains Mono';
-          src: url('{% static 'fonts/JetBrainsMono-Regular.ttf' %}') format('truetype');
-          font-weight: normal;
-          font-style: normal;
-      }
-
-      /* for ace editor */
-      .readonly-highlight {
-          position: absolute;
-          background-color: red;
-          opacity: 0.1;
-      }
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: url('{% static 'fonts/JetBrainsMono-Regular.ttf' %}') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+  
+        /* for ace editor */
+        .readonly-highlight {
+            position: absolute;
+            background-color: red;
+            opacity: 0.1;
+        }
   </style>
+
   <link rel="stylesheet" href="{% static 'vendors/highlight.js/styles/night-owl.min.css' %}">
   <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
 
@@ -121,17 +122,18 @@
 
           </div>
         </div>
+        </div>
       </div>
     </div>
 
     <!-- hidden test-case-row -->
     {% if is_software_language %}
-      {% include 'code_questions/snippets/test-case-row.html' with code=False form=testcase_formset.empty_form hidden=True %}
+      {% include 'code_questions/snippets/test-case-row.html' with form=testcase_formset.empty_form hidden=True %}
+    {% elif question_type == 'Module and Testbench Design' %}
+      {% include 'code_questions/snippets/double-hdl-test-case-row.html' with form_1=testcase_formset.empty_form form_2=testcase_formset.empty_form hidden=True %}
     {% else %}
-      {% include 'code_questions/snippets/test-case-row.html' with code=True form=testcase_formset.empty_form hidden=True %}
+      {% include 'code_questions/snippets/hdl-test-case-row.html' with form=testcase_formset.empty_form hidden=True %}
     {% endif %}
-
-
 
   </div>
 {% endblock %}
@@ -151,18 +153,36 @@
       // function to update all prefixes (internal test cases only as sample test case is always 0)
       const updatePrefixes = () => {
           const regex = RegExp(`tc-(\\d)-`, 'g');
-          testCasesContainer.children().each((idx, tcRow) => {
+          testCasesContainer.children('.test-case-row').each((idx, tcRow) => {
               // store current stdin, stdout values of this test case row
               let textAreas = $(tcRow).find("textarea");
               const stdin = $(textAreas.get(0)).val();
               const stdout = $(textAreas.get(1)).val();
 
-              // replace html with one with updated prefixes
-              $(tcRow).html($(tcRow).html().replaceAll(regex, `tc-${idx + 1}-`));
-              $("#tc-" + (idx + 1) + "-label").html(idx + 1); // update label
+              // update other editor if module and testbench question
+              if ('{{ question_type }}' === 'Module and Testbench Design') {
+                // find the first index
+                const firstIndex = $(tcRow).find("pre").first().attr('id').replace("id_tc-", "").replace("-stdin-editor", "");
+                const regexFirst = RegExp(`tc-(${firstIndex})-`, 'g');
+                const regexSecond = RegExp(`tc-(${Number(firstIndex) + 1})-`, 'g');
 
-              // need to .find() again as previous references are no longer valid
-              textAreas = $(tcRow).find("textarea");
+                $(tcRow).html($(tcRow).html().replaceAll(regexFirst, `tc-${idx * 2 + 2}-`))
+                $(tcRow).html($(tcRow).html().replaceAll(regexSecond, `tc-${idx * 2 + 3}-`))
+
+                // update label
+                $("#tc-" + (idx + 2) + "-label").html(idx + 2);
+                $("#tc-" + (idx + 3) + "-label").html(idx + 3);
+
+                textAreas = $(tcRow).find("textarea");
+              } else {
+                // replace html with one with updated prefixes
+                $(tcRow).html($(tcRow).html().replaceAll(regex, `tc-${idx + 1}-`));
+                $("#tc-" + (idx + 1) + "-label").html(idx + 1); // update label
+
+                // need to .find() again as previous references are no longer valid
+                textAreas = $(tcRow).find("textarea");
+              }
+
 
               // restore the previously stored stdin, stdout values
               $(textAreas.get(0)).val(stdin);
@@ -170,10 +190,45 @@
           });
       };
 
+      const initializeEditor = (index) => {
+        // initialize ace editor for code
+        let editor = ace.edit(`id_tc-${index}-stdin-editor`);
+
+        editor.renderer.setScrollMargin(10);
+        editor.setOptions({
+            fontFamily: "JetBrains Mono",
+            fontSize: "16px",
+            theme: "ace/theme/cloud9_day",
+            showPrintMargin: false,
+            highlightActiveLine: false,
+            wrap: true,
+            tabSize: 4,
+        });
+        editor.setOption("dragEnabled", false);
+        editor.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
+
+        // Synchronize Ace editor content with the hidden input field
+        editor.getSession().on('change', function(){
+          var code = editor.getValue();
+          document.getElementById(`id_tc-${index}-stdin`).value = code;
+        });
+
+        editor.commands.on("afterExec", function (e) {
+            // ignore arrow keys commands
+            if (arrowCommands.includes(e.command.name))
+                return;
+        });
+      }
+
       // add test case row button clicked
       $("#addTestCase-btn").click(() => {
           // increment totalForms
           totalForms++;
+
+          // increment again as one test case has two forms
+          if ('{{question_type}}' == 'Module and Testbench Design')
+            totalForms++;
+
           totalFormsInput.val(totalForms);
 
           // clone empty test-case-row
@@ -183,7 +238,12 @@
           cloned.removeAttr('id style');
 
           // update prefix
-          $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+          if ('{{question_type}}' == 'Module and Testbench Design') {
+            $(cloned).html($(cloned).html().replaceAll('__prefix_1__', `${totalForms - 2}`));
+            $(cloned).html($(cloned).html().replaceAll('__prefix_2__', `${totalForms - 1}`));
+          }
+          else
+            $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
 
           // update wavedrom id
           $(cloned).find('[id^="WaveDrom_Display_"]').each(function() {
@@ -197,40 +257,14 @@
           // append to container
           testCasesContainer.append(cloned);
 
-          // initialize ace editor for code
-          let row_editor_{{totalForms}} = ace.edit(`id_tc-${totalForms - 1}-stdin-editor`);
+          if ('{{ is_software_language|yesno:"truefalse" }}' === 'False') {
+            initializeEditor(totalForms - 1);
 
-          row_editor_{{totalForms}}.renderer.setScrollMargin(10);
-          row_editor_{{totalForms}}.setOptions({
-              fontFamily: "JetBrains Mono",
-              fontSize: "16px",
-              theme: "ace/theme/cloud9_day",
-              showPrintMargin: false,
-              highlightActiveLine: false,
-              wrap: true,
-              tabSize: 4,
-          });
-          row_editor_{{totalForms}}.setOption("dragEnabled", false);
-          row_editor_{{totalForms}}.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
-
-          // set the value of the editor if it exists
-          const code = document.getElementById("testbench_editor").dataset.code;
-          if (code)
-              row_editor_{{totalForms}}.setValue(code);
-
-          const index = totalForms - 1;
-
-          // Synchronize Ace editor content with the hidden input field
-          row_editor_{{totalForms}}.getSession().on('change', function(){
-            var code = row_editor_{{index}}.getValue();
-            document.getElementById(`id_tc-${index}-stdin`).value = code;
-          });
-
-          row_editor_{{totalForms}}.commands.on("afterExec", function (e) {
-              // ignore arrow keys commands
-              if (arrowCommands.includes(e.command.name))
-                  return;
-          });
+            // initialize the other editor
+            if ('{{question_type}}' === 'Module and Testbench Design') {
+              initializeEditor(totalForms - 2);
+            }
+          }
       });
 
       // remove new row
@@ -247,12 +281,22 @@
           } else {
               // decrement totalForms
               totalForms--;
+
+              // decrement again as one test case has two forms
+              if ('{{question_type}}' == 'Module and Testbench Design')
+                totalForms--;
+
               totalFormsInput.val(totalForms);
 
               // remove and update prefixes
               toRemove.fadeOut('slow', () => {
                   toRemove.remove();
                   updatePrefixes();
+
+                  for (let i = 0; i < totalForms; i++) {
+                    let editor = ace.edit(`id_tc-${i}-stdin-editor`);
+                    editor.setValue(document.getElementById(`id_tc-${i}-stdin`).value);
+                  }
               });
               return false;
           }
@@ -298,17 +342,20 @@
         // testcase is module definition
         module = document.getElementById(stdin_id).value;
         testbench = ace.edit("testbench_editor").getValue()
-      } else {
+      } else if ('{{ question_type }}' == 'Module Design') {
         module = ace.edit("module_editor").getValue()
         testbench = document.getElementById(stdin_id).value;
+      } else {
+        module = document.getElementById(`id_tc-${index}-stdin`).value;
+        testbench = document.getElementById(`id_tc-${Number(index) + 1}-stdin`).value;
       }
 
       // check if empty
-      if (testbench === "") {
-        runStatus.html("Testbench is empty &#x274C;", index);
-        return;
-      } else if (module === "") {
+      if (module === "") {
         runStatus.html("Module Definition is empty &#x274C;", index);
+        return;
+      } else if (testbench === "") {
+        runStatus.html("Testbench is empty &#x274C;", index);
         return;
       }
 
@@ -389,8 +436,12 @@
                 wavedrom_div.classList.remove("d-none");
 
                 // Set the output value
-                const output = document.getElementById(`id_tc-${index}-stdout`);
-                output.value = res.data.stdout;
+                document.getElementById(`id_tc-${index}-stdout`).value = res.data.stdout;
+
+                if ('{{ question_type }}' === 'Module and Testbench Design') {
+                  document.getElementById(`id_tc-${Number(index) + 1}-stdout`).value = res.data.stdout;
+                }
+                
               } else if (res.data.status_id === 6) {  // compilation error
                 moreDetails.show();
               } else {

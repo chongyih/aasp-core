@@ -23,3 +23,8 @@ def param_replace(context, **kwargs):
 @register.filter(name='add_class')
 def add_class(field, css):
     return field.as_widget(attrs={"class": css})
+
+@register.filter(name='chunks')
+def chunk_list(input_list, chunk_size):
+    print([input_list[i:i + chunk_size] for i in range(0, len(input_list), chunk_size)])
+    return [input_list[i:i + chunk_size] for i in range(0, len(input_list), chunk_size)]

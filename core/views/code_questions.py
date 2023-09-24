@@ -159,19 +159,30 @@ def update_test_cases(request, code_question_id):
         return redirect('assessment-details', assessment_id=code_question.assessment.id)
 
     # prepare formset
-    if code_question.testcase_set.count() == 0:
-        if hasattr(code_question, 'hdlquestionconfig') and code_question.hdlquestionconfig.get_question_type() == 'Testbench Design':
-            TestCaseFormset = inlineformset_factory(CodeQuestion, TestCase, extra=1,
-                                                    fields=['stdin', 'stdout', 'time_limit', 'memory_limit', 'score',
-                                                            'hidden', 'sample'])
+    # Module and Testbench Design HDL questions have 2 test cases (Module and Testbench) for each test case
+    extra_test_cases = 0
+    if code_question.testcase_set.count() == 0: # new code question, create extra test cases
+        if hasattr(code_question, 'hdlquestionconfig'):
+            question_type = code_question.hdlquestionconfig.get_question_type()
+            if question_type == 'Testbench Design':
+                extra_test_cases = 1
+            elif question_type == 'Module and Testbench Design':
+                extra_test_cases = 6
+            else:
+                extra_test_cases = 3
         else:
-            TestCaseFormset = inlineformset_factory(CodeQuestion, TestCase, extra=3,
-                                                fields=['stdin', 'stdout', 'time_limit', 'memory_limit', 'score',
-                                                        'hidden', 'sample'])
-    else:
-        TestCaseFormset = inlineformset_factory(CodeQuestion, TestCase, extra=0,
-                                                fields=['stdin', 'stdout', 'time_limit', 'memory_limit', 'score',
-                                                        'hidden', 'sample'])
+            extra_test_cases = 3
+    else:   # existing code question
+        if hasattr(code_question, 'hdlquestionconfig') and code_question.hdlquestionconfig.get_question_type() == 'Module and Testbench Design':
+            extra_test_cases = 0
+
+    # Create the TestCaseFormset with the determined number of extra test cases
+    TestCaseFormset = inlineformset_factory(
+        CodeQuestion,
+        TestCase,
+        extra=extra_test_cases,
+        fields=['stdin', 'stdout', 'time_limit', 'memory_limit', 'score', 'hidden', 'sample']
+    )
     testcase_formset = TestCaseFormset(prefix='tc', instance=code_question)
 
     # get question type

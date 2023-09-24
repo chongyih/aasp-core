@@ -98,13 +98,6 @@
                     {% endfor %}
                   </div>
                 {% else %}
-                  {% csrf_token %}
-
-                  <!-- solution row -->
-                  {% include 'code_questions/snippets/solution-row.html' with form=hdl_solution_form %}
-
-                  <hr>
-                  
                   <!-- test case rows -->
                   {% if question_type == 'Module Design' %}
                     {% include 'code_questions/snippets/module-test-case.html' with testcase_formset=testcase_formset hdl_solution_form=hdl_solution_form %}

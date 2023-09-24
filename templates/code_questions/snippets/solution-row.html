@@ -78,6 +78,18 @@
     <script src="{% static 'vendors/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
     <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
 
+    <!-- Error message toast -->
+    <script>
+        const showErrorToast = (msg) => {
+            Toastify({
+                text: msg,
+                duration: 3000,
+                position: "center",
+                style: {"background": "#ff6961"}
+            }).showToast();
+        };
+    </script>
+    
     <!-- Ace code editor config -->
     <script>
         const Range = ace.require("ace/range").Range;

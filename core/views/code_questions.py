@@ -74,7 +74,7 @@ def create_code_question(request, parent, parent_id):
                 tags = Tag.objects.filter(name__in=tags).values_list('id', flat=True)
                 code_question.tags.add(*tags)
 
-                messages.success(request, "The code question has been created, please proceed to add some test cases!")
+                messages.success(request, "The code question has been created, please proceed to select the languages!")
                 return redirect('update-languages', code_question_id=code_question.id)
 
     context = {
@@ -211,22 +211,22 @@ def update_test_cases(request, code_question_id):
         testcase_formset = TestCaseFormset(request.POST, instance=code_question, prefix='tc')
 
         if testcase_formset.is_valid():
+            with transaction.atomic():
+                # remove past attempts
+                if code_question.assessment:
+                    code_question.assessment.assessmentattempt_set.all().delete()
 
-            # remove past attempts
-            if code_question.assessment:
-                code_question.assessment.assessmentattempt_set.all().delete()
+                testcase_formset.save()
+                messages.success(request, "Test cases updated!")
 
-            testcase_formset.save()
-            messages.success(request, "Test cases updated!")
-
-            next_url = request.GET.get("next")
-            if next_url:
-                return redirect(next_url)
-            
-            if code_question.question_bank:
-                return redirect('question-bank-details', question_bank_id=code_question.question_bank.id)
-            else:
-                return redirect('assessment-details', assessment_id=code_question.assessment.id)
+                next_url = request.GET.get("next")
+                if next_url:
+                    return redirect(next_url)
+                
+                if code_question.question_bank:
+                    return redirect('question-bank-details', question_bank_id=code_question.question_bank.id)
+                else:
+                    return redirect('assessment-details', assessment_id=code_question.assessment.id)
     
     context = {
         'creation': request.GET.get('next') is None,
@@ -265,46 +265,46 @@ def update_languages(request, code_question_id):
         code_snippet_formset = CodeSnippetFormset(request.POST, instance=code_question, prefix='cs')
 
         if code_snippet_formset.is_valid():
+            with transaction.atomic():
+                # remove past attempts
+                if code_question.assessment:
+                    code_question.assessment.assessmentattempt_set.all().delete()
 
-            # remove past attempts
-            if code_question.assessment:
-                code_question.assessment.assessmentattempt_set.all().delete()
+                cq_is_software = code_question.is_software_language()
 
-            cq_is_software = code_question.is_software_language()
+                code_snippet_formset.save()
+                messages.success(request, "Code Snippets saved!")
 
-            code_snippet_formset.save()
-            messages.success(request, "Code Snippets saved!")
+                name = ''
 
-            name = ''
-
-            # get first undeleted language
-            for form in code_snippet_formset:
-                if form.cleaned_data.get('DELETE') is True:
-                    continue
-                name = form.cleaned_data.get('language')
-                break
-            
-            # remove all test cases if language type is changed
-            language = get_object_or_404(Language, name=name)
-            if language.software_language != cq_is_software:
-                code_question.testcase_set.all().delete()
+                # get first undeleted language
+                for form in code_snippet_formset:
+                    if form.cleaned_data.get('DELETE') is True:
+                        continue
+                    name = form.cleaned_data.get('language')
+                    break
                 
-                if hasattr(code_question, 'hdlquestionconfig'):
-                    code_question.hdlquestionconfig.delete()
+                # remove all test cases if language type is changed
+                language = get_object_or_404(Language, name=name)
+                if language.software_language != cq_is_software:
+                    code_question.testcase_set.all().delete()
+                    
+                    if hasattr(code_question, 'hdlquestionconfig'):
+                        code_question.hdlquestionconfig.delete()
 
-                if not language.software_language:
+                    if not language.software_language:
+                        return redirect('update-question-type', code_question_id=code_question.id)
+
+                    return redirect('update-test-cases', code_question_id=code_question.id)
+
+                next_url = request.GET.get("next")
+                if next_url:
+                    return redirect(next_url)
+                
+                if code_question.is_software_language():
+                    return redirect('update-test-cases', code_question_id=code_question.id)
+                else:
                     return redirect('update-question-type', code_question_id=code_question.id)
-
-                return redirect('update-test-cases', code_question_id=code_question.id)
-
-            next_url = request.GET.get("next")
-            if next_url:
-                return redirect(next_url)
-            
-            if code_question.is_software_language():
-                return redirect('update-test-cases', code_question_id=code_question.id)
-            else:
-                return redirect('update-question-type', code_question_id=code_question.id)
 
     context = {
         'creation': request.GET.get('next') is None,
@@ -339,19 +339,20 @@ def update_question_type(request, code_question_id):
         form = QuestionTypeForm(request.POST)
 
         if form.is_valid():
-            # remove existing config
-            if hasattr(code_question, 'hdlquestionconfig'):
-                code_question.hdlquestionconfig.delete()
+            with transaction.atomic():
+                # remove existing config
+                if hasattr(code_question, 'hdlquestionconfig'):
+                    code_question.hdlquestionconfig.delete()
 
-            hdl_config = form.save(commit=False)
-            hdl_config.code_question = code_question
-            hdl_config.save()
+                hdl_config = form.save(commit=False)
+                hdl_config.code_question = code_question
+                hdl_config.save()
 
-            next_url = request.GET.get("next")
-            if next_url:
-                return redirect(next_url)
-            
-            return redirect('generate-module-code', code_question_id=code_question.id)
+                next_url = request.GET.get("next")
+                if next_url:
+                    return redirect(next_url)
+                
+                return redirect('generate-module-code', code_question_id=code_question.id)
     
     context = {
         'creation': request.GET.get('next') is None,

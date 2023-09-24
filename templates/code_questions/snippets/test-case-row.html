@@ -1,28 +1,3 @@
-{% load static %}
-
-{% block styles %}
-  <!-- ace editor css -->
-  <style>
-      @font-face {
-          font-family: 'JetBrains Mono';
-          src: url('{% static 'fonts/JetBrainsMono-Regular.ttf' %}') format('truetype');
-          font-weight: normal;
-          font-style: normal;
-      }
-
-      /* for ace editor */
-      .readonly-highlight {
-          position: absolute;
-          background-color: red;
-          opacity: 0.1;
-      }
-  </style>
-  <link rel="stylesheet" href="{% static 'vendors/highlight.js/styles/night-owl.min.css' %}">
-  <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
-
-{% endblock %}
-
-<body onload="WaveDrom.ProcessAll()">
 <div class="row test-case-row"
      {% if hidden %}id="empty-test-case-row" style="display:none"{% endif %}
      {% if form.DELETE.value %}style="display:none"{% endif %}
@@ -49,238 +24,100 @@
               class="fa-solid fa-xmark"></i></button>
     </div>
   {% endif %}
-  
-  <!-- Input -->
-  {% if code %}
-    <!-- Ace Code Editor -->
-    <div class="col-8">
-      <div class="form-group">
-        <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdin">{% if question_type == 'Module Design' %}Testbench{% else %}Module Definition{% endif %}</label>
-        <pre name="tc-{{ prefix|default:"__prefix__" }}-stdin" 
-             id="id_tc-{{ prefix|default:"__prefix__" }}-stdin-editor" 
-             class="inner rounded" style="height: 500px;" >{{ form.stdin.value|default:"" }}</pre>
-        <input type="hidden" name="tc-{{ prefix|default:"__prefix__" }}-stdin" 
-               id="id_tc-{{ prefix|default:"__prefix__" }}-stdin" 
-               value="{{ form.stdin.value|default:"" }}">
-        <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
-        {% for e in form.stdin.errors %}
-          <p class="text-danger">{{ e }}</p>
-        {% endfor %}
-      </div>
-    </div>
 
-  {% else %}
-    <!-- stdin input -->
-    <div class="col-3">
-      <div class="form-group">
-        <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdin">Input</label>
-        <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdin"
-                  id="id_tc-{{ prefix|default:"__prefix__" }}-stdin" rows="4"
-                  class="form-control font-monospace">{{ form.stdin.value|default:"" }}</textarea>
-        <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
-        {# stdin errors #}
-        {% for e in form.stdin.errors %}
-          <p class="text-danger">{{ e }}</p>
-        {% endfor %}
-      </div>
+  <!-- stdin input -->
+  <div class="col-3">
+    <div class="form-group">
+      <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdin">Input</label>
+      <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdin"
+                id="id_tc-{{ prefix|default:"__prefix__" }}-stdin" rows="4"
+                class="form-control font-monospace">{{ form.stdin.value|default:"" }}</textarea>
+      <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
+      {# stdin errors #}
+      {% for e in form.stdin.errors %}
+        <p class="text-danger">{{ e }}</p>
+      {% endfor %}
     </div>
-  {% endif %}
-  
-  {% if code %}
-  <div class="form-group col-4">
-  {% endif %}
-    <!-- stdout output -->
-    <div class="form-group {% if code %}row d-none{% else %}col-3{% endif %}">
+  </div>
+
+  <!-- stdout input -->
+  <div class="col-3">
+    <div class="form-group">
       <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdout">Output</label>
       <textarea name="tc-{{ prefix|default:"__prefix__" }}-stdout"
-                id="id_tc-{{ prefix|default:"__prefix__" }}-stdout" rows={% if code %}15{% else %}5{% endif %}
+                id="id_tc-{{ prefix|default:"__prefix__" }}-stdout" rows="4"
                 class="form-control font-monospace">{{ form.stdout.value|default:"" }}</textarea>
-      <div>
-        <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
-      </div>
+      <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
       {# stdout errors #}
       {% for e in form.stdout.errors %}
         <p class="text-danger">{{ e }}</p>
       {% endfor %}
     </div>
 
-    <!-- time and memory limit inputs -->
-    <div class="{% if code %}row{% else %}col-3{% endif %}">
-      <div class="form-group">
-        <label for="id_tc-{{ prefix|default:"__prefix__" }}-time_limit">Time Limit (s)</label>
-        <input name="tc-{{ prefix|default:"__prefix__" }}-time_limit"
-              id="id_tc-{{ prefix|default:"__prefix__" }}-time_limit" type="number"
-              class="form-control" min="0" value="{{ form.time_limit.value }}">
-        {# time_limit errors #}
-        {% for e in form.time_limit.errors %}
-          <p class="text-danger">{{ e }}</p>
-        {% endfor %}
-      </div>
-      <div class="form-group">
-        <label for="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit">Memory Limit (KB)</label>
-        <input name="tc-{{ prefix|default:"__prefix__" }}-memory_limit"
-              id="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit" type="number"
-              class="form-control" min="0" value="{{ form.memory_limit.value }}">
-        {# memory_limit errors #}
-        {% for e in form.memory_limit.errors %}
-          <p class="text-danger">{{ e }}</p>
-        {% endfor %}
-      </div>
+  </div>
+
+  <!-- time and memory limit inputs -->
+  <div class="col-3">
+    <div class="form-group">
+      <label for="id_tc-{{ prefix|default:"__prefix__" }}-time_limit">Time Limit (s)</label>
+      <input name="tc-{{ prefix|default:"__prefix__" }}-time_limit"
+             id="id_tc-{{ prefix|default:"__prefix__" }}-time_limit" type="number"
+             class="form-control" min="0" value="{{ form.time_limit.value }}">
+      {# time_limit errors #}
+      {% for e in form.time_limit.errors %}
+        <p class="text-danger">{{ e }}</p>
+      {% endfor %}
+    </div>
+    <div class="form-group">
+      <label for="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit">Memory Limit (KB)</label>
+      <input name="tc-{{ prefix|default:"__prefix__" }}-memory_limit"
+             id="id_tc-{{ prefix|default:"__prefix__" }}-memory_limit" type="number"
+             class="form-control" min="0" value="{{ form.memory_limit.value }}">
+      {# memory_limit errors #}
+      {% for e in form.memory_limit.errors %}
+        <p class="text-danger">{{ e }}</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- score and sample/hidden checkboxes input -->
+  <div class="col-3">
+    <div class="form-group">
+      <label for="id_tc-{{ prefix|default:"__prefix__" }}-score">Score</label>
+      <input name="tc-{{ prefix|default:"__prefix__" }}-score" id="id_tc-{{ prefix|default:"__prefix__" }}-score"
+             type="number" class="form-control"
+             min="0"
+              {% if sample %}
+             value="{{ form.score.value|default:0 }}"
+              {% else %}
+             value="{{ form.score.value|default:5 }}"
+              {% endif %}>
+      {# score errors #}
+      {% for e in form.score.errors %}
+        <p class="text-danger">{{ e }}</p>
+      {% endfor %}
     </div>
 
-    <!-- score and sample/hidden checkboxes input -->
-    <div class="{% if code %}row{% else %}col-3{% endif %}">
-      <div class="form-group">
-        <label for="id_tc-{{ prefix|default:"__prefix__" }}-score">Score</label>
-        <input name="tc-{{ prefix|default:"__prefix__" }}-score" id="id_tc-{{ prefix|default:"__prefix__" }}-score"
-              type="number" class="form-control"
-              min="0"
-                {% if sample %}
-              value="{{ form.score.value|default:0 }}"
-                {% else %}
-              value="{{ form.score.value|default:5 }}"
-                {% endif %}>
-        {# score errors #}
-        {% for e in form.score.errors %}
-          <p class="text-danger">{{ e }}</p>
-        {% endfor %}
-      </div>
-
-      <div class="form-group" {% if sample %} style="visibility:hidden"{% endif %}>
-        <label>Options</label>
-        <div class="form-check">
-          <div class="checkbox">
-            <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-hidden"
-                  id="id_tc-{{ prefix|default:"__prefix__" }}-hidden"
-                  class="form-check-input" {% if form.hidden.value and not sample %}checked{% endif %}>
-            <label for="id_tc-{{ prefix|default:"__prefix__" }}-hidden">Hidden</label>
-          </div>
-          <div class="checkbox" style="visibility:hidden">
-            <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-sample"
-                  id="id_tc-{{ prefix|default:"__prefix__" }}-sample"
-                  class="form-check-input" {% if sample %}checked{% endif %}>
-            <label for="id_tc-{{ prefix|default:"__prefix__" }}-sample">Sample</label>
-          </div>
+    <div class="form-group" {% if sample %} style="visibility:hidden"{% endif %}>
+      <label>Options</label>
+      <div class="form-check">
+        <div class="checkbox">
+          <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-hidden"
+                 id="id_tc-{{ prefix|default:"__prefix__" }}-hidden"
+                 class="form-check-input" {% if form.hidden.value and not sample %}checked{% endif %}>
+          <label for="id_tc-{{ prefix|default:"__prefix__" }}-hidden">Hidden</label>
+        </div>
+        <div class="checkbox" style="visibility:hidden">
+          <input type="checkbox" name="tc-{{ prefix|default:"__prefix__" }}-sample"
+                 id="id_tc-{{ prefix|default:"__prefix__" }}-sample"
+                 class="form-check-input" {% if sample %}checked{% endif %}>
+          <label for="id_tc-{{ prefix|default:"__prefix__" }}-sample">Sample</label>
         </div>
       </div>
     </div>
   </div>
-  {% if code %}
-  <label for="id_tc-{{ prefix|default:"__prefix__" }}-wavedrom">Expected Output</label>
-  <!-- wavedrom -->
-  <div id="id_tc-{{ prefix|default:"__prefix__" }}-wavedrom" class="nowrap d-none" style="overflow-x: auto">
-    <script type="WaveDrom">
-      { signal: [] }
-    </script>
-  </div>
-  {# stdout errors #}
-  {% for e in form.stdout.errors %}
-    <p class="text-danger mt-1">{% if e == 'This field is required.' %}Please generate an output.{% else %}{{ e }}{% endif %}</p>
-  {% endfor %}
-  <div class="d-flex justify-content-between mt-2">
-    <button type="button" id="id_tc-{{ prefix|default:"__prefix__" }}-button" class="btn btn-sm btn-warning" style="height: min-content" onclick="generateOutput(this)">Generate Output</button>
-    <div class="mt-1">
-      <span class="h5" id="id_tc-{{ prefix|default:"__prefix__" }}-run-status">Ready</span>
-      <div class="spinner-border spinner-border-sm ms-2" id="id_tc-{{ prefix|default:"__prefix__" }}-main-loading" style="display:none;"></div>
-      <br>
-      <button type="button" id="id_tc-{{ prefix|default:"__prefix__" }}-more-details" class="btn btn-link p-0 view-modal" onclick="viewModal(this)"
-              style="display:none;">
-        More Details
-      </button>
-    </div>
-  </div>
-  {% endif %}
   <div class="mt-1">
     <hr>
   </div>
 
-  <!-- Error modal -->
-  <div class="modal fade" id="error-modal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            Compilation Errors
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" />
-        </div>
-        <div class="modal-body">
-          <pre id="error-details" style="color: red; font-family: monospace; font-size: medium; padding: 10px;"></pre>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
 </div>
-
-{% block js %}
-    <script src="{% static 'vendors/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
-    <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
-    <!-- wavedrom -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/wavedrom/3.1.0/skins/default.js" type="text/javascript"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/wavedrom/3.1.0/wavedrom.min.js" type="text/javascript"></script>
-
-    <!-- Load wavedrom output on first load -->
-    <script>
-      window.addEventListener('load', () => {
-        const wavedrom = document.getElementById(`id_tc-{{ prefix|default:"__prefix__" }}-stdout`).value;
-        const index = `{{ prefix|default:"__prefix__" }}`;
-        const e = document.getElementById(`InputJSON_${index}`);
-        
-        if (!wavedrom) return;
-        
-        let wavedrom_json = JSON.parse(wavedrom)
-        wavedrom_json.signal = wavedrom_json.signal.map(signal => {
-          const nameWithoutPrefix = signal.name.replace(/^in_|^out_/, "");
-          signal.name = nameWithoutPrefix;
-          return signal;
-        });
-
-        // Show the wavedrom div
-        const wavedrom_div = document.getElementById(`id_tc-${index}-wavedrom`);
-        wavedrom_div.classList.remove("d-none");
-
-        // Update the input element's value with the wavedrom value
-        e.innerHTML = JSON.stringify(wavedrom_json);
-        WaveDrom.RenderWaveForm(index, WaveDrom.eva(`InputJSON_${index}`), "WaveDrom_Display_")
-      });
-    </script>
-
-    <!-- Ace code editor config -->
-    <script>
-        if (!{{ is_software_language|yesno:"true,false" }}) {
-          // initialize testbench ace editor
-          let row_editor_{{prefix}} = ace.edit(`id_tc-${"{{prefix}}"|"__prefix__"}-stdin-editor`);
-
-          row_editor_{{prefix}}.renderer.setScrollMargin(10);
-          row_editor_{{prefix}}.setOptions({
-              fontFamily: "JetBrains Mono",
-              fontSize: "16px",
-              theme: "ace/theme/cloud9_day",
-              showPrintMargin: false,
-              highlightActiveLine: false,
-              wrap: true,
-              tabSize: 4,
-          });
-          row_editor_{{prefix}}.setOption("dragEnabled", false);
-
-          row_editor_{{prefix}}.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
-
-          // Synchronize Ace editor content with the hidden input field
-          row_editor_{{prefix}}.getSession().on('change', function(){
-            var code = row_editor_{{prefix}}.getValue();
-            document.getElementById("id_tc-{{ prefix|default:"__prefix__" }}-stdin").value = code;
-          });
-
-          row_editor_{{prefix}}.commands.on("afterExec", function (e) {
-              // ignore arrow keys commands
-              if (arrowCommands.includes(e.command.name))
-                  return;
-          });
-        }
-    
-    </script>
-{% endblock %}

@@ -601,7 +601,7 @@ class TestbenchGenerator:
             ports = ports.split(',')
             
             for port in ports:
-                if port != '\t' and port != ' ':
+                if port != '\t' and port.strip() != '':
                     # remove space and brackets
                     port = re.sub(r'[\[\]\(\) ]', '', port)
                     comp_pin_list_pre.append((direction, bus + port))

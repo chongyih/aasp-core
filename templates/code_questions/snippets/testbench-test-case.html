@@ -2,9 +2,14 @@
     <!-- test cases & code snippet management forms -->
     {{ testcase_formset.management_form }}
 
+    <!-- solution row -->
+    {% include 'code_questions/snippets/solution-row.html' with form=hdl_solution_form %}
+
+    <hr>
+
     <!-- Test case (testbench test only has one test case) -->
     <h5>Test Case</h5>
-    {% include 'code_questions/snippets/test-case-row.html' with sample=True code=True prefix="0" form=testcase_formset.0 %}
+    {% include 'code_questions/snippets/hdl-test-case-row.html' with sample=True prefix="0" form=testcase_formset.0 %}
     </div>
 
 </div>

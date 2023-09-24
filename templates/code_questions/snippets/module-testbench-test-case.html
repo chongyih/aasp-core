@@ -1,0 +1,16 @@
+<div>
+    <!-- test cases & code snippet management forms -->
+    {{ testcase_formset.management_form }}
+
+    <!-- Sample Test case -->
+    <h5>Sample Test Case</h5>
+    {% include 'code_questions/snippets/hdl-test-case-row.html' with sample=True prefix="0" form=testcase_formset.0 %}
+    <!-- this div holds all internal test case rows -->
+    <h5>Internal Test Cases</h5>
+    <div id="test-cases-container" class="mt-4">
+    {% for f in testcase_formset|slice:"1:" %}
+        {% include 'code_questions/snippets/hdl-test-case-row.html' with prefix=forloop.counter form=f %}
+    {% endfor %}
+    </div>
+
+</div>

@@ -553,7 +553,7 @@ class TestbenchGenerator:
         self.print_dut()
         self.print_stimulus_block()
         self.print_clock_gen()
-        self.print_module_end() 
+        self.print_module_end()
 
         return self.testbench
 
@@ -601,13 +601,11 @@ class TestbenchGenerator:
             ports = ports.split(',')
             
             for port in ports:
-                if port != '\t':
+                if port != '\t' and port.strip() != '':
                     # remove space and brackets
                     port = re.sub(r'[\[\]\(\) ]', '', port)
-                    print(direction, bus, port)
                     comp_pin_list_pre.append((direction, bus + port))
 
-        print(comp_pin_list_pre)
         comp_pin_list = []
         type_name = ['reg', 'wire', 'wire', "ERROR"]
         for i in comp_pin_list_pre:
@@ -666,7 +664,6 @@ class TestbenchGenerator:
     def find_clk_rst(self):
         for pin in self.pin_list:
             if re.match(r'[\S]*(clk|clock)[\S]*', pin[1]):
-                print(pin[1])
                 self.clock_name = pin[1]
                 break
 

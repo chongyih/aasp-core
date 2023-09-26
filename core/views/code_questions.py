@@ -18,9 +18,9 @@ from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import JSONRenderer
 
 from core.decorators import groups_allowed, UserGroup
-from core.forms.question_banks import CodeQuestionForm, ModuleGenerationForm
+from core.forms.question_banks import CodeQuestionForm, ModuleGenerationForm, QuestionSolutionForm, QuestionTypeForm
 from core.models import QuestionBank, Assessment, CodeQuestion
-from core.models.questions import HDLQuestionSolution, TestCase, CodeSnippet, Language, Tag
+from core.models.questions import HDLQuestionConfig, TestCase, CodeSnippet, Language, Tag
 from core.serializers import CodeQuestionsSerializer
 from core.views.utils import TestbenchGenerator, check_permissions_course, check_permissions_code_question, embed_inout_module, embed_inout_testbench, generate_module
 
@@ -74,7 +74,7 @@ def create_code_question(request, parent, parent_id):
                 tags = Tag.objects.filter(name__in=tags).values_list('id', flat=True)
                 code_question.tags.add(*tags)
 
-                messages.success(request, "The code question has been created, please proceed to add some test cases!")
+                messages.success(request, "The code question has been created, please proceed to select the languages!")
                 return redirect('update-languages', code_question_id=code_question.id)
 
     context = {
@@ -159,69 +159,95 @@ def update_test_cases(request, code_question_id):
         return redirect('assessment-details', assessment_id=code_question.assessment.id)
 
     # prepare formset
-    if code_question.testcase_set.count() == 0:
-        TestCaseFormset = inlineformset_factory(CodeQuestion, TestCase, extra=3,
-                                                fields=['stdin', 'stdout', 'time_limit', 'memory_limit', 'score',
-                                                        'hidden', 'sample'])
-    else:
-        TestCaseFormset = inlineformset_factory(CodeQuestion, TestCase, extra=0,
-                                                fields=['stdin', 'stdout', 'time_limit', 'memory_limit', 'score',
-                                                        'hidden', 'sample'])
+    # Module and Testbench Design HDL questions have 2 test cases (Module and Testbench) for each test case
+    extra_test_cases = 0
+    if code_question.testcase_set.count() == 0: # new code question, create extra test cases
+        if hasattr(code_question, 'hdlquestionconfig'):
+            question_type = code_question.hdlquestionconfig.get_question_type()
+            if question_type == 'Testbench Design':
+                extra_test_cases = 1
+            elif question_type == 'Module and Testbench Design':
+                extra_test_cases = 6
+            else:
+                extra_test_cases = 3
+        else:
+            extra_test_cases = 3
+    else:   # existing code question
+        if hasattr(code_question, 'hdlquestionconfig') and code_question.hdlquestionconfig.get_question_type() == 'Module and Testbench Design':
+            extra_test_cases = 0
+
+    # Create the TestCaseFormset with the determined number of extra test cases
+    TestCaseFormset = inlineformset_factory(
+        CodeQuestion,
+        TestCase,
+        extra=extra_test_cases,
+        fields=['stdin', 'stdout', 'time_limit', 'memory_limit', 'score', 'hidden', 'sample']
+    )
     testcase_formset = TestCaseFormset(prefix='tc', instance=code_question)
 
-    # get module and testbench from session
-    module = request.session.get('module')
-    testbench = request.session.get('testbench')
+    # get question type
+    if hasattr(code_question, 'hdlquestionconfig'):
+        question_type = code_question.hdlquestionconfig.get_question_type()
+    else:
+        question_type = None
 
-    # delete session variables
-    if module and testbench:
-        del request.session['module']
-        del request.session['testbench']
+    # prepare HDL solution form
+    if not code_question.is_software_language():
+        if hasattr(code_question, 'hdlquestionsolution'):
+            hdl_solution_form = QuestionSolutionForm(instance=code_question.hdlquestionsolution)
+        else:
+            hdl_solution_form = QuestionSolutionForm()
 
+        if request.session.get('module'):
+            hdl_solution_form.initial['module'] = request.session.get('module')
+            hdl_solution_form.initial['testbench'] = request.session.get('testbench')
+            
+            del request.session['module']
+            del request.session['testbench']
+
+    # process POST requests
+    if request.method == "POST":
+        if not code_question.is_software_language():
+            hdl_solution_form = QuestionSolutionForm(request.POST)
+
+            if hdl_solution_form.is_valid():
+                # check if existing config exists
+                if hasattr(code_question, 'hdlquestionsolution'):
+                    code_question.hdlquestionsolution.delete()
+                    
+                question_sol = hdl_solution_form.save(commit=False)
+                question_sol.code_question = code_question
+                question_sol.save()
+
+        testcase_formset = TestCaseFormset(request.POST, instance=code_question, prefix='tc')
+
+        if testcase_formset.is_valid():
+            with transaction.atomic():
+                # remove past attempts
+                if code_question.assessment:
+                    code_question.assessment.assessmentattempt_set.all().delete()
+
+                testcase_formset.save()
+                messages.success(request, "Test cases updated!")
+
+                next_url = request.GET.get("next")
+                if next_url:
+                    return redirect(next_url)
+                
+                if code_question.question_bank:
+                    return redirect('question-bank-details', question_bank_id=code_question.question_bank.id)
+                else:
+                    return redirect('assessment-details', assessment_id=code_question.assessment.id)
+    
     context = {
         'creation': request.GET.get('next') is None,
         'code_question': code_question,
         'code_snippet': code_snippets,
         'testcase_formset': testcase_formset,
-        'module': module,
-        'testbench': testbench,
+        'question_type': question_type,
         'is_software_language': code_question.is_software_language(),
+        'hdl_solution_form': hdl_solution_form if not code_question.is_software_language() else None,
     }
-
-    # prepare HDL solution form
-    if not code_question.is_software_language():
-        HDLSolutionFormset = inlineformset_factory(CodeQuestion, HDLQuestionSolution, extra=0, 
-                                                    fields=['module', 'testbench'])
-        hdl_solution_formset = HDLSolutionFormset(prefix='solution', instance=code_question)
-        context['hdl_solution_formset'] = hdl_solution_formset
-
-    # process POST requests
-    if request.method == "POST":
-        if not code_question.is_software_language():
-            hdl_solution_formset = HDLSolutionFormset(request.POST, instance=code_question, prefix='solution')
-
-            if hdl_solution_formset.is_valid():
-                hdl_solution_formset.save()
-
-        testcase_formset = TestCaseFormset(request.POST, instance=code_question, prefix='tc')
-
-        if testcase_formset.is_valid():
-
-            # remove past attempts
-            if code_question.assessment:
-                code_question.assessment.assessmentattempt_set.all().delete()
-
-            testcase_formset.save()
-            messages.success(request, "Test cases updated!")
-
-            next_url = request.GET.get("next")
-            if next_url:
-                return redirect(next_url)
-            
-            if code_question.question_bank:
-                return redirect('question-bank-details', question_bank_id=code_question.question_bank.id)
-            else:
-                return redirect('assessment-details', assessment_id=code_question.assessment.id)
 
     return render(request, 'code_questions/update-test-cases.html', context)
 
@@ -250,42 +276,46 @@ def update_languages(request, code_question_id):
         code_snippet_formset = CodeSnippetFormset(request.POST, instance=code_question, prefix='cs')
 
         if code_snippet_formset.is_valid():
+            with transaction.atomic():
+                # remove past attempts
+                if code_question.assessment:
+                    code_question.assessment.assessmentattempt_set.all().delete()
 
-            # remove past attempts
-            if code_question.assessment:
-                code_question.assessment.assessmentattempt_set.all().delete()
+                cq_is_software = code_question.is_software_language()
 
-            cq_is_software = code_question.is_software_language()
+                code_snippet_formset.save()
+                messages.success(request, "Code Snippets saved!")
 
-            code_snippet_formset.save()
-            messages.success(request, "Code Snippets saved!")
+                name = ''
 
-            # get first undeleted language
-            for form in code_snippet_formset:
-                if form.cleaned_data.get('DELETE') is True:
-                    continue
-                name = form.cleaned_data.get('language')
-                break
-            
-            # remove all test cases if language type is changed
-            language = get_object_or_404(Language, name=name)
-            if language.software_language != cq_is_software:
-                code_question.testcase_set.all().delete()
+                # get first undeleted language
+                for form in code_snippet_formset:
+                    if form.cleaned_data.get('DELETE') is True:
+                        continue
+                    name = form.cleaned_data.get('language')
+                    break
                 
-                if not language.software_language:
-                    code_question.hdlquestionsolution_set.all().delete()
+                # remove all test cases if language type is changed
+                language = get_object_or_404(Language, name=name)
+                if language.software_language != cq_is_software:
+                    code_question.testcase_set.all().delete()
+                    
+                    if hasattr(code_question, 'hdlquestionconfig'):
+                        code_question.hdlquestionconfig.delete()
+
+                    if not language.software_language:
+                        return redirect('update-question-type', code_question_id=code_question.id)
+
+                    return redirect('update-test-cases', code_question_id=code_question.id)
+
+                next_url = request.GET.get("next")
+                if next_url:
+                    return redirect(next_url)
+                
+                if code_question.is_software_language():
+                    return redirect('update-test-cases', code_question_id=code_question.id)
+                else:
                     return redirect('update-question-type', code_question_id=code_question.id)
-
-                return redirect('update-test-cases', code_question_id=code_question.id)
-
-            next_url = request.GET.get("next")
-            if next_url:
-                return redirect(next_url)
-            
-            if code_question.is_software_language():
-                return redirect('update-test-cases', code_question_id=code_question.id)
-            else:
-                return redirect('update-question-type', code_question_id=code_question.id)
 
     context = {
         'creation': request.GET.get('next') is None,
@@ -300,6 +330,51 @@ def update_languages(request, code_question_id):
 @login_required()
 @groups_allowed(UserGroup.educator)
 def update_question_type(request, code_question_id):
+    # get CodeQuestion instance
+    code_question = get_object_or_404(CodeQuestion, id=code_question_id)
+
+    # check permissions
+    if check_permissions_code_question(code_question, request.user) != 2:
+        return PermissionDenied()
+    
+    # if belongs to a published assessment, disallow
+    if code_question.assessment and code_question.assessment.published:
+        messages.warning(request, "Question type from a published assessment cannot be modified!")
+        return redirect('assessment-details', assessment_id=code_question.assessment.id)
+    
+    # prepare form
+    question_type_form = QuestionTypeForm()
+
+    # process POST requests
+    if request.method == "POST":
+        form = QuestionTypeForm(request.POST)
+
+        if form.is_valid():
+            with transaction.atomic():
+                # remove existing config
+                if hasattr(code_question, 'hdlquestionconfig'):
+                    code_question.hdlquestionconfig.delete()
+
+                hdl_config = form.save(commit=False)
+                hdl_config.code_question = code_question
+                hdl_config.save()
+
+                next_url = request.GET.get("next")
+                if next_url:
+                    return redirect(next_url)
+                
+                return redirect('generate-module-code', code_question_id=code_question.id)
+    
+    context = {
+        'creation': request.GET.get('next') is None,
+        'code_question': code_question,
+        'question_type_form': question_type_form,
+    }
+
+    return render(request, 'code_questions/update-question-type.html', context)
+
+@login_required()
+def generate_module_code(request, code_question_id):
     # get CodeQuestion instance
     code_question = get_object_or_404(CodeQuestion, id=code_question_id)
 
@@ -361,7 +436,7 @@ def update_question_type(request, code_question_id):
         'module_formset': module_generation_formset,
     }
 
-    return render(request, 'code_questions/update-question-type.html', context)
+    return render(request, 'code_questions/generate-module-code.html', context)
 
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
@@ -401,14 +476,30 @@ def get_cq_details(request):
             }
         return Response(context, status=status.HTTP_400_BAD_REQUEST)
     
+@api_view(["POST"])
 @login_required()
+@renderer_classes([JSONRenderer])
 def testbench_generation(request):
     # get module_code from request
     module_code = request.POST.get("module_code")
 
-    test_bench = TestbenchGenerator(module_code)()
+    try:
+        # generate testbench
+        testbench = TestbenchGenerator(module_code)()
 
-    return HttpResponse(test_bench, content_type='text/plain')
+        context = {
+            "result": "success",
+            "testbench": testbench
+        }
+
+        return Response(context, status=status.HTTP_200_OK)
+    
+    except Exception as ex:
+        context = { 
+            "result": "error",
+            "message": "Error in generating testbench. Please check that your module code has inputs and outputs defined."
+        }
+        return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(["POST"])
 @login_required()
@@ -422,14 +513,13 @@ def compile_code(request):
     try:
         if request.method == "POST":
             language = Language.objects.get(judge_language_id=request.POST.get('lang-id'))
-            main = request.POST.get('main')
-            tb = request.POST.get('tb')
+            module = request.POST.get('module')
+            testbench = request.POST.get('testbench')
             
             if language.name.find('Verilog') != -1:
-                if tb.find('$dumpfile') == -1:
+                if testbench.find('$dumpfile') == -1:
                     # add wave dump to last line before endmodule
-                    main = main
-                    testbench = tb.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
+                    testbench = testbench.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
                 else:
                     # Define the regular expression patterns
                     dumpfile_pattern = r'\$dumpfile\("[^"]+"\)'
@@ -440,19 +530,17 @@ def compile_code(request):
                     new_dumpvars = '$dumpvars(0)'
 
                     # replace wave dump
-                    testbench = re.sub(dumpfile_pattern, new_dumpfile, tb)
+                    testbench = re.sub(dumpfile_pattern, new_dumpfile, testbench)
                     testbench = re.sub(dumpvars_pattern, new_dumpvars, testbench)
-                    main = main
-
                 try:
-                    main, input_ports, output_ports = embed_inout_module(main)
+                    module, input_ports, output_ports = embed_inout_module(module)
                     testbench = embed_inout_testbench(testbench, input_ports, output_ports)
                 except Exception as ex:
                     pass
             
             # create zip file
             with zipfile.ZipFile('submission.zip', 'w') as zip_file:
-                zip_file.writestr('main.v', main)
+                zip_file.writestr('main.v', module)
                 zip_file.writestr('testbench.v', testbench)
                 zip_file.writestr('compile', 'iverilog -o a.out main.v testbench.v')
                 zip_file.writestr('run', "vvp -n a.out | find -name '*.vcd' -exec python3 -m vcd2wavedrom.vcd2wavedrom --aasp -i {} + | tr -d '[:space:]'")

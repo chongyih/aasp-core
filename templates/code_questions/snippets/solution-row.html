@@ -1,15 +1,6 @@
 {% load static %}
 
 <div class="row solution-row">
-    {# if id is not None, this is an existing row #}
-    {% if form.id.value != None %}
-        <input type="hidden" name="solution-0-id" value="{{ form.id.value }}"
-            id="id_solution-0-id">
-        <input type="checkbox" style="visibility:hidden" class="delete-checkbox"
-            name="solution-0-DELETE"
-            id="solution-0-DELETE" {% if form.DELETE.value %}checked{% endif %}>
-    {% endif %}
-
     <h4 class="pb-2">Solution</h4>
     <div class="mb-3">
     
@@ -29,21 +20,21 @@
 
     <div class="row">
         <!-- Ace Code Editor -->
-        <div class="col">
+        <div class="col pe-2">
             <label>Module Definition</label>
-            <pre id="sol_editor" class="inner rounded" style="height: 500px;"></pre>
-            <input type="hidden" name="solution-0-module" 
-               id="id_solution-0-module" 
-               value="{{ form.module.value|default:module|default:"" }}">
+            <pre id="module_editor" class="inner rounded" style="height: 500px;"></pre>
+            <input type="hidden" name="module" 
+            id="id_module" 
+            value="{{ form.module.value|default:"" }}">
         </div>
 
         <!-- Ace Code Editor -->
-        <div class="col">
+        <div class="col ps-2">
             <label>Testbench</label>
             <pre id="testbench_editor" class="inner rounded" style="height: 500px;"></pre>
-            <input type="hidden" name="solution-0-testbench" 
-               id="id_solution-0-testbench" 
-               value="{{ form.testbench.value|default:testbench|default:"" }}">
+            <input type="hidden" name="testbench" 
+            id="id_testbench" 
+            value="{{ form.testbench.value|default:"" }}">
         </div>
     </div>
 
@@ -56,7 +47,21 @@
 {% block js %}
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="{% static 'vendors/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js"></script>
+    <script type="text/javascript" src="{% static 'vendors/toastify/toastify.js' %}"></script>
 
+    <!-- Error message toast -->
+    <script>
+        const showErrorToast = (msg) => {
+            Toastify({
+                text: msg,
+                duration: 3000,
+                position: "center",
+                style: {"background": "#ff6961"}
+            }).showToast();
+        };
+    </script>
+    
     <!-- Ace code editor config -->
     <script>
         const Range = ace.require("ace/range").Range;
@@ -64,11 +69,11 @@
         // language and theme selections
         const langSelect = $("#lang-select");
         const themeSelect = $("#theme-select");
-        const moduleInput = $("#id_solution-0-module");
-        const testbenchInput = $("#id_solution-0-testbench");
+        const moduleInput = $("#id_module");
+        const testbenchInput = $("#id_testbench");
 
         // initialize solution ace editor
-        let module_editor = ace.edit("sol_editor");
+        let module_editor = ace.edit("module_editor");
         module_editor.renderer.setScrollMargin(10);
         module_editor.setOptions({
             fontFamily: "JetBrains Mono",
@@ -124,61 +129,69 @@
         // Synchronize both Ace editor content with the hidden input field
         module_editor.getSession().on('change', function(){
             var code = module_editor.getValue();
-            document.getElementById("id_solution-0-module").value = code;
+            document.getElementById("id_module").value = code;
         });
 
         testbench_editor.getSession().on('change', function(){
             var code = testbench_editor.getValue();
-            document.getElementById("id_solution-0-testbench").value = code;
+            document.getElementById("id_testbench").value = code;
         });
+
     </script>
 
     <!-- Generate Testbench -->
     <script>
         const generateTestbench = () => {
-            let editor = ace.edit("sol_editor");
+            let editor = ace.edit("module_editor");
             const module_code = editor.getValue();
 
             $(document).ready(function() {
                     $.ajax({
-                    type: "POST",
-                    url: "/testbench/generate/",
-                    data: {
-                        csrfmiddlewaretoken: "{{ csrf_token }}",
-                        module_code: module_code,
-                    },
-                    success: function(data) {
+                        type: "POST",
+                        url: "/testbench/generate/",
+                        data: {
+                            csrfmiddlewaretoken: "{{ csrf_token }}",
+                            module_code: module_code,
+                        },
+                    }).done((res, textStatus, jqXHR) => {
                         let testbench_editor = ace.edit("testbench_editor");
-                        testbench_editor.setValue(data, -1);
-                    },
-                    error: function(data) {
-                        console.log(data);
-                    }
+                        testbench_editor.setValue(res.testbench, -1);
+                    }).fail((jqXHR, textStatus, errorThrown) => {
+                        // 4xx status codes
+                        if (Math.floor(jqXHR.status / 100) == 4) {
+                            showErrorToast(jqXHR.responseJSON.message);
+                        }
+                        else {
+                            showErrorToast("Something went wrong. Please try again.");
+                        }
+                    });
                 })
-            })
         }
     </script>
 
     <!-- Apply testbench to all existing test cases -->
     <script>
         const applyToAll = () => {
-            // find all testbench editors excluding hidden ones"
-            const testbench_editors = document.querySelectorAll("[id^='id_tc-'][id$='-stdin-editor']:not([id='id_tc-{{ prefix|default:'__prefix__' }}-stdin-editor'])");
+            let code_editor, code;
+
+            // find all stdin editors excluding hidden ones"
+            const stdin_editors = document.querySelectorAll("[id^='id_tc-'][id$='-stdin-editor']:not([id='id_tc-{{ prefix|default:'__prefix__' }}-stdin-editor'])");
             
             // get the current testbench
-            let testbench_editor = ace.edit("testbench_editor");
-            const testbench_code = testbench_editor.getValue();
+            if ('{{ question_type }}' === 'Module Design') {
+                code_editor = ace.edit("testbench_editor");
+                code = testbench_editor.getValue();
+            } else {
+                code_editor = ace.edit("module_editor");
+                code = module_editor.getValue();
+            }
 
-            // loop through all testbench editors
-            testbench_editors.forEach((editor) => {
+            // loop through all stdin editors
+            stdin_editors.forEach((editor) => {
                 // set the testbench code
-                ace.edit(editor).setValue(testbench_code);
+                ace.edit(editor).setValue(code);
                 ace.edit(editor).clearSelection();
             });
-
-            // store testbench to apply to new test cases
-            const testbench = document.getElementById("testbench_editor");
-            testbench.dataset.code = testbench_code;
         }
     </script>
 {% endblock %}

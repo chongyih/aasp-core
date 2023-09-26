@@ -2,7 +2,7 @@ from django.core.validators import FileExtensionValidator
 from django import forms
 
 from core.models import QuestionBank
-from core.models.questions import TestCase, CodeQuestion
+from core.models.questions import HDLQuestionSolution, TestCase, CodeQuestion, HDLQuestionConfig
 
 
 class QuestionBankForm(forms.ModelForm):
@@ -21,6 +21,19 @@ class ImportQuestionBankForm(forms.Form):
     file = forms.FileField(
         validators=[FileExtensionValidator(allowed_extensions=['json'])]
     )
+
+class QuestionTypeForm(forms.ModelForm):
+    class Meta:
+        model = HDLQuestionConfig
+        fields = ['question_type']
+        widgets = {
+            'question_type': forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        }
+
+class QuestionSolutionForm(forms.ModelForm):
+    class Meta:
+        model = HDLQuestionSolution
+        fields = ['module', 'testbench']
 
 class ModuleGenerationForm(forms.Form):
     def clean(self):

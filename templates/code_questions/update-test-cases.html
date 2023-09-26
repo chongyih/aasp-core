@@ -4,38 +4,23 @@
 {% block title %}Test Cases{% endblock %}
 
 {% block styles %}
-  <!-- Split.js, ace editor css -->
+  <!-- ace editor css -->
   <style>
-      .split {
-          display: flex;
-          flex-direction: row;
-      }
-
-      .gutter {
-          background-color: #eee;
-          background-repeat: no-repeat;
-          background-position: 50%;
-      }
-
-      .gutter.gutter-horizontal {
-          background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
-          cursor: col-resize;
-      }
-
-      @font-face {
-          font-family: 'JetBrains Mono';
-          src: url('{% static 'fonts/JetBrainsMono-Regular.ttf' %}') format('truetype');
-          font-weight: normal;
-          font-style: normal;
-      }
-
-      /* for ace editor */
-      .readonly-highlight {
-          position: absolute;
-          background-color: red;
-          opacity: 0.1;
-      }
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: url('{% static 'fonts/JetBrainsMono-Regular.ttf' %}') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+  
+        /* for ace editor */
+        .readonly-highlight {
+            position: absolute;
+            background-color: red;
+            opacity: 0.1;
+        }
   </style>
+
   <link rel="stylesheet" href="{% static 'vendors/highlight.js/styles/night-owl.min.css' %}">
   <link rel="stylesheet" href="{% static 'vendors/toastify/toastify.css' %}"/>
 
@@ -94,6 +79,7 @@
                     {% for error in testcase_formset.errors %}
                       {{ error }}
                     {% endfor %}
+                  </div>
                 {% endif %}
                 
                 {% if is_software_language %}
@@ -113,32 +99,21 @@
                     {% endfor %}
                   </div>
                 {% else %}
-                  <!-- hdl question solution management forms -->
-                  {{ hdl_solution_formset.management_form }}
+                  <!-- test case rows -->
+                  {% if question_type == 'Module Design' %}
+                    {% include 'code_questions/snippets/module-test-case.html' with testcase_formset=testcase_formset hdl_solution_form=hdl_solution_form %}
+                  {% elif question_type == 'Testbench Design' %}
+                    {% include 'code_questions/snippets/testbench-test-case.html' with testcase_formset=testcase_formset hdl_solution_form=hdl_solution_form %}
+                  {% elif question_type == 'Module and Testbench Design' %}
+                    {% include 'code_questions/snippets/module-testbench-test-case.html' with testcase_formset=testcase_formset hdl_solution_form=hdl_solution_form %}
+                  {% endif %}
                   
-                  {% include 'code_questions/snippets/solution-row.html' with form=hdl_solution_formset.0 %}
-
-                  <hr>
-
-                  <!-- test cases & code snippet management forms -->
-                  {{ testcase_formset.management_form }}
-
-                  <!-- Sample Test case -->
-                  <h5>Sample Test Case</h5>
-                  {% include 'code_questions/snippets/test-case-row.html' with sample=True code=True prefix="0" form=testcase_formset.0 %}
-                  <!-- this div holds all internal test case rows -->
-                  <h5>Internal Test Cases</h5>
-                  <div id="test-cases-container" class="mt-4">
-                    {% for f in testcase_formset|slice:"1:" %}
-                      {% include 'code_questions/snippets/test-case-row.html' with code=True prefix=forloop.counter form=f %}
-                    {% endfor %}
-                  </div>
 
                 {% endif %}
 
                 <!-- buttons -->
                 <div>
-                  <button type="button" class="btn btn-sm btn-warning" id="addTestCase-btn">Add Test Case</button>
+                  <button type="button" class="btn btn-sm btn-warning {% if question_type == 'Testbench Design' %}d-none{% endif %}" id="addTestCase-btn">Add Test Case</button>
                   <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save and Continue</button>
                 </div>
               </div>
@@ -147,17 +122,18 @@
 
           </div>
         </div>
+        </div>
       </div>
     </div>
 
     <!-- hidden test-case-row -->
     {% if is_software_language %}
-      {% include 'code_questions/snippets/test-case-row.html' with code=False form=testcase_formset.empty_form hidden=True %}
+      {% include 'code_questions/snippets/test-case-row.html' with form=testcase_formset.empty_form hidden=True %}
+    {% elif question_type == 'Module and Testbench Design' %}
+      {% include 'code_questions/snippets/double-hdl-test-case-row.html' with form_1=testcase_formset.empty_form form_2=testcase_formset.empty_form hidden=True %}
     {% else %}
-      {% include 'code_questions/snippets/test-case-row.html' with code=True form=testcase_formset.empty_form hidden=True %}
+      {% include 'code_questions/snippets/hdl-test-case-row.html' with form=testcase_formset.empty_form hidden=True %}
     {% endif %}
-
-
 
   </div>
 {% endblock %}
@@ -177,18 +153,36 @@
       // function to update all prefixes (internal test cases only as sample test case is always 0)
       const updatePrefixes = () => {
           const regex = RegExp(`tc-(\\d)-`, 'g');
-          testCasesContainer.children().each((idx, tcRow) => {
+          testCasesContainer.children('.test-case-row').each((idx, tcRow) => {
               // store current stdin, stdout values of this test case row
               let textAreas = $(tcRow).find("textarea");
               const stdin = $(textAreas.get(0)).val();
               const stdout = $(textAreas.get(1)).val();
 
-              // replace html with one with updated prefixes
-              $(tcRow).html($(tcRow).html().replaceAll(regex, `tc-${idx + 1}-`));
-              $("#tc-" + (idx + 1) + "-label").html(idx + 1); // update label
+              // update other editor if module and testbench question
+              if ('{{ question_type }}' === 'Module and Testbench Design') {
+                // find the first index
+                const firstIndex = $(tcRow).find("pre").first().attr('id').replace("id_tc-", "").replace("-stdin-editor", "");
+                const regexFirst = RegExp(`tc-(${firstIndex})-`, 'g');
+                const regexSecond = RegExp(`tc-(${Number(firstIndex) + 1})-`, 'g');
 
-              // need to .find() again as previous references are no longer valid
-              textAreas = $(tcRow).find("textarea");
+                $(tcRow).html($(tcRow).html().replaceAll(regexFirst, `tc-${idx * 2 + 2}-`))
+                $(tcRow).html($(tcRow).html().replaceAll(regexSecond, `tc-${idx * 2 + 3}-`))
+
+                // update label
+                $("#tc-" + (idx + 2) + "-label").html(idx + 2);
+                $("#tc-" + (idx + 3) + "-label").html(idx + 3);
+
+                textAreas = $(tcRow).find("textarea");
+              } else {
+                // replace html with one with updated prefixes
+                $(tcRow).html($(tcRow).html().replaceAll(regex, `tc-${idx + 1}-`));
+                $("#tc-" + (idx + 1) + "-label").html(idx + 1); // update label
+
+                // need to .find() again as previous references are no longer valid
+                textAreas = $(tcRow).find("textarea");
+              }
+
 
               // restore the previously stored stdin, stdout values
               $(textAreas.get(0)).val(stdin);
@@ -196,10 +190,45 @@
           });
       };
 
+      const initializeEditor = (index) => {
+        // initialize ace editor for code
+        let editor = ace.edit(`id_tc-${index}-stdin-editor`);
+
+        editor.renderer.setScrollMargin(10);
+        editor.setOptions({
+            fontFamily: "JetBrains Mono",
+            fontSize: "16px",
+            theme: "ace/theme/cloud9_day",
+            showPrintMargin: false,
+            highlightActiveLine: false,
+            wrap: true,
+            tabSize: 4,
+        });
+        editor.setOption("dragEnabled", false);
+        editor.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
+
+        // Synchronize Ace editor content with the hidden input field
+        editor.getSession().on('change', function(){
+          var code = editor.getValue();
+          document.getElementById(`id_tc-${index}-stdin`).value = code;
+        });
+
+        editor.commands.on("afterExec", function (e) {
+            // ignore arrow keys commands
+            if (arrowCommands.includes(e.command.name))
+                return;
+        });
+      }
+
       // add test case row button clicked
       $("#addTestCase-btn").click(() => {
           // increment totalForms
           totalForms++;
+
+          // increment again as one test case has two forms
+          if ('{{question_type}}' == 'Module and Testbench Design')
+            totalForms++;
+
           totalFormsInput.val(totalForms);
 
           // clone empty test-case-row
@@ -209,7 +238,12 @@
           cloned.removeAttr('id style');
 
           // update prefix
-          $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+          if ('{{question_type}}' == 'Module and Testbench Design') {
+            $(cloned).html($(cloned).html().replaceAll('__prefix_1__', `${totalForms - 2}`));
+            $(cloned).html($(cloned).html().replaceAll('__prefix_2__', `${totalForms - 1}`));
+          }
+          else
+            $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
 
           // update wavedrom id
           $(cloned).find('[id^="WaveDrom_Display_"]').each(function() {
@@ -223,40 +257,14 @@
           // append to container
           testCasesContainer.append(cloned);
 
-          // initialize ace editor for code
-          let row_editor_{{totalForms}} = ace.edit(`id_tc-${totalForms - 1}-stdin-editor`);
+          if ('{{ is_software_language|yesno:"truefalse" }}' === 'False') {
+            initializeEditor(totalForms - 1);
 
-          row_editor_{{totalForms}}.renderer.setScrollMargin(10);
-          row_editor_{{totalForms}}.setOptions({
-              fontFamily: "JetBrains Mono",
-              fontSize: "16px",
-              theme: "ace/theme/cloud9_day",
-              showPrintMargin: false,
-              highlightActiveLine: false,
-              wrap: true,
-              tabSize: 4,
-          });
-          row_editor_{{totalForms}}.setOption("dragEnabled", false);
-          row_editor_{{totalForms}}.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
-
-          // set the value of the editor if it exists
-          const code = document.getElementById("testbench_editor").dataset.code;
-          if (code)
-              row_editor_{{totalForms}}.setValue(code);
-
-          const index = totalForms - 1;
-
-          // Synchronize Ace editor content with the hidden input field
-          row_editor_{{totalForms}}.getSession().on('change', function(){
-            var code = row_editor_{{index}}.getValue();
-            document.getElementById(`id_tc-${index}-stdin`).value = code;
-          });
-
-          row_editor_{{totalForms}}.commands.on("afterExec", function (e) {
-              // ignore arrow keys commands
-              if (arrowCommands.includes(e.command.name))
-                  return;
-          });
+            // initialize the other editor
+            if ('{{question_type}}' === 'Module and Testbench Design') {
+              initializeEditor(totalForms - 2);
+            }
+          }
       });
 
       // remove new row
@@ -273,12 +281,22 @@
           } else {
               // decrement totalForms
               totalForms--;
+
+              // decrement again as one test case has two forms
+              if ('{{question_type}}' == 'Module and Testbench Design')
+                totalForms--;
+
               totalFormsInput.val(totalForms);
 
               // remove and update prefixes
               toRemove.fadeOut('slow', () => {
                   toRemove.remove();
                   updatePrefixes();
+
+                  for (let i = 0; i < totalForms; i++) {
+                    let editor = ace.edit(`id_tc-${i}-stdin-editor`);
+                    editor.setValue(document.getElementById(`id_tc-${i}-stdin`).value);
+                  }
               });
               return false;
           }
@@ -286,38 +304,239 @@
 
   </script>
 
-  <!-- Load from file -->
   <script>
-      const loadFromFile = (elem) => {
-          // get the corresponding text area
-          const textArea = $(elem).siblings("textarea").first();
+    // display error Toast and set status text
+    const showError = (msg, index) => {
+        const runStatus = $(`#id_tc-${index}-run-status`);
+        const mainLoading = $(`#id_tc-${index}-main-loading`);
+        const moreDetails = $(`#id_tc-${index}-more-details`);
+        
+        mainLoading.hide();
+        moreDetails.hide();
 
-          // create input element in DOM
-          let input = document.createElement('input');
-          input.type = 'file';
-          input.accept = '.txt';
-
-          // define onchange event
-          input.onchange = e => {
-              // get the selected file
-              let file = e.target.files[0];
-
-              // setting up the reader
-              let reader = new FileReader();
-              reader.readAsText(file, 'UTF-8');
-
-              // set text area value
-              reader.onload = readerEvent => {
-                  textArea.val(readerEvent.target.result);
-              }
-          }
-
-          // trigger the file picker
-          input.click();
-
-          // clean up
-          input.remove()
-      }
+        runStatus.html(msg);
+        Toastify({
+            text: msg,
+            duration: 3000,
+            position: "center",
+            style: {"background": "#ff6961"}
+        }).showToast();
+    };
   </script>
 
+  <!-- Generate output button -->
+  <script>
+    const generateOutput = (elem) => {
+      let editor, module, testbench;
+
+      const button_id = elem.id;
+      const stdin_id = button_id.replace("button", "stdin");
+      const index = button_id.replace("id_tc-", "").replace("-button", "");
+
+      const runStatus = $(`#id_tc-${index}-run-status`);
+      const mainLoading = $(`#id_tc-${index}-main-loading`);
+      const moreDetails = $(`#id_tc-${index}-more-details`);
+
+      // get the corresponding ace editor and stdin
+      if ('{{ question_type }}' == 'Testbench Design') {
+        // testcase is module definition
+        module = document.getElementById(stdin_id).value;
+        testbench = ace.edit("testbench_editor").getValue()
+      } else if ('{{ question_type }}' == 'Module Design') {
+        module = ace.edit("module_editor").getValue()
+        testbench = document.getElementById(stdin_id).value;
+      } else {
+        module = document.getElementById(`id_tc-${index}-stdin`).value;
+        testbench = document.getElementById(`id_tc-${Number(index) + 1}-stdin`).value;
+      }
+
+      // check if empty
+      if (module === "") {
+        runStatus.html("Module Definition is empty &#x274C;", index);
+        return;
+      } else if (testbench === "") {
+        runStatus.html("Testbench is empty &#x274C;", index);
+        return;
+      }
+
+      mainLoading.show();
+      moreDetails.hide()
+      runStatus.html('Compiling...');
+
+      $.ajax({
+        type: "POST",
+        url: "{% url 'compile-code' %}",
+        data: {
+          csrfmiddlewaretoken: "{{ csrf_token }}",
+          'lang-id': $("#lang-select").find("option:selected").data('judgeid'),
+          module: module,
+          testbench: testbench,
+        },
+      }).done((res, textStatus, jqXHR) => {
+        if (res.result === "success") {
+          updateOutput(res.token, index);
+
+          // set token
+          moreDetails.data('token', res.token)
+        }
+      }).fail((jqXHR, textStatus, errorThrown) => {
+          // 4xx status codes
+          if (Math.floor(jqXHR.status / 100) == 4) {
+              console.error("Internal API Error!");
+              showError("Internal API Error &#x274C;", index);
+          }
+          else {
+              console.error("External API Error!");
+              showError("External API Error &#x274C;", index);
+          }
+      });
+    }
+
+    // updates sample status by polling
+    const updateOutput = (token, index) => {
+      $.ajax({
+          type: 'GET',
+          url: "{% url 'get-tc-details' %}",
+          data: {token, status_only: false, vcd: 'true'},
+      }).done((res, textStatus, jqXHR) => {
+          if (res.result === "success") {
+            const runStatus = $(`#id_tc-${index}-run-status`);
+            const moreDetails = $(`#id_tc-${index}-more-details`);
+            const mainLoading = $(`#id_tc-${index}-main-loading`);
+
+            if (res.data.status_id === 1 || res.data.status_id === 2) {  // not finished
+                //runStatus.html(res.data.status);
+                window.setTimeout(() => {
+                    updateOutput(token, index);
+                }, 1000);
+            } else { // finished
+              if (res.data.status_id === 3)
+                runStatus.html('Successful');
+              else
+                runStatus.html(res.data.status + " &#x274C;");
+
+              mainLoading.hide();
+
+              if (res.data.status_id === 3 | res.data.status_id === 4) {
+                const e = document.getElementById(`InputJSON_${index}`);
+
+                let wavedrom = JSON.parse(res.data.stdout)
+                wavedrom.signal = wavedrom.signal.map(signal => {
+                  const nameWithoutPrefix = signal.name.replace(/^in_|^out_/, "");
+                  signal.name = nameWithoutPrefix;
+                  return signal;
+                });
+
+                // Update the input element's value with the wavedrom value
+                e.innerHTML = JSON.stringify(wavedrom);
+                WaveDrom.RenderWaveForm(index, WaveDrom.eva(`InputJSON_${index}`), "WaveDrom_Display_")
+
+                // Show the wavedrom div
+                const wavedrom_div = document.getElementById(`id_tc-${index}-wavedrom`);
+                wavedrom_div.classList.remove("d-none");
+
+                // Set the output value
+                document.getElementById(`id_tc-${index}-stdout`).value = res.data.stdout;
+
+                if ('{{ question_type }}' === 'Module and Testbench Design') {
+                  document.getElementById(`id_tc-${Number(index) + 1}-stdout`).value = res.data.stdout;
+                }
+                
+              } else if (res.data.status_id === 6) {  // compilation error
+                moreDetails.show();
+              } else {
+                showError(res.data.stdout, index);
+              }
+            }
+          }
+      }).fail((jqXHR, textStatus, errorThrown) => {
+          // 4xx status codes
+          if (Math.floor(jqXHR.status / 100) == 4) {
+              console.error("Internal API Error!");
+              showError("Internal API Error &#x274C;", index);
+          }
+          else {
+              console.error("External API Error!");
+              showError("External API Error &#x274C;", index);
+          }
+      });
+    }
+
+  </script>
+
+  <!-- Load from file -->
+  <script>
+    const loadFromFile = (elem) => {
+        // get the corresponding text area if software
+        const textArea = $(elem).siblings("textarea").first();
+
+        // get the corresponding ace editor if hardware
+        const editor_id = $(elem).siblings("pre").first().attr('id');
+        const editor = ace.edit(editor_id);
+
+        // create input element in DOM
+        let input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.txt';
+
+        // define onchange event
+        input.onchange = e => {
+            // get the selected file
+            let file = e.target.files[0];
+
+            // setting up the reader
+            let reader = new FileReader();
+            reader.readAsText(file, 'UTF-8');
+
+            // set text area value
+            reader.onload = readerEvent => {
+                textArea.val(readerEvent.target.result);
+                editor.setValue(readerEvent.target.result, -1);
+            }
+        }
+
+        // trigger the file picker
+        input.click();
+
+        // clean up
+        input.remove()
+    }
+  </script>
+
+  <script>
+    // "More Details" clicked (opens modal)
+    const viewModal = (btn) => {
+      // get index
+      const index = btn.id.replace("id_tc-", "").replace("-more-details", "");
+
+      // get token
+      const token = $(btn).data('token');
+
+      // ajax request
+      $.ajax({
+          type: 'GET',
+          url: "{% url 'get-tc-details' %}",
+          data: {token, status_only: false},
+      }).done((res, textStatus, jqXHR) => {
+          if (res.result === "success") {
+            // set error details
+            $("#error-details").html(res.data.compile_output);
+
+            // show modal
+            $("#error-modal").modal('show')
+          }
+      }).fail((jqXHR, textStatus, errorThrown) => {
+          // 4xx status codes
+          if (Math.floor(jqXHR.status / 100) == 4) {
+              console.error("Internal API Error!");
+              showError("Internal API Error &#x274C;", index);
+          }
+          else {
+              console.error("External API Error!");
+              showError("External API Error &#x274C;", index);
+          }
+      });
+    }
+
+  </script>
 {% endblock %}

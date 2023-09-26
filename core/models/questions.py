@@ -49,7 +49,6 @@ class QuestionBank(models.Model):
     def __str__(self):
         return self.name
 
-
 class CodeQuestion(models.Model):
     class Meta:
         pass
@@ -131,18 +130,31 @@ class CodeTemplate(models.Model):
     name = models.CharField(max_length=50, blank=False, null=False)
     code = models.TextField(blank=False, null=False)
 
-class HDLQuestionSolution(models.Model):
+class HDLQuestionConfig(models.Model):
     QUESTION_TYPES = [
         (1, "Module Design"),
         (2, "Testbench Design"),
         (3, "Module and Testbench Design"),
     ]
 
+    CONFIGURATION_OPTIONS = [
+        (1, "Generate module code"),
+    ]
+
     class Meta:
         pass
 
-    code_question = models.ForeignKey(CodeQuestion, null=False, blank=False, on_delete=models.CASCADE)
-    question_type = models.IntegerField(choices=QUESTION_TYPES, default=1)
-    module = models.TextField(blank=False, null=False)
-    testbench = models.TextField(blank=True, null=True)
+    def get_question_type(self):
+        """
+        Returns the question type of the HDL question.
+        """
+        return self.QUESTION_TYPES[self.question_type - 1][1]
     
+    code_question = models.OneToOneField(CodeQuestion, null=True, blank=True, on_delete=models.CASCADE)
+    question_type = models.IntegerField(choices=QUESTION_TYPES, default=1)
+    question_config = models.IntegerField(choices=CONFIGURATION_OPTIONS, default=1)
+
+class HDLQuestionSolution(models.Model):
+    code_question = models.OneToOneField(CodeQuestion, null=True, blank=True, on_delete=models.CASCADE)
+    module = models.TextField(blank=True, null=True)
+    testbench = models.TextField(blank=True, null=True)

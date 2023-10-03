@@ -11,13 +11,9 @@
     <!-- this div holds all internal test case rows -->
     <h5>Internal Test Cases</h5>
     <div id="test-cases-container" class="mt-4">
-    {% with testcase_formset|slice:"2:"|chunks:2 as form_pairs %}
-        {% for form_pair in form_pairs %}
-            {% with f1=form_pair.0 f2=form_pair.1 %}
-                {% include 'code_questions/snippets/double-hdl-test-case-row.html' with double=True prefix_1=forloop.counter|add:forloop.counter prefix_2=forloop.counter|add:forloop.counter|add:1 form_1=f1 form_2=f2 %}
-            {% endwith %}
-        {% endfor %}
-    {% endwith %}
+    {% for f in testcase_formset|slice:"2:" %}
+        {% include 'code_questions/snippets/hdl-test-case-row.html' with prefix=forloop.counter|add:1 form=f %}
+    {% endfor %}
     </div>
 
 </div>

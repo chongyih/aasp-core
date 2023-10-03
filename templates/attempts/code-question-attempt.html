@@ -123,9 +123,11 @@
 
             <hr>
 
+            {% if not tab %}
             <!-- sample test case -->
             <h5>Sample Input</h5>
             <pre><code class="language-plaintext rounded">{{ sample_tc.stdin }}</code></pre>
+            {% endif %}
 
             <!-- wavedrom -->
             {% if is_software_language %}
@@ -155,6 +157,123 @@
 
         <!-- Answer pane -->
         <div id="split-1">
+          <!-- Answer Tab content -->
+          {% if tab %}
+          <ul class="nav nav-fill nav-tabs">
+            <li class="nav-item">
+              <a class="nav-link active" data-bs-toggle="tab" href="#module-tab">Module</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="tab" href="#testbench-tab">Testbench</a>
+            </li>
+          </ul>
+
+          <!-- Answer Content -->
+          <div class="tab-content mt-3" id="answerPaneContent">
+            <!-- Module Answer Content -->
+            <div class="tab-pane fade show active" id="module-tab" role="tabpanel" aria-labelledby="module-tab">
+              <div class="p-4">
+                <h4>Your answer</h4>
+    
+                <div class="row">
+                  <!-- Language selection -->
+                  <div class="col-6">
+                    <label for="module-lang-select">Language</label>
+                    <select class="form-select" id="module-lang-select">
+                      {% for cs in code_snippets %}
+                        <option data-code="{{ cs.code }}" data-judgeid="{{ cs.language.judge_language_id }}"
+                                data-ace-mode="{{ cs.language.ace_mode }}">{{ cs.language.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+    
+                  <!-- theme selection -->
+                  <div class="col-4">
+                    <label for="module-theme-select">Theme</label>
+                    <select class="form-select" id="module-theme-select">
+                      <option value="cloud9_day">Light (Cloud9 Day)</option>
+                      <option value="one_dark">Dark (One Dark)</option>
+                    </select>
+                  </div>
+    
+                  <div class="col-2">
+                    <label></label><br>
+                    <button class="btn btn-warning btn-block" type="button" onclick="resetCode('module')">Reset</button>
+                  </div>
+    
+                </div>
+    
+                <!-- Ace Code Editor -->
+                <div class="row p-2">
+                  <pre id="module-editor" class="inner rounded" style="height: 500px;"></pre>
+                </div>
+              </div>
+            </div>
+
+            <!-- Testbench Answer Content -->
+            <div class="tab-pane fade" id="testbench-tab" role="tabpanel" aria-labelledby="testbench-tab">
+              <div class="p-4">
+                <h4>Your answer</h4>
+    
+                <div class="row">
+                  <!-- Language selection -->
+                  <div class="col-6">
+                    <label for="testbench-lang-select">Language</label>
+                    <select class="form-select" id="testbench-lang-select">
+                      {% for cs in code_snippets %}
+                        <option data-code="{{ cs.code }}" data-judgeid="{{ cs.language.judge_language_id }}"
+                                data-ace-mode="{{ cs.language.ace_mode }}">{{ cs.language.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+    
+                  <!-- theme selection -->
+                  <div class="col-4">
+                    <label for="testbench-theme-select">Theme</label>
+                    <select class="form-select" id="testbench-theme-select">
+                      <option value="cloud9_day">Light (Cloud9 Day)</option>
+                      <option value="one_dark">Dark (One Dark)</option>
+                    </select>
+                  </div>
+    
+                  <div class="col-2">
+                    <label></label><br>
+                    <button class="btn btn-warning btn-block" type="button" onclick="resetCode('testbench')">Reset</button>
+                  </div>
+    
+                </div>
+    
+                <!-- Ace Code Editor -->
+                <div class="row p-2">
+                  <pre id="testbench-editor" class="inner rounded" style="height: 500px;"></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between px-4 pb-4">
+            <div>
+              {% if is_software_language %}
+                <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun('module')">Compile and
+                Run<i
+                    class="fa-solid fa-play ms-2"></i></button>
+              {% else %}
+                <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun('module')">Compile<i
+                      class="fa-solid fa-play ms-2"></i></button>
+                <button type="button" id="waveform-btn" class="btn btn-info d-none" onclick="viewWaveform('module')">Run</button>
+              {% endif %}
+              <button type="button" id="submit-btn" onclick="submit('module');" class="btn btn-success">Submit</button>
+            </div>
+            <div>
+              <span class="h5" id="run-status">Ready</span>
+              <div class="spinner-border spinner-border-sm ms-2" id="main-loading" style="display:none;"></div>
+              <br>
+              <button type="button" id="more-details" class="btn btn-link p-0 view-modal" onclick="viewModal(this)"
+                      style="display:none;">
+                More Details
+              </button>
+            </div>
+          </div>
+          {% else %}
           <div class="p-4">
             <h4>Your answer</h4>
 
@@ -194,15 +313,15 @@
             <div class="d-flex justify-content-between">
               <div>
                 {% if is_software_language %}
-                  <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile and
+                <button type="button" id="module-sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile and
                   Run<i
                       class="fa-solid fa-play ms-2"></i></button>
                 {% else %}
-                  <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile<i
+                  <button type="button" id="module-sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile<i
                         class="fa-solid fa-play ms-2"></i></button>
-                  <button type="button" id="waveform-btn" class="btn btn-info d-none" onclick="viewWaveform()">Run</button>
+                  <button type="button" id="module-waveform-btn" class="btn btn-info d-none" onclick="viewWaveform()">Run</button>
                 {% endif %}
-                <button type="button" id="submit-btn" onclick="submit();" class="btn btn-success">Submit</button>
+                <button type="button" id="module-submit-btn" onclick="submit();" class="btn btn-success">Submit</button>              
               </div>
               <div>
                 <span class="h5" id="run-status">Ready</span>
@@ -215,8 +334,12 @@
               </div>
             </div>
 
-            <hr>
+          </div>
+          {% endif %}
 
+          <div class="px-4 pb-4">
+            <hr>
+            
             <div class="row">
               <h4>Submission History</h4>
               <div class="accordion" id="submissions-accordion">
@@ -242,7 +365,7 @@
                     </h2>
 
                     <div id="submission-{{ cqs.id }}" class="accordion-collapse collapse"
-                         data-bs-parent="#submissions-accordion">
+                          data-bs-parent="#submissions-accordion">
                       <div class="accordion-body">
                         <div class="row">
                           {% for tca in cqs.testcaseattempt_set.all %}
@@ -254,13 +377,13 @@
                                 Test Case {{ forloop.counter }}
                               </button>
                               <div class="spinner-border spinner-border-sm ms-2" id="tca-loading-{{ tca.id }}"
-                                   style="
-                                       {% if tca.status == 1 or tca.status == 2 %}{% else %}display: none;{% endif %}"></div>
+                                    style="
+                                        {% if tca.status == 1 or tca.status == 2 %}{% else %}display: none;{% endif %}"></div>
                               <i class="fa-solid fa-check text-success" id="tca-accepted-{{ tca.id }}"
-                                 style="{% if tca.status == 3 %}{% else %}display: none;{% endif %}"></i>
+                                  style="{% if tca.status == 3 %}{% else %}display: none;{% endif %}"></i>
                               <i class="fa-solid fa-xmark text-danger" id="tca-failed-{{ tca.id }}"
-                                 style="
-                                     {% if tca.status >= 4 and tca.status <= 14 %}{% else %}display: none;{% endif %}"></i>
+                                  style="
+                                      {% if tca.status >= 4 and tca.status <= 14 %}{% else %}display: none;{% endif %}"></i>
                             </div>
                           {% endfor %}
                         </div>
@@ -272,7 +395,6 @@
 
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -420,14 +542,56 @@
 
   <!-- Ace code editor config -->
   <script>
+    let editor = {};
+    let langSelect = {};
+    let themeSelect = {};
+
+    const arrowCommands = ["gotoleft", "gotoright", "golineup", "golinedown"];
+    let readonlyRanges = [];
+    let markers = [];
+
+    const updateReadonlyRanges = (editor) => {
+        // clear previous ranges
+        readonlyRanges = [];
+
+        // clear previous markers
+        markers.forEach((marker) => {
+            editor.session.removeMarker(marker);
+        });
+
+        const content = editor.getValue().split("\n");
+        let starts = [], ends = [];
+        content.forEach((line, idx) => {
+            if (line.indexOf("// ro-start") !== -1)
+                starts.push(idx);
+            else if (line.indexOf("// ro-end") !== -1)
+                ends.push(idx + 1);
+        });
+
+        for (let i = 0; i < starts.length; i++) {
+            let r = new Range(starts[i], 0, ends[i], 0);
+            let marker = editor.session.addMarker(r, "readonly-highlight", "line");
+            readonlyRanges.push(r);
+            markers.push(marker);
+        }
+      };
+
+      // function that sets the language and code snippet
+      const setLanguage = (editor, langSelect) => {
+        // get the selected option
+        const selected = langSelect.find("option:selected")
+        // set the code snippet
+        editor.session.setValue(selected.data("code"))
+        //"{{ is_software_language }}" === "False" ? updatePorts() : editor.session.setValue(selected.data("code"))
+        // set ace mode
+        editor.session.setMode("ace/mode/" + selected.data("ace-mode"))
+
+        updateReadonlyRanges(editor)
+      }
+
+    const initializeEditor = (editor, langSelect, themeSelect) => {
       const Range = ace.require("ace/range").Range;
 
-      // language and theme selections
-      const langSelect = $("#lang-select");
-      const themeSelect = $("#theme-select");
-
-      // initialize ace editor
-      let editor = ace.edit("editor");
       editor.renderer.setScrollMargin(10);
       editor.setOptions({
           fontFamily: "JetBrains Mono",
@@ -445,101 +609,34 @@
           editor.setTheme("ace/theme/" + $(this).val());
       });
 
-      const arrowCommands = ["gotoleft", "gotoright", "golineup", "golinedown"];
-      let readonlyRanges = [];
-      let markers = [];
+      // prevent action on read-only lines
+      editor.commands.on("exec", function (e) {
+          // ignore arrow keys commands
+          if (arrowCommands.includes(e.command.name))
+              return;
 
-      const updateReadonlyRanges = () => {
-          // clear previous ranges
-          readonlyRanges = [];
-
-          // clear previous markers
-          markers.forEach((marker) => {
-              editor.session.removeMarker(marker);
+          const pos = editor.selection.getCursor();
+          readonlyRanges.forEach((readonlyRange) => {
+              if (readonlyRange.inside(pos.row, pos.column) || // cursor inside range (exclusive of start and end)
+                  readonlyRange.isEnd(pos.row, pos.column) && e.command.name === "backspace" ||  // cursor is at the end ( prevent backspace only)
+                  readonlyRange.isStart(pos.row, pos.column) ||  // cursor is at the start of the range
+                  !editor.getSelection().isEmpty() && editor.getSelectionRange().intersects(readonlyRange))  // prevent selection containing readonly area but ends in editable area
+              {
+                  e.preventDefault();
+                  e.stopPropagation();
+              }
           });
+      });
 
-          const content = editor.getValue().split("\n");
-          let starts = [], ends = [];
-          content.forEach((line, idx) => {
-              if (line.indexOf("// ro-start") !== -1)
-                  starts.push(idx);
-              else if (line.indexOf("// ro-end") !== -1)
-                  ends.push(idx + 1);
-          });
+      editor.commands.on("afterExec", function (e) {
+          // ignore arrow keys commands
+          if (arrowCommands.includes(e.command.name))
+              return;
+          updateReadonlyRanges(editor);
+      });
 
-          for (let i = 0; i < starts.length; i++) {
-              let r = new Range(starts[i], 0, ends[i], 0);
-              let marker = editor.session.addMarker(r, "readonly-highlight", "line");
-              readonlyRanges.push(r);
-              markers.push(marker);
-          }
-      };
-
-	  const updatePorts = () => {
-		return
-
-		// get the selected option
-		const selected = langSelect.find("option:selected")
-
-		// get module header
-		const wavedrom = JSON.parse('{{ sample_tc.stdout|safe }}')
-
-		// iterate through all signals
-		let module_header = ""
-		wavedrom.signal.forEach((signal, index) => {
-			// Determine whether it's an input or output based on the signal name
-			const direction = signal.name.startsWith("in_") ? "input" : "output"
-			// Remove the 'in_' or 'out_' prefix from the signal name
-			const portName = signal.name.replace(/^(in_|out_)/, "")
-
-			// Handle bus declarations
-			const busMatch = portName.match(/^(.+)\[(\d+):(\d+)\]$/)
-			if (busMatch) {
-				const busName = busMatch[1]
-				const msb = busMatch[2]
-				const lsb = busMatch[3]
-				module_header += `${direction} [${msb}:${lsb}] ${busName}`
-			} else {
-				module_header += `${direction} ${portName}`
-			}
-
-			// Add a comma for all but the last port declaration
-			if (index !== wavedrom.signal.length - 1) {
-				module_header += ", "
-			}
-		})
-
-		if (module_header) {
-			// add read only ranges for module header
-			module_header = `// ro-start \nmodule top (${module_header});\n// ro-end`
-
-			// set the code snippet
-			lines = selected.data("code").split("\n")
-			lines[0] = module_header
-			editor.session.setValue(lines.join("\n"))
-		}
-	}
-
-    // function that sets the language and code snippet
-    const setLanguage = () => {
-      // get the selected option
-      const selected = langSelect.find("option:selected")
-      // set the code snippet
-      editor.session.setValue(selected.data("code"))
-      //"{{ is_software_language }}" === "False" ? updatePorts() : editor.session.setValue(selected.data("code"))
-      // set ace mode
-      editor.session.setMode("ace/mode/" + selected.data("ace-mode"))
-
-      updateReadonlyRanges()
+      updateReadonlyRanges(editor);
     }
-
-    // set language on first load
-    setLanguage()
-
-    // when language dropdown changed
-    langSelect.change(function () {
-      setLanguage()
-    })
 
     window.addEventListener("load", function () {
       let wavedrom = JSON.parse('{{ sample_tc.stdout|safe }}')
@@ -556,38 +653,98 @@
       WaveDrom.RenderWaveForm(0, WaveDrom.eva("InputJSON_0"), "WaveDrom_Display_")
     })
 
-    // when language dropdown changed
-    langSelect.change(function () {
-        setLanguage();
-    });
+    // initialize editor
+    if ({{ tab|yesno:"true,false" }}) {
+      // initialize module editor
+      editor['module'] = ace.edit("module-editor")
+      langSelect['module'] = $("#module-lang-select")
+      themeSelect['module'] = $("#module-theme-select")
 
-    // prevent action on read-only lines
-    editor.commands.on("exec", function (e) {
-        // ignore arrow keys commands
-        if (arrowCommands.includes(e.command.name))
-            return;
+      initializeEditor(editor['module'], langSelect['module'], themeSelect['module'])
+      
+      // set language on first load
+      setLanguage(editor['module'], langSelect['module'])
 
-        const pos = editor.selection.getCursor();
-        readonlyRanges.forEach((readonlyRange) => {
-            if (readonlyRange.inside(pos.row, pos.column) || // cursor inside range (exclusive of start and end)
-                readonlyRange.isEnd(pos.row, pos.column) && e.command.name === "backspace" ||  // cursor is at the end ( prevent backspace only)
-                readonlyRange.isStart(pos.row, pos.column) ||  // cursor is at the start of the range
-                !editor.getSelection().isEmpty() && editor.getSelectionRange().intersects(readonlyRange))  // prevent selection containing readonly area but ends in editable area
-            {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-        });
-    });
+      // when language dropdown changed
+      langSelect['module'].change(function () {
+        setLanguage(editor['module'], langSelect['module'])
+      })
 
-    editor.commands.on("afterExec", function (e) {
-        // ignore arrow keys commands
-        if (arrowCommands.includes(e.command.name))
-            return;
-        updateReadonlyRanges();
-    });
+      // initialize testbench editor
+      editor['testbench'] = ace.edit("testbench-editor")
+      langSelect['testbench'] = $("#testbench-lang-select")
+      themeSelect['testbench'] = $("#testbench-theme-select")
 
-    updateReadonlyRanges();
+      initializeEditor(editor['testbench'], langSelect['testbench'], themeSelect['testbench'])
+
+      // set language on first load
+      setLanguage(editor['testbench'], langSelect['testbench'])
+
+      // when language dropdown changed
+      langSelect['testbench'].change(function () {
+        setLanguage(editor['testbench'], langSelect['testbench'])
+      })
+    } else {
+      // initialize editor
+      editor['main'] = ace.edit("editor")
+      langSelect['main'] = $("#lang-select")
+      themeSelect['main'] = $("#theme-select")
+
+      initializeEditor(editor['main'], langSelect['main'], themeSelect['main'])
+
+      // set language on first load
+      setLanguage(editor['main'], langSelect['main'])
+
+      // when language dropdown changed
+      langSelect['main'].change(function () {
+        setLanguage(editor['main'], langSelect['main'])
+      })
+    }
+
+	  const updatePorts = () => {
+      return
+
+      // get the selected option
+      const selected = langSelect.find("option:selected")
+
+      // get module header
+      const wavedrom = JSON.parse('{{ sample_tc.stdout|safe }}')
+
+      // iterate through all signals
+      let module_header = ""
+      wavedrom.signal.forEach((signal, index) => {
+        // Determine whether it's an input or output based on the signal name
+        const direction = signal.name.startsWith("in_") ? "input" : "output"
+        // Remove the 'in_' or 'out_' prefix from the signal name
+        const portName = signal.name.replace(/^(in_|out_)/, "")
+
+        // Handle bus declarations
+        const busMatch = portName.match(/^(.+)\[(\d+):(\d+)\]$/)
+        if (busMatch) {
+          const busName = busMatch[1]
+          const msb = busMatch[2]
+          const lsb = busMatch[3]
+          module_header += `${direction} [${msb}:${lsb}] ${busName}`
+        } else {
+          module_header += `${direction} ${portName}`
+        }
+
+        // Add a comma for all but the last port declaration
+        if (index !== wavedrom.signal.length - 1) {
+          module_header += ", "
+        }
+      })
+
+      if (module_header) {
+        // add read only ranges for module header
+        module_header = `// ro-start \nmodule top (${module_header});\n// ro-end`
+
+        // set the code snippet
+        lines = selected.data("code").split("\n")
+        lines[0] = module_header
+        editor.session.setValue(lines.join("\n"))
+      }
+	  }
   </script>
 
   <!-- Unload warning -->
@@ -618,13 +775,13 @@
 
   <!-- Reset code editor -->
   <script>
-    const resetCode = () => {
+    const resetCode = (type='main') => {
       if ({{ assessment_attempt.assessment.limit_tab_switching|yesno:"true,false"}}) {
         window.onblur = () => {};
       }
       
       if (confirm("Are you sure you wish to reset?")) {
-          setLanguage();
+          setLanguage(editor, langSelect[type]);
       }
 
       if ({{ assessment_attempt.assessment.limit_tab_switching|yesno:"true,false"}}) {
@@ -663,7 +820,7 @@
       const vcdromModal = $("#vcdromModal");
 
       // display error Toast and set status text
-      const showError = (msg) => {
+      const showError = (msg, type='main') => {
           mainLoading.hide();
           moreDetails.hide();
 
@@ -687,10 +844,11 @@
       };
 
       // "compile and run" clicked
-      const compileAndRun = () => {
+      const compileAndRun = (type='main') => {
           // disable buttons
           sampleBtn.prop("disabled", true);
           submitBtn.prop("disabled", true);
+          waveformBtn?.prop("disabled", true)
 
           // hide more details link
           mainLoading.show();
@@ -699,9 +857,15 @@
 
           // prepare form data
           let formData = new FormData();
-          formData.append("code", editor.getValue());
-          formData.append("lang-id", langSelect.find("option:selected").data('judgeid'));
+          formData.append("code", editor[type].getValue());
+          formData.append("lang-id", langSelect[type].find("option:selected").data('judgeid'));
           formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+          // append module and testbench if applicable
+          if ({{ tab|yesno:"true,false" }}) {
+            formData.append("module_code", editor['module'].getValue());
+            formData.append("testbench_code", editor['testbench'].getValue());
+          }
 
           // ajax call
           $.ajax({
@@ -713,7 +877,7 @@
           }).done((res, textStatus, jqXHR) => {
               if (res.result === "success") {
                   const token = res.token;
-                  updateSampleStatus(token);
+                  updateSampleStatus(token, type);
               }
           }).fail((jqXHR, textStatus, errorThrown) => {
               window.setTimeout(() => {
@@ -731,7 +895,7 @@
       };
 
       // updates sample status by polling
-      const updateSampleStatus = (token) => {
+      const updateSampleStatus = (token, type='main') => {
           $.ajax({
               type: 'GET',
               url: "{% url 'get-tc-details' %}",
@@ -741,7 +905,7 @@
                   if (res.data.status_id === 1 || res.data.status_id === 2) {  // not finished
                       runStatus.html(res.data.status);
                       window.setTimeout(() => {
-                          updateSampleStatus(token);
+                          updateSampleStatus(token, type);
                       }, 1000);
                   } else { // finished
                       if (res.data.status_id === 3)
@@ -752,6 +916,7 @@
                       // enable buttons
                       sampleBtn.prop("disabled", false);
                       submitBtn.prop("disabled", false);
+                      waveformBtn?.prop("disabled", false)
                       // hide loading, show more details link
                       mainLoading.hide();
                       moreDetails.show();
@@ -781,7 +946,7 @@
       }
 
       // "view waveform" clicked
-      const viewWaveform = () => {
+      const viewWaveform = (type='main') => {
         const vcd = waveformBtn.data('vcd');
         if (!vcd) {
           showErrorToast("An error has occurred. Please check that you have successfully compiled your code and try again.");
@@ -791,6 +956,7 @@
         // disable buttons
         sampleBtn.prop("disabled", true);
         submitBtn.prop("disabled", true);
+        waveformBtn.prop("disabled", true)
 
         $.ajax({
           type: 'POST',
@@ -818,6 +984,7 @@
         vcdromModal.on('hidden.bs.modal', () => {
           sampleBtn.prop("disabled", false);
           submitBtn.prop("disabled", false);
+          waveformBtn.prop("disabled", false)
         });
       }
 
@@ -955,6 +1122,7 @@
                     if (res.data.stdout && res.data.stdout !== 'Hidden') {
                       // show waveforms
                       modalAccordion.removeClass("d-none")
+                      modalTiming.removeClass("d-none")
 
                       const wavedromGroups = compareWaveform(res.data.expected_output, res.data.stdout)
 
@@ -987,7 +1155,11 @@
                       // show error message
                       modalError.removeClass("d-none")
                       modalErrorMsg.html(res.data.compile_output)
-                    } else {
+                    } else if (res.data.status_id === 4) { // wrong answer but no stdout
+                      modalError.removeClass("d-none")
+                      modalErrorMsg.html('Your code did not produce any output.')
+                    }
+                    else {
                       // show error message
                       modalError.removeClass("d-none")
                       modalErrorMsg.html(res.data.stderr)
@@ -1014,10 +1186,11 @@
       };
 
       // submit code, create new submission
-      const submit = () => {
+      const submit = (type='main') => {
           // disable buttons
           sampleBtn.prop("disabled", true);
           submitBtn.prop("disabled", true);
+          waveformBtn?.prop("disabled", true)
 
           // hide more details link
           mainLoading.show();
@@ -1026,9 +1199,15 @@
 
           // prepare form data
           let formData = new FormData();
-          formData.append("code", editor.getValue());
-          formData.append("lang-id", langSelect.find("option:selected").data('judgeid'));
+          formData.append("code", editor[type].getValue());
+          formData.append("lang-id", langSelect[type].find("option:selected").data('judgeid'));
           formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+          // append module and testbench if applicable
+          if ({{ tab|yesno:"true,false" }}) {
+            formData.append("module_code", editor['module'].getValue());
+            formData.append("testbench_code", editor['testbench'].getValue());
+          }
 
           // ajax call
           $.ajax({
@@ -1061,7 +1240,7 @@
                       $("#submissions-accordion").prepend(clonedAccordionItem);
                       $("#submission-" + res.cqs_id).collapse('show');
                       // call updator function
-                      updateSubmissionStatus(res.cqs_id);
+                      updateSubmissionStatus(res.cqs_id, type);
                   }, 500);
               }
           }).fail((jqXHR, textStatus, errorThrown) => {
@@ -1074,7 +1253,7 @@
       };
 
       // polls and updates the status of a submission and its testcases
-      const updateSubmissionStatus = (cqs_id) => {
+      const updateSubmissionStatus = (cqs_id, type='main') => {
           // ajax request
           $.ajax({
               type: 'GET',
@@ -1083,17 +1262,17 @@
           }).done((res, textStatus, jqXHR) => {
               if (res.result === "success") {
                   // set submission status (passed/failed/processing)
-                  setSubmissionStatus(res.cqs_id, res.outcome);
+                  setSubmissionStatus(res.cqs_id, res.outcome, type);
 
                   // set testcase statuses
                   res.statuses.forEach((value) => {
-                      setTestCaseStatus(value[0], value[1]);
+                      setTestCaseStatus(value[0], value[1], type);
                   });
 
                   // if submission is still processing, poll again in 1s
                   if (res.outcome === "Processing")
                       window.setTimeout(() => {
-                          updateSubmissionStatus(cqs_id);
+                          updateSubmissionStatus(cqs_id, type);
                       }, 1000);
               }
           }).fail((jqXHR, textStatus, errorThrown) => {
@@ -1109,7 +1288,7 @@
           });
       };
 
-      const setSubmissionStatus = (cqs_id, outcome) => {
+      const setSubmissionStatus = (cqs_id, outcome, type='main') => {
           const cqsStatus = $("#cqs-status-" + cqs_id);
 
           cqsStatus.html(outcome);
@@ -1125,11 +1304,12 @@
           // enable buttons
           sampleBtn.prop('disabled', false);
           submitBtn.prop('disabled', false);
+          waveformBtn.prop('disabled', false)
           runStatus.html('Ready');
           mainLoading.hide();
       };
 
-      const setTestCaseStatus = (tca_id, status_id) => {
+      const setTestCaseStatus = (tca_id, status_id, type='main') => {
           const loading = $("#tca-loading-" + tca_id);
           const failed = $("#tca-failed-" + tca_id);
           const accepted = $("#tca-accepted-" + tca_id);
@@ -1154,10 +1334,11 @@
       // handle ongoing submissions upon page load
       {% for cqs in code_question_submissions %}
           {% if cqs.outcome == "Processing" %}
-              updateSubmissionStatus({{cqs.id}});
+              updateSubmissionStatus({{cqs.id}}, type);
               // disable buttons and set status
               sampleBtn.prop("disabled", true);
               submitBtn.prop("disabled", true);
+              waveformBtn.prop("disabled", true)
               runStatus.html('Processing');
           {% endif %}
       {% endfor %}

@@ -32,7 +32,7 @@
         <!-- Ace Code Editor -->
         <div class="col-8">
         <div class="form-group">
-            <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdin">{% if question_type == 'Module Design' %}Testbench{% else %}Module Definition{% endif %}</label>
+            <label for="id_tc-{{ prefix|default:"__prefix__" }}-stdin">{% if question_type == 'Testbench Design' %}Module Definition{% else %}Testbench{% endif %}</label>
             <pre name="tc-{{ prefix|default:"__prefix__" }}-stdin" 
                 id="id_tc-{{ prefix|default:"__prefix__" }}-stdin-editor" 
                 class="inner rounded" style="height: 500px;" >{{ form.stdin.value|default:"" }}</pre>

@@ -1,5 +1,4 @@
 {% load static %}
-{% load utils %}
 
 <div>
     <!-- test cases & code snippet management forms -->
@@ -7,7 +6,7 @@
 
     <!-- Sample Test case -->
     <h5>Sample Test Case</h5>
-    {% include 'code_questions/snippets/double-hdl-test-case-row.html' with sample=True double=True prefix_1="0" prefix_2="1" form_1=testcase_formset.0 form_2=testcase_formset.1 %}
+    {% include 'code_questions/snippets/double-hdl-test-case-row.html' with sample=True prefix_1="0" prefix_2="1" form_1=testcase_formset.0 form_2=testcase_formset.1 sol_form=hdl_solution_form %}
     <!-- this div holds all internal test case rows -->
     <h5>Internal Test Cases</h5>
     <div id="test-cases-container" class="mt-4">
@@ -34,7 +33,11 @@
     </script>
 
     <script>
-        const initialize_editor = (editor, textId) => {
+        const langSelect = $("#lang-select");
+        const defaultModuleCode = $('option:first', langSelect).data('code');
+        const defaultTBCode = $('option:eq(1)', langSelect).data('code');
+
+        const initialize_editor = (editor, idx) => {
             editor.renderer.setScrollMargin(10);
 
             editor.setOptions({
@@ -48,20 +51,29 @@
             });
 
             editor.setOption("dragEnabled", false);
-
             editor.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
+
+            // get the default code
+            const defaultCode = idx == 0 ? defaultModuleCode : defaultTBCode; // module code for first editor, testbench code for rest
+
+            // get the solution code
+            const stdin = $(`#id_tc-${idx}-stdin`).val() ? $(`#id_tc-${idx}-stdin`).val() : defaultCode;
+
+            // set the code snippet
+            editor.session.setValue(stdin);
+            document.getElementById(`id_tc-${idx}-stdin`).value = stdin;
 
             // Synchronize Ace editor content with the hidden input field
             editor.getSession().on('change', function(){
                 var code = editor.getValue();
-                document.getElementById(textId).value = code;
+                document.getElementById(`id_tc-${idx}-stdin`).value = code;
             });
         }
 
         for (let i = 0; i < $("#id_tc-TOTAL_FORMS").val(); i++) {
             let editor = ace.edit(`id_tc-${i}-stdin-editor`);
 
-            initialize_editor(editor, `id_tc-${i}-stdin`);
+            initialize_editor(editor, i);
         }
 
         const generateTestbench = (elem) => {

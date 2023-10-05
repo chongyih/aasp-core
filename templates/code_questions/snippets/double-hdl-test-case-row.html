@@ -56,7 +56,7 @@
                         class="inner rounded" style="height: 500px;" >{{ form_1.stdin.value|default:"" }}</pre>
                 <input type="hidden" name="tc-{{ prefix_1|default:"__prefix_1__" }}-stdin" 
                         id="id_tc-{{ prefix_1|default:"__prefix_1__" }}-stdin" 
-                        value="{{ form_1.stdin.value|default:"" }}">
+                        value="{{ sol_form.module.value|default:form_1.stdin.value|default:"" }}">
                 <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
                 {% for e in form_1.stdin.errors %}
                     <p class="text-danger">{{ e }}</p>
@@ -73,7 +73,7 @@
                         class="inner rounded" style="height: 500px;" >{{ form_2.stdin.value|default:"" }}</pre>
                 <input type="hidden" name="tc-{{ prefix_2|default:"__prefix_2__" }}-stdin" 
                         id="id_tc-{{ prefix_2|default:"__prefix_2__" }}-stdin" 
-                        value="{{ form_2.stdin.value|default:"" }}">
+                        value="{{ sol_form.testbench.value|default:form_2.stdin.value|default:"" }}">
                 <button type="button" class="btn btn-link float-end m-0 p-0" onclick="loadFromFile(this)">Load from file</button>
                 {% for e in form_2.stdin.errors %}
                     <p class="text-danger">{{ e }}</p>
@@ -96,7 +96,7 @@
         </div>
 
         <div class="col-8">
-            <div>
+            <div class="d-none">
                 <label for="id_tc-{{ prefix_1|default:"__prefix_1__" }}-wavedrom">Expected Output</label>
                 <!-- wavedrom -->
                 <div id="id_tc-{{ prefix_1|default:"__prefix_1__" }}-wavedrom" class="nowrap d-none" style="overflow-x: auto">
@@ -109,7 +109,7 @@
                     <p class="text-danger mt-1">{% if e == 'This field is required.' %}Please generate an output.{% else %}{{ e }}{% endif %}</p>
                 {% endfor %}
             </div>
-            <div class="d-none">
+            <div>
                 <label for="id_tc-{{ prefix_2|default:"__prefix_2__" }}-wavedrom">Expected Output</label>
                 <!-- wavedrom -->
                 <div id="id_tc-{{ prefix_2|default:"__prefix_2__" }}-wavedrom" class="nowrap d-none" style="overflow-x: auto">
@@ -241,12 +241,12 @@
             <div class="row">
                 <!-- generate output button and status -->
                 <div class="d-flex justify-content-between mt-2">
-                    <button type="button" id="id_tc-{{ prefix_1|default:"__prefix_1__" }}-button" class="btn btn-sm btn-warning" style="height: min-content" onclick="generateOutput(this)">Generate Output</button>
+                    <button type="button" id="id_tc-{{ prefix_2|default:"__prefix_2__" }}-button" class="btn btn-sm btn-warning" style="height: min-content" onclick="generateOutput(this)">Generate Output</button>
                     <div class="mt-1">
-                    <span class="h5" id="id_tc-{{ prefix_1|default:"__prefix_1__" }}-run-status">Ready</span>
-                    <div class="spinner-border spinner-border-sm ms-2" id="id_tc-{{ prefix_1|default:"__prefix_1__" }}-main-loading" style="display:none;"></div>
+                    <span class="h5" id="id_tc-{{ prefix_2|default:"__prefix_2__" }}-run-status">Ready</span>
+                    <div class="spinner-border spinner-border-sm ms-2" id="id_tc-{{ prefix_2|default:"__prefix_2__" }}-main-loading" style="display:none;"></div>
                     <br>
-                    <button type="button" id="id_tc-{{ prefix_1|default:"__prefix_1__" }}-more-details" class="btn btn-link p-0 view-modal" onclick="viewModal(this)"
+                    <button type="button" id="id_tc-{{ prefix_2|default:"__prefix_2__" }}-more-details" class="btn btn-link p-0 view-modal" onclick="viewModal(this)"
                             style="display:none;">
                         More Details
                     </button>

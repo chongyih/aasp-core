@@ -192,7 +192,8 @@
       const existing = radio.data("existing");
       const langId = radio.data("lang-id");
       const langName = radio.data("lang-name");
-      const langTemplate = radio.data("lang-template");
+      const langModuleTemplate = $(radio).data("lang-module-template");
+      const langTestbenchTemplate = $(radio).data("lang-testbench-template");
 
       // remove existing row
       $(".language-radio").each((idx, radio) => {
@@ -204,16 +205,16 @@
           });
 
           // decrement totalForms
-          totalForms--;
+          totalForms -= 2;
           totalFormsInput.val(totalForms);
         }
       })
 
       // increment totalForms
-      totalForms++;
+      totalForms += 2;
       totalFormsInput.val(totalForms);
 
-      // clone empty snippet row
+      // clone empty module snippet row
       const cloned = emptySnippetRow.clone();
 
       // remove id, style
@@ -221,15 +222,33 @@
 
       // set id, label and language-id
       cloned.attr("id", `code-snippet-row-${langId}`);
-      cloned.find(".lang-label").first().html(langName);
+      cloned.find(".lang-label").first().html(`${langName} - Module`);
       cloned.find(".lang-id").first().val(langId);
-      cloned.find("textarea").first().text(langTemplate);
+      cloned.find("textarea").first().text(langModuleTemplate);
 
       // update prefix
-      $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+      $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 2}`));
 
       // append to container
       snippetsContainer.append(cloned);
+
+      // clone empty testbench snippet row
+      const cloned2 = emptySnippetRow.clone();
+
+      // remove id, style
+      cloned2.removeAttr('id style');
+
+      // set id, label and language-id
+      cloned2.attr("id", `code-snippet-row-${langId}`);
+      cloned2.find(".lang-label").first().html(`${langName} - Testbench`);
+      cloned2.find(".lang-id").first().val(langId);
+      cloned2.find("textarea").first().text(langTestbenchTemplate);
+
+      // update prefix
+      $(cloned2).html($(cloned2).html().replaceAll('__prefix__', `${totalForms - 1}`));
+
+      // append to container
+      snippetsContainer.append(cloned2);
     });
   </script>
 
@@ -330,7 +349,7 @@
                 });
             } else {
                 // decrement totalForms
-                totalForms--;
+                totalForms -= 2;
                 totalFormsInput.val(totalForms);
 
                 // remove and update prefixes
@@ -348,7 +367,8 @@
           if (radio.checked) {
             const langId = $(radio).data("lang-id");
             const langName = $(radio).data("lang-name");
-            const langTemplate = $(radio).data("lang-template");
+            const langModuleTemplate = $(radio).data("lang-module-template");
+            const langTestbenchTemplate = $(radio).data("lang-testbench-template");
 
             if (existing) {
               // uncheck the checkbox
@@ -359,10 +379,10 @@
               });
             } else {
               // increment totalForms
-              totalForms++;
+              totalForms += 2;
               totalFormsInput.val(totalForms);
 
-              // clone empty snippet row
+              // clone empty module snippet row
               const cloned = emptySnippetRow.clone();
 
               // remove id, style
@@ -370,15 +390,33 @@
 
               // set id, label and language-id
               cloned.attr("id", `code-snippet-row-${langId}`);
-              cloned.find(".lang-label").first().html(langName);
+              cloned.find(".lang-label").first().html(`${langName} - Module`);
               cloned.find(".lang-id").first().val(langId);
-              cloned.find("textarea").first().text(langTemplate);
+              cloned.find("textarea").first().text(langModuleTemplate);
 
               // update prefix
-              $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+              $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 2}`));
 
               // append to container
               snippetsContainer.append(cloned);
+
+              // clone empty testbench snippet row
+              const cloned2 = emptySnippetRow.clone();
+
+              // remove id, style
+              cloned2.removeAttr('id style');
+
+              // set id, label and language-id
+              cloned2.attr("id", `code-snippet-row-${langId}`);
+              cloned2.find(".lang-label").first().html(`${langName} - Testbench`);
+              cloned2.find(".lang-id").first().val(langId);
+              cloned2.find("textarea").first().text(langTestbenchTemplate);
+
+              // update prefix
+              $(cloned2).html($(cloned2).html().replaceAll('__prefix__', `${totalForms - 1}`));
+
+              // append to container
+              snippetsContainer.append(cloned2);
             }
           }
         })

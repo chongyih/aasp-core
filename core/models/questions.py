@@ -34,6 +34,9 @@ class Language(models.Model):
 
     def default_template(self):
         return self.codetemplate_set.first()
+    
+    def get_template_by_name(self, template_name):
+        return self.codetemplate_set.get(name=template_name)
 
 
 class QuestionBank(models.Model):

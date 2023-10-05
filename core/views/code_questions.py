@@ -238,7 +238,7 @@ def update_test_cases(request, code_question_id):
                     return redirect('question-bank-details', question_bank_id=code_question.question_bank.id)
                 else:
                     return redirect('assessment-details', assessment_id=code_question.assessment.id)
-    
+
     context = {
         'creation': request.GET.get('next') is None,
         'code_question': code_question,
@@ -303,19 +303,23 @@ def update_languages(request, code_question_id):
                     if hasattr(code_question, 'hdlquestionconfig'):
                         code_question.hdlquestionconfig.delete()
 
+                    # redirect to update test cases since test cases are removed
                     if not language.software_language:
+                        request.session['next'] = request.GET.get('next')
                         return redirect('update-question-type', code_question_id=code_question.id)
 
                     return redirect('update-test-cases', code_question_id=code_question.id)
 
+                # redirect to question type if HDL
+                if not code_question.is_software_language():
+                    request.session['next'] = request.GET.get('next')
+                    return redirect('update-question-type', code_question_id=code_question.id)
+                
                 next_url = request.GET.get("next")
                 if next_url:
                     return redirect(next_url)
                 
-                if code_question.is_software_language():
-                    return redirect('update-test-cases', code_question_id=code_question.id)
-                else:
-                    return redirect('update-question-type', code_question_id=code_question.id)
+                return redirect('update-test-cases', code_question_id=code_question.id)
 
     context = {
         'creation': request.GET.get('next') is None,
@@ -351,22 +355,38 @@ def update_question_type(request, code_question_id):
 
         if form.is_valid():
             with transaction.atomic():
+                current_question_type = code_question.hdlquestionconfig.question_type if hasattr(code_question, 'hdlquestionconfig') else None
+                new_question_type = form.cleaned_data.get('question_type')
+
+                # check if existing question type is unchanged
+                if current_question_type == new_question_type:
+                    # if no existing test cases, redirect to update test cases
+                    next_url = request.session.get('next')
+
+                    if code_question.testcase_set.count() == 0:
+                        return redirect('generate-module-code', code_question_id=code_question.id)
+                    
+                    if next_url:
+                        del request.session['next']
+                        return redirect(next_url)
+                    
+                    return redirect('generate-module-code', code_question_id=code_question.id)
+                
+                # remove existing test cases since question type is changed
+                code_question.testcase_set.all().delete()
+
                 # remove existing config
-                if hasattr(code_question, 'hdlquestionconfig'):
+                if current_question_type != None:
                     code_question.hdlquestionconfig.delete()
 
                 hdl_config = form.save(commit=False)
                 hdl_config.code_question = code_question
                 hdl_config.save()
-
-                next_url = request.GET.get("next")
-                if next_url:
-                    return redirect(next_url)
                 
                 return redirect('generate-module-code', code_question_id=code_question.id)
     
     context = {
-        'creation': request.GET.get('next') is None,
+        'creation': request.session['next'] is None,
         'code_question': code_question,
         'question_type_form': question_type_form,
     }

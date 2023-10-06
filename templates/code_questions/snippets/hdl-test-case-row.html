@@ -227,10 +227,17 @@
 
         row_editor_{{prefix}}.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
 
+        if (!document.getElementById("id_tc-{{ prefix|default:"__prefix__" }}-stdin").value)
+            "{{ question_type }}" === 'Testbench Design' ? row_editor_{{prefix}}.setValue($('option:first', $("#lang-select")).data('code'), -1)
+            : "{{ question_type }}" === 'Module Design' ? row_editor_{{prefix}}.setValue($('option:eq(1)', $("#lang-select")).data('code'), -1)
+            : "";
+        else
+            row_editor_{{prefix}}.setValue(document.getElementById("id_tc-{{ prefix|default:"__prefix__" }}-stdin").value, -1);
+
         // Synchronize Ace editor content with the hidden input field
         row_editor_{{prefix}}.getSession().on('change', function(){
-        var code = row_editor_{{prefix}}.getValue();
-        document.getElementById("id_tc-{{ prefix|default:"__prefix__" }}-stdin").value = code;
+            var code = row_editor_{{prefix}}.getValue();
+            document.getElementById("id_tc-{{ prefix|default:"__prefix__" }}-stdin").value = code;
         });
 
         row_editor_{{prefix}}.commands.on("afterExec", function (e) {

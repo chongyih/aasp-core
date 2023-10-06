@@ -166,10 +166,20 @@
               // update other editor if module and testbench question
               if ('{{ question_type }}' === 'Module and Testbench Design')
                 index = idx + 2;
+
+              // update wavedrom id if HDL
+              if ('{{ is_software_language|yesno:"truefalse" }}' === 'False') {
+                $(tcRow).find('[id^="WaveDrom_Display_"]').each(function() {
+                  var id = $(this).attr('id').replace("WaveDrom_Display_", "");
+
+                  $(tcRow).find(`[id="WaveDrom_Display_${id}"]`).attr('id', `WaveDrom_Display_${index}`);
+                  $(tcRow).find(`[id="InputJSON_${id}"]`).attr('id', `InputJSON_${index}`);
+                });
+              }
               
               // replace html with one with updated prefixes
               $(tcRow).html($(tcRow).html().replaceAll(regex, `tc-${index}-`));
-              $("#tc-" + (index) + "-label").html(index - 1); // update label
+              $("#tc-" + (index) + "-label").html('{{ question_type }}' === 'Module and Testbench Design' ? index : index - 1); // update label
 
               // need to .find() again as previous references are no longer valid
               textAreas = $(tcRow).find("textarea");
@@ -184,6 +194,7 @@
         // initialize ace editor for code
         let editor = ace.edit(`id_tc-${index}-stdin-editor`);
 
+        editor.setValue('')
         editor.renderer.setScrollMargin(10);
         editor.setOptions({
             fontFamily: "JetBrains Mono",
@@ -270,7 +281,8 @@
 
               // destroy editor
               if ('{{ is_software_language|yesno:"truefalse" }}' === 'False')
-                destroyEditor(index);
+                for (let i = index; i < totalForms; i++) 
+                  destroyEditor(i);
 
               // remove and update prefixes
               toRemove.fadeOut('slow', () => {
@@ -278,10 +290,11 @@
                   
                   updatePrefixes(index);
 
-                  for (let i = index; i < totalForms; i++) {
-                    initializeEditor(i);
-                    ace.edit(`id_tc-${i}-stdin-editor`).setValue(document.getElementById(`id_tc-${i}-stdin`).value, -1);
-                  }
+                  if ('{{ is_software_language|yesno:"truefalse" }}' === 'False')
+                    for (let i = index; i < totalForms; i++) {
+                      initializeEditor(i);
+                      ace.edit(`id_tc-${i}-stdin-editor`).setValue(document.getElementById(`id_tc-${i}-stdin`).value, -1);
+                    }
               });
               return false;
           }
@@ -422,6 +435,11 @@
 
                 // Set the output value
                 document.getElementById(`id_tc-${index}-stdout`).value = res.data.stdout;
+
+                // Set hidden output value for module and testbench question
+                if ('{{ question_type }}' === 'Module and Testbench Design' && index === '1') {
+                  document.getElementById(`id_tc-0-stdout`).value = res.data.stdout;
+                }
                 
               } else if (res.data.status_id === 6) {  // compilation error
                 moreDetails.show();

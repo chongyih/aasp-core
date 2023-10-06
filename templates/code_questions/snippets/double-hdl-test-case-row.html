@@ -293,8 +293,8 @@
     <!-- Load wavedrom output on first load -->
     <script>
       window.addEventListener('load', () => {
-        const wavedrom = document.getElementById(`id_tc-{{ prefix_1|default:"__prefix_1__" }}-stdout`).value;
-        const index = `{{ prefix_1|default:"__prefix_1__" }}`;
+        const wavedrom = document.getElementById(`id_tc-{{ prefix_2|default:"__prefix_2__" }}-stdout`).value;
+        const index = `{{ prefix_2|default:"__prefix_2__" }}`;
         const e = document.getElementById(`InputJSON_${index}`);
         
         if (!wavedrom) return;

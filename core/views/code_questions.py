@@ -167,7 +167,7 @@ def update_test_cases(request, code_question_id):
             if question_type == 'Testbench Design':
                 extra_test_cases = 1
             elif question_type == 'Module and Testbench Design':
-                extra_test_cases = 6
+                extra_test_cases = 4
             else:
                 extra_test_cases = 3
         else:
@@ -201,9 +201,6 @@ def update_test_cases(request, code_question_id):
         if request.session.get('module'):
             hdl_solution_form.initial['module'] = request.session.get('module')
             hdl_solution_form.initial['testbench'] = request.session.get('testbench')
-            
-            del request.session['module']
-            del request.session['testbench']
 
     # process POST requests
     if request.method == "POST":
@@ -223,6 +220,11 @@ def update_test_cases(request, code_question_id):
 
         if testcase_formset.is_valid():
             with transaction.atomic():
+                # remove session variables
+                if request.session.get('module'):
+                    del request.session['module']
+                    del request.session['testbench']
+
                 # remove past attempts
                 if code_question.assessment:
                     code_question.assessment.assessmentattempt_set.all().delete()
@@ -415,6 +417,11 @@ def generate_module_code(request, code_question_id):
     if request.method == "POST":
         # check if skip button is pressed
         if 'skip' in request.POST:
+            # remove session variables
+            if request.session.get('module'):
+                del request.session['module']
+                del request.session['testbench']
+
             return redirect('update-test-cases', code_question_id=code_question.id)
         
         module_generation_formset = ModuleGenerationFormset(request.POST, prefix='module')

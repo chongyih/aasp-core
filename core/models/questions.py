@@ -83,7 +83,7 @@ class CodeQuestion(models.Model):
         return total
 
     def languages(self):
-        return Language.objects.filter(codesnippet__code_question=self)
+        return Language.objects.filter(codesnippet__code_question=self).distinct()
     
     def is_software_language(self):
         """

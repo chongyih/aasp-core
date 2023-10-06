@@ -72,6 +72,10 @@
         const moduleInput = $("#id_module");
         const testbenchInput = $("#id_testbench");
 
+        // default code
+        const defaultModuleCode = $('option:first', langSelect).data('code');
+        const defaultTBCode = $('option:eq(1)', langSelect).data('code');
+
         // initialize solution ace editor
         let module_editor = ace.edit("module_editor");
         module_editor.renderer.setScrollMargin(10);
@@ -106,12 +110,14 @@
         const setLanguage = () => {
             // get the selected option
             const selected = langSelect.find("option:selected");
+
             // get the solution code
             const module = moduleInput.val();
             const testbench = testbenchInput.val();
             // set the code snippet
-            module_editor.session.setValue(module ? module : selected.data('code'));
-            testbench_editor.session.setValue(testbench ? testbench : "");
+            module_editor.session.setValue(module ? module : defaultModuleCode);
+            testbench_editor.session.setValue(testbench ? testbench : defaultTBCode);
+
             // set ace mode
             module_editor.session.setMode("ace/mode/" + selected.data('ace-mode'));
             testbench_editor.session.setMode("ace/mode/" + selected.data('ace-mode'));
@@ -119,11 +125,6 @@
 
         // set language on first load
         setLanguage();
-
-        // when language dropdown changed
-        langSelect.change(function () {
-            setLanguage();
-        });
 
         // Synchronize both Ace editor content with the hidden input field
         module_editor.getSession().on('change', function(){

@@ -181,8 +181,10 @@
                     <label for="module-lang-select">Language</label>
                     <select class="form-select" id="module-lang-select">
                       {% for cs in code_snippets %}
-                        <option data-code="{{ cs.code }}" data-judgeid="{{ cs.language.judge_language_id }}"
-                                data-ace-mode="{{ cs.language.ace_mode }}">{{ cs.language.name }}</option>
+                        {% if not forloop.counter|divisibleby:2 %}
+                          <option data-code="{{ cs.code }}" data-judgeid="{{ cs.language.judge_language_id }}"
+                                  data-ace-mode="{{ cs.language.ace_mode }}">{{ cs.language.name }}</option>
+                        {% endif %}
                       {% endfor %}
                     </select>
                   </div>
@@ -221,8 +223,10 @@
                     <label for="testbench-lang-select">Language</label>
                     <select class="form-select" id="testbench-lang-select">
                       {% for cs in code_snippets %}
-                        <option data-code="{{ cs.code }}" data-judgeid="{{ cs.language.judge_language_id }}"
-                                data-ace-mode="{{ cs.language.ace_mode }}">{{ cs.language.name }}</option>
+                        {% if forloop.counter|divisibleby:2 %}
+                          <option data-code="{{ cs.code }}" data-judgeid="{{ cs.language.judge_language_id }}"
+                                  data-ace-mode="{{ cs.language.ace_mode }}">{{ cs.language.name }}</option>
+                        {% endif %}
                       {% endfor %}
                     </select>
                   </div>
@@ -282,10 +286,26 @@
               <div class="col-6">
                 <label for="lang-select">Language</label>
                 <select class="form-select" id="lang-select">
-                  {% for cs in code_snippets %}
-                    <option data-code="{{ cs.code }}" data-judgeid="{{ cs.language.judge_language_id }}"
-                            data-ace-mode="{{ cs.language.ace_mode }}">{{ cs.language.name }}</option>
+                  {% if code_question.hdlquestionconfig.get_question_type == 'Testbench Design' %}
+                    {% for cs in code_snippets %}
+                      {% if forloop.counter|divisibleby:2 %}
+                        <option data-code="{{ cs.code }}" data-judgeid="{{ cs.language.judge_language_id }}"
+                                data-ace-mode="{{ cs.language.ace_mode }}">{{ cs.language.name }}</option>
+                      {% endif %}
                   {% endfor %}
+                  {% elif code_question.hdlquestionconfig.get_question_type == 'Module Design' %}
+                    {% for cs in code_snippets %}
+                        {% if not forloop.counter|divisibleby:2 %}
+                          <option data-code="{{ cs.code }}" data-judgeid="{{ cs.language.judge_language_id }}"
+                                  data-ace-mode="{{ cs.language.ace_mode }}">{{ cs.language.name }}</option>
+                        {% endif %}
+                      {% endfor %}
+                  {% else %}
+                    {% for cs in code_snippets %}
+                      <option data-code="{{ cs.code }}" data-judgeid="{{ cs.language.judge_language_id }}"
+                              data-ace-mode="{{ cs.language.ace_mode }}">{{ cs.language.name }}</option>
+                    {% endfor %}
+                  {% endif %}
                 </select>
               </div>
 

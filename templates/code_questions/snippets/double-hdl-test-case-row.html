@@ -62,7 +62,7 @@
                     <p class="text-danger">{{ e }}</p>
                 {% endfor %}
                 <div>
-                    <button class="btn btn-warning btn-sm" type="button" id="id_tc-{{ prefix_1|default:"__prefix_1__" }}-gen-tb" onclick="generateTestbench(this)">Generate Testbench</button>
+                    <button class="btn btn-warning btn-sm" type="button" id="id_tc-{{ prefix_1|default:"__prefix_1__" }}-gen-tb" data-bs-toggle="modal" data-bs-target="#module-modal">Generate Module</button>
                 </div>
             </div>
             <!-- Testbench Ace Code Editor -->
@@ -78,6 +78,9 @@
                 {% for e in form_2.stdin.errors %}
                     <p class="text-danger">{{ e }}</p>
                 {% endfor %}
+                <div>
+                    <button class="btn btn-warning btn-sm" type="button" id="id_tc-{{ prefix_1|default:"__prefix_1__" }}-gen-tb" onclick="generateTestbench(this)">Generate Testbench</button>
+                </div>
             </div>
         </div>
 
@@ -280,6 +283,26 @@
         </div>
     </div>
 
+    <!-- Generate Module Code Modal -->
+    <div class="modal fade" id="module-modal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title">
+                Generate Module Code
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" />
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary float-end" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn btn-primary float-start" id="generateModule-btn" onclick="generateModule()">Generate</button>
+            </div>
+        </div>
+        </div>
+    </div>
 </body>
 
 {% block js %}
@@ -314,5 +337,57 @@
         e.innerHTML = JSON.stringify(wavedrom_json);
         WaveDrom.RenderWaveForm(index, WaveDrom.eva(`InputJSON_${index}`), "WaveDrom_Display_")
       });
+    </script>
+
+    <!-- Generate module modal script -->
+    <script>
+        $(document).ready(function(){
+            function loadModal() {
+                const modal = $('#module-modal');
+                modal.find('.modal-body').load("{% url 'generate-module-code-modal' %}");
+            }
+
+            // Load the generate module code modal content
+            $('#module-modal').on('show.bs.modal', function (e) {
+                // show loading gif
+                $('#module-modal .modal-body').html('<div class="d-flex justify-content-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+                loadModal();
+            });
+
+            // Load modal on first load
+            loadModal();
+        })
+
+        // Handle form submission when the form is clicked
+        function generateModule() {
+            const module_editor = ace.edit("id_tc-{{ prefix_1|default:"__prefix_1__" }}-stdin-editor");
+            const testbench_editor = ace.edit("id_tc-{{ prefix_2|default:"__prefix_2__" }}-stdin-editor");
+            
+            // Serialize the form data
+            var formData = $('#module_modal_form').serialize();
+
+            // Send the form data to the server using AJAX
+            $.ajax({
+                type: 'POST',
+                url: '{% url "generate-module-code-modal" %}',
+                data: formData,
+            }).done((res, textStatus, jqXHR) => {
+                // Handle the response from the server
+                if (res.result === 'success') {
+                    // Close the modal
+                    $('#module-modal').modal('hide');
+
+                    // Set the module code and testbench
+                    module_editor.setValue(res.module_code, -1);
+                    testbench_editor.setValue(res.testbench, -1);
+                } else {
+                    // Display the error message
+                    $('#module-modal .modal-body').html(res);
+                }
+            }).fail((jqXHR, textStatus, errorThrown) => {
+                $('#module-modal').modal('hide');
+                showErrorToast("Something went wrong. Please try again.");
+            });
+        };
     </script>
 {% endblock %}

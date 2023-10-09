@@ -198,10 +198,6 @@ def update_test_cases(request, code_question_id):
         else:
             hdl_solution_form = QuestionSolutionForm()
 
-        if request.session.get('module'):
-            hdl_solution_form.initial['module'] = request.session.get('module')
-            hdl_solution_form.initial['testbench'] = request.session.get('testbench')
-
     # process POST requests
     if request.method == "POST":
         if not code_question.is_software_language():
@@ -220,11 +216,6 @@ def update_test_cases(request, code_question_id):
 
         if testcase_formset.is_valid():
             with transaction.atomic():
-                # remove session variables
-                if request.session.get('module'):
-                    del request.session['module']
-                    del request.session['testbench']
-
                 # remove past attempts
                 if code_question.assessment:
                     code_question.assessment.assessmentattempt_set.all().delete()
@@ -364,15 +355,12 @@ def update_question_type(request, code_question_id):
                 if current_question_type == new_question_type:
                     # if no existing test cases, redirect to update test cases
                     next_url = request.session.get('next')
-
-                    if code_question.testcase_set.count() == 0:
-                        return redirect('generate-module-code', code_question_id=code_question.id)
                     
                     if next_url:
                         del request.session['next']
                         return redirect(next_url)
                     
-                    return redirect('generate-module-code', code_question_id=code_question.id)
+                    return redirect('update-test-cases', code_question_id=code_question.id)
                 
                 # remove existing test cases since question type is changed
                 code_question.testcase_set.all().delete()
@@ -385,7 +373,7 @@ def update_question_type(request, code_question_id):
                 hdl_config.code_question = code_question
                 hdl_config.save()
                 
-                return redirect('generate-module-code', code_question_id=code_question.id)
+                return redirect('update-test-cases', code_question_id=code_question.id)
     
     context = {
         'creation': request.session['next'] is None,
@@ -395,35 +383,16 @@ def update_question_type(request, code_question_id):
 
     return render(request, 'code_questions/update-question-type.html', context)
 
+@api_view(["GET", "POST"])
 @login_required()
-def generate_module_code(request, code_question_id):
-    # get CodeQuestion instance
-    code_question = get_object_or_404(CodeQuestion, id=code_question_id)
-
-    # check permissions
-    if check_permissions_code_question(code_question, request.user) != 2:
-        return PermissionDenied()
-
-    # if belongs to a published assessment, disallow
-    if code_question.assessment and code_question.assessment.published:
-        messages.warning(request, "Question type from a published assessment cannot be modified!")
-        return redirect('assessment-details', assessment_id=code_question.assessment.id)
-    
+@renderer_classes([JSONRenderer])
+def generate_module_code_modal(request):
     # render form
     ModuleGenerationFormset = formset_factory(ModuleGenerationForm, extra=0)
     module_generation_formset = ModuleGenerationFormset(prefix='module', initial=[{'module_name': '', 'port_direction': 'input', 'bus': False, 'msb': 0, 'lsb': 0}])
 
     # process POST requests
     if request.method == "POST":
-        # check if skip button is pressed
-        if 'skip' in request.POST:
-            # remove session variables
-            if request.session.get('module'):
-                del request.session['module']
-                del request.session['testbench']
-
-            return redirect('update-test-cases', code_question_id=code_question.id)
-        
         module_generation_formset = ModuleGenerationFormset(request.POST, prefix='module')
 
         if module_generation_formset.is_valid():
@@ -448,22 +417,20 @@ def generate_module_code(request, code_question_id):
             module_code = generate_module(module_name, ports)
             testbench = TestbenchGenerator(module_code)()
 
-            request.session['module'] = module_code
-            request.session['testbench'] = testbench
+            context = {
+                'result': 'success',
+                'module_code': module_code,
+                'testbench': testbench,
+            }
 
-            next_url = request.GET.get("next")
-            if next_url:
-                return redirect(next_url)
-
-            return redirect('update-test-cases', code_question_id=code_question.id)
+            return Response(context, status=status.HTTP_200_OK)
 
     context = {
         'creation': request.GET.get('next') is None,
-        'code_question': code_question,
         'module_formset': module_generation_formset,
     }
 
-    return render(request, 'code_questions/generate-module-code.html', context)
+    return render(request, 'code_questions/generate-module-code-modal.html', context)
 
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])

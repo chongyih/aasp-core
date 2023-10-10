@@ -10,7 +10,7 @@
         {% if form.id.value != None %}
             <input type="hidden" name="tc-{{ prefix|default:"__prefix__" }}-id" value="{{ form.id.value }}"
                 id="id_tc-{{ prefix|default:"__prefix__" }}-id">
-            <input type="checkbox" style="visibility:hidden" class="delete-checkbox"
+            <input type="checkbox" style="display:none" class="delete-checkbox"
                 name="tc-{{ prefix|default:"__prefix__" }}-DELETE"
                 id="id_tc-{{ prefix|default:"__prefix__" }}-DELETE" {% if form.DELETE.value %}checked{% endif %}>
         {% endif %}
@@ -104,7 +104,7 @@
                 {% endfor %}
             </div>
 
-            <div class="form-group" {% if sample %} style="visibility:hidden"{% endif %}>
+            <div class="form-group" {% if sample or double %} style="visibility:hidden"{% endif %}>
                 <label>Options</label>
                 <div class="form-check">
                 <div class="checkbox">
@@ -185,8 +185,8 @@
     <!-- Load wavedrom output on first load -->
     <script>
       window.addEventListener('load', () => {
-        const wavedrom = document.getElementById(`id_tc-{{ prefix|default:"__prefix__" }}-stdout`).value;
-        const index = `{{ prefix|default:"__prefix__" }}`;
+        const wavedrom = document.getElementById(`id_tc-{{ prefix }}-stdout`).value;
+        const index = `{{ prefix }}`;
         const e = document.getElementById(`InputJSON_${index}`);
         
         if (!wavedrom) return;
@@ -211,7 +211,7 @@
     <!-- Ace code editor config -->
     <script>
         // initialize testbench ace editor
-        let row_editor_{{prefix}} = ace.edit(`id_tc-${"{{prefix}}"|"__prefix__"}-stdin-editor`);
+        let row_editor_{{prefix}} = ace.edit(`id_tc-${"{{prefix}}"}-stdin-editor`);
 
         row_editor_{{prefix}}.renderer.setScrollMargin(10);
         row_editor_{{prefix}}.setOptions({
@@ -227,17 +227,17 @@
 
         row_editor_{{prefix}}.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
 
-        if (!document.getElementById("id_tc-{{ prefix|default:"__prefix__" }}-stdin").value)
+        if (!document.getElementById("id_tc-{{ prefix }}-stdin").value)
             "{{ question_type }}" === 'Testbench Design' ? row_editor_{{prefix}}.setValue($('option:first', $("#lang-select")).data('code'), -1)
             : "{{ question_type }}" === 'Module Design' ? row_editor_{{prefix}}.setValue($('option:eq(1)', $("#lang-select")).data('code'), -1)
             : "";
         else
-            row_editor_{{prefix}}.setValue(document.getElementById("id_tc-{{ prefix|default:"__prefix__" }}-stdin").value, -1);
+            row_editor_{{prefix}}.setValue(document.getElementById("id_tc-{{ prefix }}-stdin").value, -1);
 
         // Synchronize Ace editor content with the hidden input field
         row_editor_{{prefix}}.getSession().on('change', function(){
             var code = row_editor_{{prefix}}.getValue();
-            document.getElementById("id_tc-{{ prefix|default:"__prefix__" }}-stdin").value = code;
+            document.getElementById("id_tc-{{ prefix }}-stdin").value = code;
         });
 
         row_editor_{{prefix}}.commands.on("afterExec", function (e) {

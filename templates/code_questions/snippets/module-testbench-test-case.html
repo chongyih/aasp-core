@@ -3,7 +3,9 @@
 <div>
     <!-- test cases & code snippet management forms -->
     {{ testcase_formset.management_form }}
-
+    <h4>Test Cases</h4>
+    <p>In 'Module and Testbench Design' question type, all sample and hidden test cases are hidden from the students, showing only the sample expected output for reference.</p>
+    
     <!-- Sample Test case -->
     <h5>Sample Test Case</h5>
     {% include 'code_questions/snippets/double-hdl-test-case-row.html' with sample=True prefix_1="0" prefix_2="1" form_1=testcase_formset.0 form_2=testcase_formset.1 sol_form=hdl_solution_form %}
@@ -11,7 +13,7 @@
     <h5>Internal Test Cases</h5>
     <div id="test-cases-container" class="mt-4">
     {% for f in testcase_formset|slice:"2:" %}
-        {% include 'code_questions/snippets/hdl-test-case-row.html' with prefix=forloop.counter|add:1 form=f %}
+        {% include 'code_questions/snippets/hdl-test-case-row.html' with double=True prefix=forloop.counter|add:1 form=f %}
     {% endfor %}
     </div>
 

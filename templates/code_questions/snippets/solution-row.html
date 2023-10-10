@@ -2,6 +2,11 @@
 
 <div class="row solution-row">
     <h4 class="pb-2">Solution</h4>
+    {% if type == 'module' %}
+    <p>Complete the module definition code in the solution section to compile and generate an output for your testbench code provided in the test case section.</p>
+    {% elif type == 'testbench' %}
+    <p>Complete the testbench code in the solution section to compile and generate an output for your module definition code provided in the test case section.</p>
+    {% endif %}
     <div class="mb-3">
     
     <div class="row">

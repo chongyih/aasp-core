@@ -257,7 +257,7 @@
           <div class="d-flex justify-content-between px-4 pb-4">
             <div>
               {% if is_software_language %}
-                <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun('module')">Compile and
+                <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile and
                 Run<i
                     class="fa-solid fa-play ms-2"></i></button>
               {% else %}
@@ -333,15 +333,15 @@
             <div class="d-flex justify-content-between">
               <div>
                 {% if is_software_language %}
-                <button type="button" id="module-sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile and
+                <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile and
                   Run<i
                       class="fa-solid fa-play ms-2"></i></button>
                 {% else %}
-                  <button type="button" id="module-sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile<i
+                  <button type="button" id="sample-btn" class="btn btn-warning" onclick="compileAndRun()">Compile<i
                         class="fa-solid fa-play ms-2"></i></button>
-                  <button type="button" id="module-waveform-btn" class="btn btn-info d-none" onclick="viewWaveform()">Run</button>
+                  <button type="button" id="waveform-btn" class="btn btn-info d-none" onclick="viewWaveform()">Run</button>
                 {% endif %}
-                <button type="button" id="module-submit-btn" onclick="submit();" class="btn btn-success">Submit</button>              
+                <button type="button" id="submit-btn" onclick="submit();" class="btn btn-success">Submit</button>              
               </div>
               <div>
                 <span class="h5" id="run-status">Ready</span>

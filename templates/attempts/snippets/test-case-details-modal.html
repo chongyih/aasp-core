@@ -20,13 +20,8 @@
 
         <!-- modal body details -->
         <div id="m-body" style="display:none;">
-          <!-- token -->
-          <h6>Token</h6>
-          <p id="m-token"></p>
-          
           {% if is_software_language %}
           <!-- stdin -->
-          <hr>
           <h6>Standard Input</h6>
           <pre><code class="language-plaintext rounded" id="m-stdin"></code></pre>
           <div class="row">
@@ -43,7 +38,6 @@
           </div>
           {% else %}
           <!-- waveform evaluation -->
-          <hr>
           <div class="d-none" id="m-hidden">
             <h6>Timing diagrams for test case</h6>
             <pre><code class="language-plaintext rounded">Hidden</code></pre>
@@ -73,19 +67,19 @@
                 {% endfor %}
               </div>
             </div>
-            <!-- error -->
-            <div class="d-none" id="m-error">
-              <h6>Error</h6>
-              <pre><code class="language-plaintext rounded" id="m-error-msg"></code></pre>
-            </div>
+          </div>
+          <!-- error -->
+          <div class="d-none" id="m-error">
+            <h6>Error</h6>
+            <pre><code class="language-plaintext rounded" id="m-error-msg"></code></pre>
           </div>
           {% endif %}
-          </div>
-          <hr>
+        </div>
+        <hr>
 
-          <!-- outcome -->
-          <h6>Outcome</h6>
-          <p id="m-outcome"></p>
+        <!-- outcome -->
+        <h6>Outcome</h6>
+        <p id="m-outcome"></p>
         </div>
 
         <div class="modal-footer">

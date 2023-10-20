@@ -34,7 +34,10 @@
                   <p class="nav-link active" id="pill-languages-tab">Step 2: Languages</p>
                 </li>
                 <li class="nav-item">
-                  <p class="nav-link">Step 3: Test Cases</p>
+                  <p class="nav-link" id="pill-languages-tab">Step 3: Code Snippets</p>
+                </li>
+                <li class="nav-item">
+                  <p class="nav-link">Step 4: Test Cases</p>
                 </li>
               </ul>
             {% endif %}
@@ -75,10 +78,8 @@
                 <!-- code snippet management form -->
                 {{ code_snippet_formset.management_form }}
 
-                <!-- this div holds all code snippet rows -->
-                <h5 class="mt-5">Code Snippets</h5>
-
-                <div id="code-snippets-container" class="mt-4">
+                <!-- hidden code snippet forms (to be shown on update code snippets page) -->
+                <div id="code-snippets-container" class="mt-4 d-none">
                   {# have existing code snippets #}
                   {% for f in code_snippet_formset %}
                     {% include 'code_questions/snippets/code-snippet-row.html' with prefix=forloop.counter0 form=f lang_id=f.language.value %}
@@ -87,7 +88,7 @@
 
                 <!-- buttons -->
                 <div>
-                  <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save Languages</button>
+                  <button type="submit" class="btn btn-sm btn-success float-end">Save Languages</button>
                 </div>
 
               </form>
@@ -112,7 +113,7 @@
       const snippetsContainer = $("#code-snippets-container");
       const emptySnippetRow = $("#empty-code-snippet-row");
       const totalFormsInput = $("#id_cs-TOTAL_FORMS");
-      let totalForms = totalFormsInput.val();
+      let totalForms = Number(totalFormsInput.val());
 
       $(".language-checkbox").change(function () {
           const checkbox = $(this);
@@ -132,11 +133,9 @@
 
           if (this.checked) { // checkbox was checked (add)
               if (existing) {
-                  const toShow = $("#code-snippets-container #code-snippet-row-" + langId);
-                  toShow.fadeIn(300, () => {
-                      const delete_checkbox = $(toShow).children(".delete-checkbox").first();
-                      $(delete_checkbox).prop('checked', false);
-                  });
+                  const toAdd = $("#code-snippets-container #code-snippet-row-" + langId);
+                  const delete_checkbox = $(toAdd).children(".delete-checkbox").first();
+                  $(delete_checkbox).prop('checked', false);
               } else {
                   // increment totalForms
                   totalForms++;
@@ -165,21 +164,17 @@
               const toRemove = $("#code-snippets-container #code-snippet-row-" + langId);
 
               if (existing) {
-                  // simply check the checkbox and hide the row
-                  toRemove.fadeOut(300, () => {
-                      const delete_checkbox = $(toRemove).children(".delete-checkbox").first();
-                      $(delete_checkbox).prop('checked', true);
-                  });
+                  // simply check the checkbox
+                  const delete_checkbox = $(toRemove).children(".delete-checkbox").first();
+                  $(delete_checkbox).prop('checked', true);
               } else {
                   // decrement totalForms
                   totalForms--;
                   totalFormsInput.val(totalForms);
 
                   // remove and update prefixes
-                  toRemove.fadeOut('slow', () => {
-                      toRemove.remove();
-                      updatePrefixes();
-                  });
+                  toRemove.remove();
+                  updatePrefixes();
               }
           }
       });
@@ -194,21 +189,6 @@
       const langName = radio.data("lang-name");
       const langModuleTemplate = $(radio).data("lang-module-template");
       const langTestbenchTemplate = $(radio).data("lang-testbench-template");
-
-      // remove existing row
-      $(".language-radio").each((idx, radio) => {
-        if ($(radio).data("lang-id") !== langId) {
-          const langId = $(radio).data("lang-id");
-          const toRemove = $("#code-snippets-container #code-snippet-row-" + langId);
-          toRemove.fadeOut('300', () => {
-            toRemove.remove();
-          });
-
-          // decrement totalForms
-          totalForms -= 2;
-          totalFormsInput.val(totalForms);
-        }
-      })
 
       // increment totalForms
       totalForms += 2;
@@ -274,21 +254,19 @@
             const toRemove = $("#code-snippets-container #code-snippet-row-" + langId);
 
             if (existing) {
-                // simply check the checkbox and hide the row
-                toRemove.fadeOut(300, () => {
-                    const delete_checkbox = $(toRemove).children(".delete-checkbox").first();
-                    $(delete_checkbox).prop('checked', true);
+                // simply check the checkbox
+                const delete_checkboxes = $(toRemove).children(".delete-checkbox");
+                $(delete_checkboxes).each((idx, checkbox) => {
+                  $(checkbox).prop('checked', true);
                 });
             } else {
                 // decrement totalForms
-                totalForms--;
+                totalForms-=2;
                 totalFormsInput.val(totalForms);
 
                 // remove and update prefixes
-                toRemove.fadeOut('slow', () => {
-                    toRemove.remove();
-                    updatePrefixes();
-                });
+                toRemove.remove();
+                updatePrefixes();
             }
           }
         })
@@ -304,11 +282,9 @@
             
             if (existing) {
               // uncheck the checkbox
-              const toShow = $("#code-snippets-container #code-snippet-row-" + langId);
-              toShow.fadeIn(300, () => {
-                  const delete_checkbox = $(toShow).children(".delete-checkbox").first();
-                  $(delete_checkbox).prop('checked', false);
-              });
+              const toAdd = $("#code-snippets-container #code-snippet-row-" + langId);
+              const delete_checkbox = $(toAdd).children(".delete-checkbox").first();
+              $(delete_checkbox).prop('checked', false);
             } else {
               // increment totalForms
               totalForms++;
@@ -343,24 +319,20 @@
 
             if (existing) {
                 // simply check the checkbox and hide the row
-                toRemove.fadeOut(300, () => {
-                    const delete_checkbox = $(toRemove).children(".delete-checkbox").first();
-                    $(delete_checkbox).prop('checked', true);
-                });
+                const delete_checkbox = $(toRemove).children(".delete-checkbox").first();
+                $(delete_checkbox).prop('checked', true);
             } else {
                 // decrement totalForms
-                totalForms -= 2;
+                totalForms--;
                 totalFormsInput.val(totalForms);
 
                 // remove and update prefixes
-                toRemove.fadeOut('slow', () => {
-                    toRemove.remove();
-                    updatePrefixes();
-                });
+                toRemove.remove();
+                updatePrefixes();
             }
           }
         })
-
+        
         $(".language-radio").each((idx, radio) => {
           const existing = $(radio).data("existing");
           
@@ -372,11 +344,9 @@
 
             if (existing) {
               // uncheck the checkbox
-              const toShow = $("#code-snippets-container #code-snippet-row-" + langId);
-              toShow.fadeIn(300, () => {
-                  const delete_checkbox = $(toShow).children(".delete-checkbox").first();
-                  $(delete_checkbox).prop('checked', false);
-              });
+              const toAdd = $("#code-snippets-container #code-snippet-row-" + langId);
+              const delete_checkbox = $(toAdd).children(".delete-checkbox").first();
+              $(delete_checkbox).prop('checked', false);
             } else {
               // increment totalForms
               totalForms += 2;
@@ -393,7 +363,7 @@
               cloned.find(".lang-label").first().html(`${langName} - Module`);
               cloned.find(".lang-id").first().val(langId);
               cloned.find("textarea").first().text(langModuleTemplate);
-
+              
               // update prefix
               $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 2}`));
 

@@ -277,7 +277,7 @@ def update_languages(request, code_question_id):
                 cq_is_software = code_question.is_software_language()
 
                 code_snippet_formset.save()
-                messages.success(request, "Code Snippets saved!")
+                messages.success(request, "Language saved!")
 
                 name = ''
 
@@ -301,7 +301,7 @@ def update_languages(request, code_question_id):
                         request.session['next'] = request.GET.get('next')
                         return redirect('update-question-type', code_question_id=code_question.id)
 
-                    return redirect('update-test-cases', code_question_id=code_question.id)
+                    return redirect('update-code-snippets', code_question_id=code_question.id)
 
                 # redirect to question type if HDL
                 if not code_question.is_software_language():
@@ -312,7 +312,7 @@ def update_languages(request, code_question_id):
                 if next_url:
                     return redirect(next_url)
                 
-                return redirect('update-test-cases', code_question_id=code_question.id)
+                return redirect('update-code-snippets', code_question_id=code_question.id)
 
     context = {
         'creation': request.GET.get('next') is None,
@@ -323,6 +323,43 @@ def update_languages(request, code_question_id):
     }
 
     return render(request, 'code_questions/update-languages.html', context)
+
+@login_required()
+@groups_allowed(UserGroup.educator)
+def update_code_snippets(request, code_question_id):
+    # get CodeQuestion instance
+    code_question = get_object_or_404(CodeQuestion, id=code_question_id)
+
+    # check permissions
+    if check_permissions_code_question(code_question, request.user) != 2:
+        return PermissionDenied()
+
+    # prepare formset
+    CodeSnippetFormset = inlineformset_factory(CodeQuestion, CodeSnippet, extra=0, fields=['language', 'code'])
+    code_snippet_formset = CodeSnippetFormset(prefix='cs', instance=code_question)
+
+    # process POST requests
+    if request.method == "POST":
+        code_snippet_formset = CodeSnippetFormset(request.POST, instance=code_question, prefix='cs')
+
+        if code_snippet_formset.is_valid():
+            with transaction.atomic():
+                code_snippet_formset.save()
+                messages.success(request, "Code snippets saved!")
+
+                next_url = request.GET.get("next")
+                if next_url:
+                    return redirect(next_url)
+
+                return redirect('update-test-cases', code_question_id=code_question.id)
+
+    context = {
+        'code_question': code_question,
+        'code_snippet_formset': code_snippet_formset,
+    }
+
+    return render(request, 'code_questions/update-code-snippets.html', context)
+    
 
 @login_required()
 @groups_allowed(UserGroup.educator)
@@ -360,7 +397,7 @@ def update_question_type(request, code_question_id):
                         del request.session['next']
                         return redirect(next_url)
                     
-                    return redirect('update-test-cases', code_question_id=code_question.id)
+                    return redirect('update-code-snippets', code_question_id=code_question.id)
                 
                 # remove existing test cases since question type is changed
                 code_question.testcase_set.all().delete()
@@ -373,7 +410,7 @@ def update_question_type(request, code_question_id):
                 hdl_config.code_question = code_question
                 hdl_config.save()
                 
-                return redirect('update-test-cases', code_question_id=code_question.id)
+                return redirect('update-code-snippets', code_question_id=code_question.id)
     
     context = {
         'creation': request.session['next'] is None,

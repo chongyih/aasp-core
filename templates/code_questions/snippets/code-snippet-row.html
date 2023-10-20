@@ -19,7 +19,7 @@
 
   <!-- code input -->
   <div class="form-group">
-    <label for="id_cs-{{ prefix|default_if_none:"__prefix__" }}-code" class="lang-label">{{ form.instance.language }}</label>
+    <label for="id_cs-{{ prefix|default_if_none:"__prefix__" }}-code" class="lang-label d-none">{{ form.instance.language }}</label>
     <textarea name="cs-{{ prefix|default_if_none:"__prefix__" }}-code" cols="40" rows="10" id="id_cs-{{ prefix|default_if_none:"__prefix__" }}-code"
               spellcheck="false" class="form-control font-monospace">{{ form.code.value|default_if_none:"" }}</textarea>
   </div>

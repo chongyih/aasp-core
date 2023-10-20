@@ -76,6 +76,12 @@
             let editor = ace.edit(`id_tc-${i}-stdin-editor`);
 
             initialize_editor(editor, i);
+
+            // event listener for module editor update to show generate testbench button
+            if (i == 0)
+                editor.getSession().once('change', function(){
+                    $('#id_tc-0-gen-tb').removeClass('d-none');
+                });
         }
 
         const generateTestbench = (elem) => {

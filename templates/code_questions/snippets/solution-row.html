@@ -45,7 +45,7 @@
                 id="id_testbench" 
                 value="{{ form.testbench.value|default:"" }}">
             </div>
-            <button class="btn btn-warning btn-sm" type="button" id="generateTestbench-btn" onclick="generateTestbench()">Generate Testbench</button>
+            <button class="btn btn-warning btn-sm d-none" type="button" id="generateTestbench-btn" onclick="generateTestbench()">Generate Testbench</button>
             <button class="btn btn-primary btn-sm float-end" type="button" onclick="applyToAll()">Apply to All</button>
         </div>
     </div>
@@ -169,6 +169,11 @@
 
     <!-- Generate Testbench -->
     <script>
+        // event listener for module editor update to show generate testbench button
+        module_editor.getSession().once('change', function(){
+            $('#generateTestbench-btn').removeClass('d-none');
+        });
+
         const generateTestbench = () => {
             let editor = ace.edit("module_editor");
             const module_code = editor.getValue();

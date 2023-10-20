@@ -62,7 +62,7 @@
                     <p class="text-danger">{{ e }}</p>
                 {% endfor %}
                 <div>
-                    <button class="btn btn-warning btn-sm" type="button" id="id_tc-{{ prefix_1|default:"__prefix_1__" }}-gen-tb" data-bs-toggle="modal" data-bs-target="#module-modal">Generate Module</button>
+                    <button class="btn btn-warning btn-sm" type="button" id="id_tc-{{ prefix_1|default:"__prefix_1__" }}-gen-module" data-bs-toggle="modal" data-bs-target="#module-modal">Generate Module</button>
                 </div>
             </div>
             <!-- Testbench Ace Code Editor -->
@@ -79,7 +79,7 @@
                     <p class="text-danger">{{ e }}</p>
                 {% endfor %}
                 <div>
-                    <button class="btn btn-warning btn-sm" type="button" id="id_tc-{{ prefix_1|default:"__prefix_1__" }}-gen-tb" onclick="generateTestbench(this)">Generate Testbench</button>
+                    <button class="btn btn-warning btn-sm d-none" type="button" id="id_tc-{{ prefix_1|default:"__prefix_1__" }}-gen-tb" onclick="generateTestbench(this)">Generate Testbench</button>
                 </div>
             </div>
         </div>

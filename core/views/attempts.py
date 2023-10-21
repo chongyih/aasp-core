@@ -245,6 +245,11 @@ def attempt_question(request, assessment_attempt_id, question_index):
                 'wavedrom_output': [signal['name'] for signal in data['signal'] if signal['name'].startswith('out_')]
             })
 
+            if hasattr(code_question, 'hdlquestionconfig') and code_question.hdlquestionconfig.get_question_type() == 'Module and Testbench Design':
+                context.update({
+                    'tab': True,
+                })
+
         return render(request, "attempts/code-question-attempt.html", context)
 
     else:
@@ -273,7 +278,15 @@ def submit_single_test_case(request, test_case_id):
                 }
                 return Response(error_context, status=status.HTTP_404_NOT_FOUND)
 
-            params = construct_judge0_params(request, test_case)
+            lang_id = request.POST.get('lang-id')
+
+            if test_case.code_question.hdlquestionconfig.get_question_type() == 'Module and Testbench Design':
+                test_case.stdin = request.POST.get('testbench_code')
+                code = request.POST.get('module_code')
+            else:
+                code = request.POST.get('code')
+            
+            params = construct_judge0_params(code, lang_id, test_case)
 
             # call judge0
             try:
@@ -430,9 +443,24 @@ def code_question_submission(request, code_question_attempt_id):
             test_cases = TestCase.objects.filter(code_question__codequestionattempt=cqa)
 
             # generate params for judge0 call
-            code = request.POST.get('code')
             language_id = request.POST.get('lang-id')
-            submissions = [construct_judge0_params(request, test_case) for test_case in test_cases]
+
+            # get question type
+            question_type = cqa.code_question.hdlquestionconfig.get_question_type()
+
+            # get code according to question type
+            if question_type == 'Module and Testbench Design':
+                submissions = []
+
+                code = request.POST.get('module_code')
+                testbench_code = request.POST.get('testbench_code')
+
+                # first test case is module code, others are testbench code
+                submissions.append(construct_judge0_params(testbench_code, language_id, test_cases[0]))
+                submissions.extend([construct_judge0_params(code, language_id, test_case) for test_case in test_cases[1:]])
+            else:
+                code = request.POST.get('code')
+                submissions = [construct_judge0_params(code, language_id, test_case) for test_case in test_cases]
             params = {"submissions": submissions}
 
             # call judge0
@@ -458,7 +486,7 @@ def code_question_submission(request, code_question_attempt_id):
                 # create CodeQuestionSubmission
                 cqs = CodeQuestionSubmission.objects.create(cq_attempt=cqa, code=code,
                                                             language=Language.objects.get(judge_language_id=language_id))
-
+                
                 # create TestCaseAttempts
                 test_case_attempts = TestCaseAttempt.objects.bulk_create([
                     TestCaseAttempt(cq_submission=cqs, test_case=tc, token=token) for tc, token in zip(test_cases, tokens)

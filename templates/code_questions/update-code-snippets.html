@@ -1,0 +1,95 @@
+{% extends 'layouts/master-nav.html' %}
+{% load static %}
+
+{% block title %}Code Snippets{% endblock %}
+
+{% block content %}
+  <div class="page-heading">
+    <div class="page-title">
+      <div class="row">
+        <div class="col-12 col-md-12 order-md-1 order-last pb-3">
+          <h2>Update Code Snippets</h2>
+          {% if code_question.question_bank != None %}
+            <h5 class="text-muted">For {{ code_question.name }} in question bank: {{ code_question.question_bank.name }}</h5>
+          {% else %}
+            <h5 class="text-muted">For {{ code_question.name }} in assessment: {{ code_question.assessment.name }}</h5>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab group row -->
+    <div class="row">
+      <div class="col-10 m-2">
+        <div class="card">
+          <div class="card-body">
+
+            <!-- Tabs (Not clickable) -->
+            {% if creation %}
+              <ul class="nav nav-pills mb-3">
+                <li class="nav-item">
+                  <p class="nav-link">Step 1: Description</p>
+                </li>
+                <li class="nav-item">
+                  <p class="nav-link" id="pill-languages-tab">Step 2: Languages</p>
+                </li>
+                <li class="nav-item">
+                    <p class="nav-link active" id="pill-languages-tab">Step 3: Code Snippets</p>
+                </li>
+                <li class="nav-item">
+                  <p class="nav-link">Step 4: Test Cases</p>
+                </li>
+              </ul>
+            {% endif %}
+
+            <!-- Tab contents -->
+            <div class="pt-3">
+              <h4>Code Snippets</h4>
+              <p>
+                Enter the default code snippets for each selected language. These default snippets will serve as the template that students will see when attempting the question.
+              </p>
+
+              {% for error in code_snippet_formset.errors %}
+                {{ error }}
+              {% endfor %}
+
+              <form method="POST">
+                {% csrf_token %}
+
+                <!-- code snippet management form -->
+                {{ code_snippet_formset.management_form }}
+
+                <!-- this div holds all code snippet rows -->
+                <ul class="nav nav-tabs" id="snippetsTab" role="tablist">
+                  {% for f in code_snippet_formset %}
+                    <li class="nav-item" role="presentation">
+                      <button class="nav-link {% if forloop.first %}active{% endif %}" id="lang-{{ forloop.counter0 }}-tab" data-bs-toggle="tab" data-bs-target="#lang-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="lang-{{ forloop.counter0 }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                        {{ f.instance.language }} {% if not code_question.is_software_language %} {% if forloop.counter0|divisibleby:2 %} - Module {% else %} - Testbench {% endif %} {% endif %}
+                      </button>
+                    </li>
+                  {% endfor %}
+                </ul>
+                <div id="code-snippets-container" class="mt-4 tab-content">
+                  {# have existing code snippets #}
+                  {% for f in code_snippet_formset %}
+                    <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="lang-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="lang-{{ forloop.counter0 }}-tab">
+                      {% include 'code_questions/snippets/code-snippet-row.html' with prefix=forloop.counter0 form=f lang_id=f.language.value %}
+                    </div>
+                  {% endfor %}
+                </div>
+
+                <!-- buttons -->
+                <div>
+                  <button type="submit" class="btn btn-sm btn-success float-end" onclick="">Save Code Snippets</button>
+                </div>
+
+              </form>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+{% endblock %}

@@ -45,8 +45,8 @@ urlpatterns = [
     path('code-question/create/<str:parent>/<int:parent_id>/', code_questions.create_code_question, name='create-code-question'),  # step 1
     path('code-question/<int:code_question_id>/update-languages/', code_questions.update_languages, name='update-languages'),  # step 2
     path('code-question/<int:code_question_id>/update-question-type/', code_questions.update_question_type, name='update-question-type'),  # step 2.1 (HDL)
-    path('code-question/<int:code_question_id>/generate-module-code/', code_questions.generate_module_code, name='generate-module-code'),  # step 2.2 (HDL)
-    path('code-question/<int:code_question_id>/update-test-cases/', code_questions.update_test_cases, name='update-test-cases'),  # step 3
+    path('code-question/<int:code_question_id>/update-code-snippets/', code_questions.update_code_snippets, name='update-code-snippets'),  # step 3
+    path('code-question/<int:code_question_id>/update-test-cases/', code_questions.update_test_cases, name='update-test-cases'),  # step 4
     path('code-question/update/<int:code_question_id>/', code_questions.update_code_question, name='update-code-question'),
     path('api/get-code-question-details/', code_questions.get_cq_details, name='get-code-question-details'),  # ajax
     path('api/compile-code/', code_questions.compile_code, name='compile-code'),  # ajax
@@ -88,8 +88,9 @@ urlpatterns = [
     path('export/testcase/stdout/', reports.export_test_case_stdout, name="export-test-case-stdout"),  # expected output
     path('export/tca/<int:tca_id>/stdout/', reports.export_test_case_attempt_stdout, name="export-test-case-attempt-stdout"),
 
-    # testbench generation
+    # testbench and module modal generation
     path('testbench/generate/', code_questions.testbench_generation, name='testbench-generation'),   # ajax
+    path('module/generate/', code_questions.generate_module_code_modal, name='generate-module-code-modal'),   # ajax
 
     # waveform display
     path('vcdrom/', attempts.vcdrom, name='vcdrom'),

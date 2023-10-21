@@ -64,7 +64,10 @@
                   <p class="nav-link" id="pill-languages-tab">Step 2: Languages</p>
                 </li>
                 <li class="nav-item">
-                  <p class="nav-link active">Step 3: Test Cases</p>
+                  <p class="nav-link" id="pill-languages-tab">Step 3: Code Snippets</p>
+                </li>
+                <li class="nav-item">
+                  <p class="nav-link active">Step 4: Test Cases</p>
                 </li>
               </ul>
             {% endif %}
@@ -129,8 +132,6 @@
     <!-- hidden test-case-row -->
     {% if is_software_language %}
       {% include 'code_questions/snippets/test-case-row.html' with form=testcase_formset.empty_form hidden=True %}
-    {% elif question_type == 'Module and Testbench Design' %}
-      {% include 'code_questions/snippets/double-hdl-test-case-row.html' with form_1=testcase_formset.empty_form form_2=testcase_formset.empty_form hidden=True %}
     {% else %}
       {% include 'code_questions/snippets/hdl-test-case-row.html' with form=testcase_formset.empty_form hidden=True %}
     {% endif %}
@@ -146,43 +147,63 @@
   <!-- TestCase dynamic formset management script -->
   <script>
       const testCasesContainer = $("#test-cases-container");
+      const testCasesNav = $("#test-cases-nav")
+      const testCasesTabContent = $("#test-cases-tab-content")
       const emptyTestCaseRow = $("#empty-test-case-row");
       const totalFormsInput = $("#id_tc-TOTAL_FORMS");
       let totalForms = totalFormsInput.val();
 
+      const arrowCommands = ["gotoleft", "gotoright", "golineup", "golinedown"];
+
       // function to update all prefixes (internal test cases only as sample test case is always 0)
-      const updatePrefixes = () => {
+      const updatePrefixes = (startIndex=0) => {
           const regex = RegExp(`tc-(\\d)-`, 'g');
-          testCasesContainer.children('.test-case-row').each((idx, tcRow) => {
+          const container = testCasesContainer.length ? testCasesContainer.children('.test-case-row') : testCasesTabContent.children('.tab-pane').children('.test-case-row');
+          
+          container.each((idx, tcRow) => {
+              let index = idx + 1;
+
+              // internal test cases start at 1 for tab content
+              if (testCasesTabContent.length) {
+                if (idx < 1) // ignore sample test cases
+                  return
+                
+                // update other editor if module and testbench question
+                if ('{{ question_type }}' === 'Module and Testbench Design') {
+                  index = idx + 1;
+                } else {
+                  index = idx;
+                }
+              }
+
+              console.log(index, startIndex, index <= startIndex - 1)
+
+              if (index <= startIndex - 1) // only update rows after the removed row
+                return;
+
               // store current stdin, stdout values of this test case row
               let textAreas = $(tcRow).find("textarea");
               const stdin = $(textAreas.get(0)).val();
               const stdout = $(textAreas.get(1)).val();
 
-              // update other editor if module and testbench question
-              if ('{{ question_type }}' === 'Module and Testbench Design') {
-                // find the first index
-                const firstIndex = $(tcRow).find("pre").first().attr('id').replace("id_tc-", "").replace("-stdin-editor", "");
-                const regexFirst = RegExp(`tc-(${firstIndex})-`, 'g');
-                const regexSecond = RegExp(`tc-(${Number(firstIndex) + 1})-`, 'g');
+              // update wavedrom id if HDL
+              if ('{{ is_software_language|yesno:"truefalse" }}' === 'False') {
+                $(tcRow).find('[id^="WaveDrom_Display_"]').each(function() {
+                  var id = $(this).attr('id').replace("WaveDrom_Display_", "");
 
-                $(tcRow).html($(tcRow).html().replaceAll(regexFirst, `tc-${idx * 2 + 2}-`))
-                $(tcRow).html($(tcRow).html().replaceAll(regexSecond, `tc-${idx * 2 + 3}-`))
+                  console.log(id)
 
-                // update label
-                $("#tc-" + (idx + 2) + "-label").html(idx + 2);
-                $("#tc-" + (idx + 3) + "-label").html(idx + 3);
-
-                textAreas = $(tcRow).find("textarea");
-              } else {
-                // replace html with one with updated prefixes
-                $(tcRow).html($(tcRow).html().replaceAll(regex, `tc-${idx + 1}-`));
-                $("#tc-" + (idx + 1) + "-label").html(idx + 1); // update label
-
-                // need to .find() again as previous references are no longer valid
-                textAreas = $(tcRow).find("textarea");
+                  $(tcRow).find(`[id="WaveDrom_Display_${id}"]`).attr('id', `WaveDrom_Display_${index}`);
+                  $(tcRow).find(`[id="InputJSON_${id}"]`).attr('id', `InputJSON_${index}`);
+                });
               }
+              
+              // replace html with one with updated prefixes
+              $(tcRow).html($(tcRow).html().replaceAll(regex, `tc-${index}-`));
+              $("#tc-" + (index) + "-label").html(('{{ question_type }}' === 'Module and Testbench Design' || testCasesTabContent.length) ? index : index - 1); // update label
 
+              // need to .find() again as previous references are no longer valid
+              textAreas = $(tcRow).find("textarea");
 
               // restore the previously stored stdin, stdout values
               $(textAreas.get(0)).val(stdin);
@@ -194,6 +215,7 @@
         // initialize ace editor for code
         let editor = ace.edit(`id_tc-${index}-stdin-editor`);
 
+        editor.setValue(document.getElementById(`id_tc-${index}-stdin`).value, -1)
         editor.renderer.setScrollMargin(10);
         editor.setOptions({
             fontFamily: "JetBrains Mono",
@@ -220,14 +242,15 @@
         });
       }
 
+      const destroyEditor = (index) => {
+        const editor_id = `id_tc-${index}-stdin-editor`;
+        ace.edit(editor_id).destroy();
+      }
+
       // add test case row button clicked
       $("#addTestCase-btn").click(() => {
           // increment totalForms
           totalForms++;
-
-          // increment again as one test case has two forms
-          if ('{{question_type}}' == 'Module and Testbench Design')
-            totalForms++;
 
           totalFormsInput.val(totalForms);
 
@@ -237,13 +260,13 @@
           // remove id, style
           cloned.removeAttr('id style');
 
+          // get index
+          let testcaseIndex = totalForms - 1;
+          if ('{{ question_type }}' === 'Module and Testbench Design')
+            testcaseIndex = totalForms - 2;
+
           // update prefix
-          if ('{{question_type}}' == 'Module and Testbench Design') {
-            $(cloned).html($(cloned).html().replaceAll('__prefix_1__', `${totalForms - 2}`));
-            $(cloned).html($(cloned).html().replaceAll('__prefix_2__', `${totalForms - 1}`));
-          }
-          else
-            $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
+          $(cloned).html($(cloned).html().replaceAll('__prefix__', `${totalForms - 1}`));
 
           // update wavedrom id
           $(cloned).find('[id^="WaveDrom_Display_"]').each(function() {
@@ -254,16 +277,18 @@
 
           });
 
-          // append to container
-          testCasesContainer.append(cloned);
+          if (testCasesContainer.length)
+            // append to container
+            testCasesContainer.append(cloned);
+          else {
+            // append to tab nav
+            testCasesNav.append(`<button class="nav-link" id="internal-tab-${testcaseIndex}" data-bs-toggle="tab" data-bs-target="#internal-${testcaseIndex}" type="button" role="tab" aria-controls="internal-${testcaseIndex}" aria-selected="false">Internal Test Case ${testcaseIndex}</button>`);
+            // append to tab content
+            testCasesTabContent.append(`<div class="tab-pane fade" id="internal-${testcaseIndex}" role="tabpanel" aria-labelledby="internal-tab-${testcaseIndex}"><div class="row test-case-row">${$(cloned).html()}</div></div>`);
+          }
 
           if ('{{ is_software_language|yesno:"truefalse" }}' === 'False') {
             initializeEditor(totalForms - 1);
-
-            // initialize the other editor
-            if ('{{question_type}}' === 'Module and Testbench Design') {
-              initializeEditor(totalForms - 2);
-            }
           }
       });
 
@@ -281,23 +306,49 @@
           } else {
               // decrement totalForms
               totalForms--;
-
-              // decrement again as one test case has two forms
-              if ('{{question_type}}' == 'Module and Testbench Design')
-                totalForms--;
-
               totalFormsInput.val(totalForms);
+
+              let index = Number($(btn).siblings().first().find('span').html());
+
+              // destroy editor
+              if ('{{ is_software_language|yesno:"truefalse" }}' === 'False')
+                for (let i = index; i < totalForms; i++) 
+                  destroyEditor(i);
 
               // remove and update prefixes
               toRemove.fadeOut('slow', () => {
                   toRemove.remove();
-                  updatePrefixes();
+                  
+                  updatePrefixes(index);
 
-                  for (let i = 0; i < totalForms; i++) {
-                    let editor = ace.edit(`id_tc-${i}-stdin-editor`);
-                    editor.setValue(document.getElementById(`id_tc-${i}-stdin`).value);
-                  }
+                  if ('{{ is_software_language|yesno:"truefalse" }}' === 'False')
+                    for (let i = index; i < totalForms; i++) {
+                      initializeEditor(i);
+                      ace.edit(`id_tc-${i}-stdin-editor`).setValue(document.getElementById(`id_tc-${i}-stdin`).value, -1);
+                    }
               });
+
+              // check if tab content
+              if (testCasesNav.length) {
+                if ('{{ question_type }}' === 'Module and Testbench Design')
+                  index = index - 1; // need to account for 2 sample test cases
+                // remove tab and tab content
+                $(`#internal-tab-${index}`).remove();
+                $(`#internal-${index}`).remove();
+                // update tab index
+                for (let i = index + 1; i <= totalForms; i++) {
+                  $(`#internal-tab-${i}`).html(`Internal Test Case ${i - 1}`);
+                  $(`#internal-tab-${i}`).attr('data-bs-target', `#internal-${i - 1}`)
+                  $(`#internal-tab-${i}`).attr('aria-controls', `internal-${i - 1}`);
+                  $(`#internal-tab-${i}`).attr('id', `internal-tab-${i - 1}`);
+
+                  $(`#internal-${i}`).attr('aria-labelledby', `internal-tab-${i - 1}`);
+                  $(`#internal-${i}`).attr('id', `internal-${i - 1}`);
+                }
+                // switch to first tab
+                $(`#sample-tab`).tab('show');
+              }
+              
               return false;
           }
       }
@@ -346,8 +397,8 @@
         module = ace.edit("module_editor").getValue()
         testbench = document.getElementById(stdin_id).value;
       } else {
-        module = document.getElementById(`id_tc-${index}-stdin`).value;
-        testbench = document.getElementById(`id_tc-${Number(index) + 1}-stdin`).value;
+        module = document.getElementById(`id_tc-0-stdin`).value;
+        testbench = document.getElementById(`id_tc-${index}-stdin`).value;
       }
 
       // check if empty
@@ -438,8 +489,9 @@
                 // Set the output value
                 document.getElementById(`id_tc-${index}-stdout`).value = res.data.stdout;
 
-                if ('{{ question_type }}' === 'Module and Testbench Design') {
-                  document.getElementById(`id_tc-${Number(index) + 1}-stdout`).value = res.data.stdout;
+                // Set hidden output value for module and testbench question
+                if ('{{ question_type }}' === 'Module and Testbench Design' && index === '1') {
+                  document.getElementById(`id_tc-0-stdout`).value = res.data.stdout;
                 }
                 
               } else if (res.data.status_id === 6) {  // compilation error

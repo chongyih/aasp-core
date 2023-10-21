@@ -178,7 +178,7 @@ def construct_assessment_published_email(assessment, recipients=None):
     send_assessment_published_email.delay(assessment.id, assessment.name, str(assessment.course),\
                                           assessment.time_start, assessment.time_end, assessment.duration, recipients)
 
-def construct_judge0_params(request, test_case) -> dict:
+def construct_judge0_params(code, lang_id, test_case) -> dict:
     """
     Constructs the parameters needed to send to Judge0 API.
     Hardware description languages require a different set up, where the code is zipped and sent to Judge0.
@@ -186,8 +186,8 @@ def construct_judge0_params(request, test_case) -> dict:
     if test_case.code_question.is_software_language() == True:
         # judge0 params
         params = {
-            "source_code": request.POST.get('code'),
-            "language_id": request.POST.get('lang-id'),
+            "source_code": code,
+            "language_id": lang_id,
             "stdin": test_case.stdin,
             "expected_output": test_case.stdout,
             "cpu_time_limit": test_case.time_limit,
@@ -195,18 +195,18 @@ def construct_judge0_params(request, test_case) -> dict:
         }
     else:
         # check if language is verilog
-        language = Language.objects.get(judge_language_id=request.POST.get('lang-id'))
+        language = Language.objects.get(judge_language_id=lang_id)
         if language.name.find('Verilog') != -1:
-            if request.POST.get('code').find('$dumpfile') == -1 and test_case.stdin.find('$dumpfile') == -1:
+            if code.find('$dumpfile') == -1 and test_case.stdin.find('$dumpfile') == -1:
                 # add wave dump to testbench
                 # find testbench file
-                if request.POST.get('code').find('initial') != -1:
+                if code.find('initial') != -1:
                     # add wave dump to last line before endmodule
-                    testbench = request.POST.get('code').replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
+                    testbench = code.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
                     main = test_case.stdin
                 elif test_case.stdin.find('initial') != -1:
                     # add wave dump to last line before endmodule
-                    main = request.POST.get('code')
+                    main = code
                     testbench = test_case.stdin.replace('endmodule', 'initial begin $dumpfile("vcd_dump.vcd"); $dumpvars(0); end endmodule')
             else:
                 # Define the regular expression patterns
@@ -217,19 +217,23 @@ def construct_judge0_params(request, test_case) -> dict:
                 new_dumpfile = '$dumpfile("vcd_dump.vcd")'
                 new_dumpvars = '$dumpvars(0)'
 
-                if request.POST.get('code').find('initial') != -1:
+                if code.find('initial') != -1:
                     # replace wave dump
-                    testbench = re.sub(dumpfile_pattern, new_dumpfile, request.POST.get('code'))
+                    testbench = re.sub(dumpfile_pattern, new_dumpfile, code)
                     testbench = re.sub(dumpvars_pattern, new_dumpvars, testbench)
                     main = test_case.stdin
                 elif test_case.stdin.find('initial') != -1:
                     # replace wave dump
                     testbench = re.sub(dumpfile_pattern, new_dumpfile, test_case.stdin)
                     testbench = re.sub(dumpvars_pattern, new_dumpvars, testbench)
-                    main = request.POST.get('code')
+                    main = code
 
-        main, input_ports, output_ports = embed_inout_module(main)
-        testbench = embed_inout_testbench(testbench, input_ports, output_ports)
+        try:
+            main, input_ports, output_ports = embed_inout_module(main)
+            testbench = embed_inout_testbench(testbench, input_ports, output_ports)
+        except:
+            main = code
+            testbench = test_case.stdin
         
         # create zip file
         with zipfile.ZipFile('submission.zip', 'w') as zip_file:
@@ -245,7 +249,7 @@ def construct_judge0_params(request, test_case) -> dict:
         # judge0 params
         params = {
             "additional_files": encoded,
-            "language_id": request.POST.get('lang-id'),
+            "language_id": lang_id,
             "stdin": test_case.stdin,
             "expected_output": test_case.stdout,
             "cpu_time_limit": test_case.time_limit,

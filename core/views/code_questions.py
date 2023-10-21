@@ -80,10 +80,14 @@ def create_code_question(request, parent, parent_id):
     context = {
         'assessment': assessment,
         'question_bank': question_bank,
-        'description_placeholder': """This editor supports **markdown**! And math equations too!
+        'description_placeholder': """#### Overview
+This editor supports **markdown**! And math equations too!
 
 You can do this: $a \\ne 0$, and this:
 $$x = {-b \pm \sqrt{b^2-4ac} \over 2a}$$
+
+#### Hardware Description Language (HDL) Guidelines
+When creating a **HDL** question, it is recommended to specify the input and output ports in your question description. Alternatively, if you prefer to define the input and output ports for the students, you can do so in the code snippet section.
 
 **Click preview!**""",
         'form': form,

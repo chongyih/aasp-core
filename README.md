@@ -68,10 +68,10 @@ docker save $(docker images --format '{{.Repository}}:{{.Tag}}') -o exported-ima
 1. Clone the repository, check out the `master` branch. You may skip this step if you already have a copy of the repository (e.g. from an archive). 
    ```bash
    # via http
-   git clone https://github.com/winglam209/aasp
+   git clone https://github.com/chongyih/aasp-core
    
    # or via ssh (you need to add your ssh publickey to your github account)
-   git clone git@github.com:winglam209/aasp.git
+   git clone git@github.com:chongyih/aasp-core.git
    ```
 
 2. Make a copy of the `.env_prod` example file and save it as `.env`.

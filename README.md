@@ -18,10 +18,10 @@ uses [Judge0](https://github.com/judge0/judge0) for code compilation and executi
 1. Clone the repository, check out the `master` branch.
    ```bash
    # via http
-   git clone https://github.com/winglam209/aasp
+   git clone https://github.com/chongyih/aasp-core
    
    # or via ssh (you need to add your ssh publickey to your github account)
-   git clone git@github.com:winglam209/aasp.git
+   git clone git@github.com:chongyih/aasp-core.git
    ```
 
 2. Make a copy of the `.env_dev` example file and save it as `.env`.

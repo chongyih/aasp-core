@@ -12,4 +12,24 @@
     {% include 'code_questions/snippets/hdl-test-case-row.html' with sample=True prefix="0" form=testcase_formset.0 %}
     </div>
 
+    <!-- Error modal -->
+    <div class="modal fade" id="error-modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title">
+                Compilation Errors
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" />
+            </div>
+            <div class="modal-body">
+            <pre id="error-details" style="color: red; font-family: monospace; font-size: medium; padding: 10px;"></pre>
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+        </div>
+    </div>
+
 </div>

@@ -18,13 +18,19 @@
         <!-- Label and delete button row -->
         {% if not sample %}
             <div class="d-flex justify-content-between align-items-center">
-            <h6>Test Case <span style="display:none"
+            <h6>Internal Test Case <span style="display:none"
                                 id="tc-{{ prefix|default:"__prefix__" }}-label">{{ prefix|default:"__prefix__" }}</span>
             </h6>
             <button type="button"
                     class="btn btn-sm btn-danger float-end justify-content-center d-flex align-items-center"
                     onclick="removeClicked(this, {% if form.id.value != None %}true{% else %}false{% endif %});"><i
                     class="fa-solid fa-xmark"></i></button>
+            </div>
+        {% else %}
+            <div class="d-flex justify-content-between align-items-center">
+            <h6>Sample Test Case <span style="display:none"
+                                id="tc-{{ prefix|default:"__prefix__" }}-label">{{ prefix|default:"__prefix__" }}</span>
+            </h6>
             </div>
         {% endif %}
     
@@ -152,26 +158,6 @@
             <hr>
         </div>
 
-        <!-- Error modal -->
-        <div class="modal fade" id="error-modal" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                <h5 class="modal-title">
-                    Compilation Errors
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" />
-                </div>
-                <div class="modal-body">
-                <pre id="error-details" style="color: red; font-family: monospace; font-size: medium; padding: 10px;"></pre>
-                </div>
-                <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-            </div>
-        </div>
-
     </div>
 </body>
 
@@ -227,18 +213,18 @@
 
         row_editor_{{ prefix|default:"__prefix__" }}.session.setMode("ace/mode/" + $("#lang-select").find("option:selected").data('ace-mode'));
 
+        // Synchronize Ace editor content with the hidden input field
+        row_editor_{{ prefix|default:"__prefix__" }}.getSession().on('change', function(){
+            var code = row_editor_{{ prefix|default:"__prefix__" }}.getValue();
+            document.getElementById("id_tc-{{ prefix|default:"__prefix__" }}-stdin").value = code;
+        });
+
         if (!document.getElementById("id_tc-{{ prefix|default:"__prefix__" }}-stdin").value)
             "{{ question_type }}" === 'Testbench Design' ? row_editor_{{ prefix|default:"__prefix__" }}.setValue($('option:first', $("#lang-select")).data('code'), -1)
             : "{{ question_type }}" === 'Module Design' ? row_editor_{{ prefix|default:"__prefix__" }}.setValue($('option:eq(1)', $("#lang-select")).data('code'), -1)
             : "";
         else
             row_editor_{{ prefix|default:"__prefix__" }}.setValue(document.getElementById("id_tc-{{ prefix }}-stdin").value, -1);
-
-        // Synchronize Ace editor content with the hidden input field
-        row_editor_{{ prefix|default:"__prefix__" }}.getSession().on('change', function(){
-            var code = row_editor_{{ prefix|default:"__prefix__" }}.getValue();
-            document.getElementById("id_tc-{{ prefix|default:"__prefix__" }}-stdin").value = code;
-        });
 
         row_editor_{{ prefix|default:"__prefix__" }}.commands.on("afterExec", function (e) {
             // ignore arrow keys commands

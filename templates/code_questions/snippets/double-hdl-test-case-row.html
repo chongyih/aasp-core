@@ -35,15 +35,21 @@
 
         <!-- Label and delete button row -->
         {% if not sample %}
-        <div class="d-flex justify-content-between align-items-center">
-        <h6>Test Case <span style="display:none"
-                            id="tc-{{ prefix_1|default:"__prefix_1__" }}-label">{{ prefix_1|default:"__prefix_1__" }}</span>
-        </h6>
-        <button type="button"
-                class="btn btn-sm btn-danger float-end justify-content-center d-flex align-items-center"
-                onclick="removeClicked(this, {% if form_1.id.value != None %}true{% else %}false{% endif %});"><i
-                class="fa-solid fa-xmark"></i></button>
-        </div>
+            <div class="d-flex justify-content-between align-items-center">
+            <h6>Internal Test Case <span style="display:none"
+                                id="tc-{{ prefix|default:"__prefix__" }}-label">{{ prefix|default:"__prefix__" }}</span>
+            </h6>
+            <button type="button"
+                    class="btn btn-sm btn-danger float-end justify-content-center d-flex align-items-center"
+                    onclick="removeClicked(this, {% if form.id.value != None %}true{% else %}false{% endif %});"><i
+                    class="fa-solid fa-xmark"></i></button>
+            </div>
+        {% else %}
+            <div class="d-flex justify-content-between align-items-center">
+            <h6>Sample Test Case <span style="display:none"
+                                id="tc-{{ prefix|default:"__prefix__" }}-label">{{ prefix|default:"__prefix__" }}</span>
+            </h6>
+            </div>
         {% endif %}
     
         <!-- Input -->
@@ -261,25 +267,6 @@
     
         <div class="mt-1">
             <hr>
-        </div>
-        <!-- Error modal -->
-        <div class="modal fade" id="error-modal" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                <h5 class="modal-title">
-                    Compilation Errors
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" />
-                </div>
-                <div class="modal-body">
-                <pre id="error-details" style="color: red; font-family: monospace; font-size: medium; padding: 10px;"></pre>
-                </div>
-                <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-            </div>
         </div>
     </div>
 

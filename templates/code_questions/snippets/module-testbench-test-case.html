@@ -8,9 +8,9 @@
     
     <nav>
         <div class="nav nav-tabs" id="test-cases-nav" role="tablist">
-            <button class="nav-link active" id="sample-tab" data-bs-toggle="tab" data-bs-target="#sample" type="button" role="tab" aria-controls="sample" aria-selected="true">Sample Test Case</button>
+            <button class="nav-link active" id="sample-tab" data-bs-toggle="tab" data-bs-target="#sample" type="button" role="tab" aria-controls="sample" aria-selected="true">Sample Test Case {% if testcase_formset.0.errors %}&#x274C;{% endif %}</button>
             {% for f in testcase_formset|slice:"2:" %}
-                <button class="nav-link" id="internal-tab-{{ forloop.counter }}" data-bs-toggle="tab" data-bs-target="#internal-{{ forloop.counter }}" type="button" role="tab" aria-controls="internal-{{ forloop.counter }}" aria-selected="true">Internal Test Case {{ forloop.counter }}</button>
+                <button class="nav-link" id="internal-tab-{{ forloop.counter }}" data-bs-toggle="tab" data-bs-target="#internal-{{ forloop.counter }}" type="button" role="tab" aria-controls="internal-{{ forloop.counter }}" aria-selected="true">Internal Test Case {{ forloop.counter }} {% if f.errors %}&#x274C;{% endif %}</button>
             {% endfor %}
         </div>
     </nav>

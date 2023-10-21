@@ -358,6 +358,7 @@ def update_code_snippets(request, code_question_id):
                 return redirect('update-test-cases', code_question_id=code_question.id)
 
     context = {
+        'creation': request.GET.get('next') is None,
         'code_question': code_question,
         'code_snippet_formset': code_snippet_formset,
     }

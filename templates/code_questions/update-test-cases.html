@@ -176,8 +176,6 @@
                 }
               }
 
-              console.log(index, startIndex, index <= startIndex - 1)
-
               if (index <= startIndex - 1) // only update rows after the removed row
                 return;
 
@@ -190,8 +188,6 @@
               if ('{{ is_software_language|yesno:"truefalse" }}' === 'False') {
                 $(tcRow).find('[id^="WaveDrom_Display_"]').each(function() {
                   var id = $(this).attr('id').replace("WaveDrom_Display_", "");
-
-                  console.log(id)
 
                   $(tcRow).find(`[id="WaveDrom_Display_${id}"]`).attr('id', `WaveDrom_Display_${index}`);
                   $(tcRow).find(`[id="InputJSON_${id}"]`).attr('id', `InputJSON_${index}`);

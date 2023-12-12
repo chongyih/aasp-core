@@ -1,12 +1,12 @@
 # Automatic Assessment Platform (AASP)
 This application is developed as part of my Final Year Project in Nanyang Technological University, Singapore.
 
-This project includes enhancements - Test Proctoring features, email automation features and bug fixes.
+This project includes enhancements - Adding Hardware Description Language assessment support and bug fixes.
 
 ## About
 
 AASP is a web-based online assessment platform that allows educators to create and manage assessments for their
-students. With test proctoring features, assessments can be administered remotely while enforcing a strict and monitored test environment.
+students. With HDL support, AASP covers a wider range of assessment types, relevant to NTU SCSE's curriculum.
 
 The platform is built with the [Django Web Framework](https://djangoproject.com/) and
 uses [Judge0](https://github.com/judge0/judge0) for code compilation and execution.

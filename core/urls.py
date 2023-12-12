@@ -94,5 +94,4 @@ urlpatterns = [
 
     # waveform display
     path('vcdrom/', attempts.vcdrom, name='vcdrom'),
-    path('api/wavedrom/vcd2wavedrom', attempts.wavedrom, name='vcd2wavedrom')
 ]
